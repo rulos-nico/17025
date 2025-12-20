@@ -1,0 +1,20 @@
+{
+  "name": "lab-iso17025-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Monorepo para plataforma de laboratorio ISO 17025",
+  "scripts": {
+    "dev": "pnpm --filter @lab17025/frontend dev",
+    "dev:all": "pnpm --parallel dev",
+    "build": "pnpm --recursive build",
+    "build:frontend": "pnpm --filter @lab17025/frontend build",
+    "preview": "pnpm --filter @lab17025/frontend preview",
+    "lint": "pnpm --recursive lint",
+    "clean": "pnpm --recursive exec rm -rf node_modules dist"
+  },
+  "keywords": ["iso17025", "laboratorio", "monorepo"],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

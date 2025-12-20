@@ -1,0 +1,10 @@
+.equipos .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text-warning {
+  color: var(--warning-color);
+  font-weight: 600;
+}
