@@ -1,0 +1,389 @@
+.document-classifier {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.document-classifier h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+/* Zona de arrastre */
+.drop-zone {
+  border: 3px dashed #ccc;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  background-color: #fafafa;
+}
+
+.drop-zone:hover {
+  border-color: #2196F3;
+  background-color: #f0f8ff;
+}
+
+.drop-zone.active {
+  border-color: #4CAF50;
+  background-color: #e8f5e9;
+  transform: scale(1.02);
+}
+
+.drop-zone.has-file {
+  border-color: #4CAF50;
+  background-color: #fff;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.drop-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.drop-hint {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.drop-formats {
+  color: #999;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+}
+
+/* Información del archivo */
+.file-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.file-icon {
+  font-size: 3rem;
+}
+
+.file-details {
+  text-align: left;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.file-size {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Botones de acción */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-new {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2196F3;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1976D2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.btn-secondary:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-new {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-new:hover {
+  background-color: #45a049;
+}
+
+/* Resultado */
+.classification-result {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.result-header h3 {
+  color: #4CAF50;
+  margin: 0;
+}
+
+.result-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.result-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.category-badge {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.confidence {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.confidence-label {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.confidence-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4CAF50;
+}
+
+.review-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #856404;
+  text-align: center;
+}
+
+/* Probabilidades */
+.probabilities {
+  margin: 1.5rem 0;
+}
+
+.probabilities h4 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.probability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.probability-item {
+  display: grid;
+  grid-template-columns: 200px 1fr 80px;
+  align-items: center;
+  gap: 1rem;
+}
+
+.probability-label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.probability-bar-container {
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.probability-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.probability-value {
+  text-align: right;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Metadatos */
+.metadata {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.metadata h4 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.metadata-list {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.metadata-list dt {
+  font-weight: 600;
+  color: #666;
+}
+
+.metadata-list dd {
+  margin: 0;
+  color: #333;
+}
+
+/* Error */
+.error-message {
+  background-color: #ffebee;
+  border: 1px solid #ef5350;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: #c62828;
+  text-align: center;
+}
+
+/* Loading */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-overlay p {
+  color: white;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .document-classifier {
+    padding: 1rem;
+  }
+
+  .result-main {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .confidence {
+    align-items: center;
+  }
+
+  .probability-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .metadata-list {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .metadata-list dt {
+    font-weight: 700;
+    margin-top: 0.5rem;
+  }
+}

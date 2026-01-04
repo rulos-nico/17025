@@ -1,0 +1,15 @@
+{
+  "name": "@lab17025/ml-types",
+  "version": "1.0.0",
+  "description": "Tipos y constantes compartidos para clasificación de documentos ML/DL",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./constants": "./constants.js",
+    "./validators": "./validators.js"
+  },
+  "keywords": ["ml", "document-classification", "types"],
+  "author": "",
+  "license": "MIT"
+}
