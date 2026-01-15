@@ -1,0 +1,24 @@
+{
+  "name": "17025",
+  "version": "1.0.0",
+  "description": "Plataforma web para gestión de entregables de un laboratorio de ensayos acreditado bajo la norma ISO/IEC 17025.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rulos-nico/17025.git"
+  },
+  "keywords": [],
+  "author": "Rulos Nico",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rulos-nico/17025/issues"
+  },
+  "homepage": "https://github.com/rulos-nico/17025#readme",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.22.1"
+  }
+}
