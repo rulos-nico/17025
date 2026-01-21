@@ -68,10 +68,10 @@ export const API_CONFIG = {
 
 // Configuración de la aplicación
 export const APP_CONFIG = {
-  name: import.meta.env.VITE_APP_NAME || 'LabMat17025',
+  name: import.meta.env.VITE_APP_NAME || 'Laboratorio Ingetec',
   env: import.meta.env.VITE_APP_ENV || 'development',
   version: '1.0.0',
-  labName: 'Laboratorio de Materiales',
+  labName: 'Laboratorio Ingetec',
   accreditation: 'ISO/IEC 17025:2017',
 };
 
@@ -79,7 +79,7 @@ export const APP_CONFIG = {
 export const LAB_INFO = {
   email: import.meta.env.VITE_CONTACT_EMAIL || 'contacto@labmat17025.com',
   phone: import.meta.env.VITE_CONTACT_PHONE || '+123 456 7890',
-  address: 'Av. Industrial 1234, Parque Industrial',
+  address: 'Tra ##, Av ##',
   city: 'Ciudad, País',
   postalCode: 'CP 12345',
 };

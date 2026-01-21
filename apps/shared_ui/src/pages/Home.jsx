@@ -80,16 +80,11 @@ function Home() {
       <section className="dashboard-header">
         <div className="container">
           <div className="welcome-section">
-            <div>
-              <h1>Bienvenido al Sistema de Gestión</h1>
-              <p className="subtitle">{APP_CONFIG.labName} - {APP_CONFIG.accreditation}</p>
-            </div>
-            <button className="btn-primary">
+              <h1>Sistema de gestion del laboratorio</h1>
+              <p className="subtitle">{APP_CONFIG.labName} - {APP_CONFIG.accreditation}</p>          
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              Nuevo Ensayo
-            </button>
           </div>
         </div>
       </section>
@@ -234,7 +229,7 @@ function Home() {
                 <path d="M4 10h16M10 4v16" stroke="currentColor" strokeWidth="2"/>
               </svg>
               <h3>Nuevo Ensayo</h3>
-              <p>Crear solicitud de ensayo</p>
+              <p></p>
             </button>
 
             <button className="action-card">
