@@ -85,31 +85,77 @@ const response = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.contac
 });
 ```
 
-### Endpoints Configurados
+### Endpoints Configurados (detallado)
 
-En `src/config.js` encontrarás todos los endpoints:
+En `src/config.js` están definidas las rutas que el frontend consume. A continuación se listan, con método(s) esperados, uso previsto, qué partes del frontend las usan y una sugerencia de dónde implementarlas en el backend (si aún no existen).
 
-```javascript
-API_CONFIG.endpoints = {
-  auth: {
-    login: '/api/auth/login',
-    logout: '/api/auth/logout',
-  },
-  ensayos: {
-    list: '/api/ensayos',
-    create: '/api/ensayos',
-    detail: (id) => `/api/ensayos/${id}`,
-  },
-  reportes: {
-    list: '/api/reportes',
-    download: (id) => `/api/reportes/${id}/download`,
-  },
-  contact: {
-    send: '/api/contacto',
-    quote: '/api/contacto/cotizacion',
-  },
-}
-```
+- **Auth**
+  - `POST /api/auth/login` — Inicio de sesión (recibe credenciales, devuelve token / sesión). Consumido por: autenticación/login (pendiente de implementarse). Backend sugerido: `server/routes/auth.js`.
+  - `POST /api/auth/logout` — Cerrar sesión. Consumido por: botón de logout en `src/App.jsx`. Backend sugerido: `server/routes/auth.js`.
+  - `GET /api/auth/profile`, `POST /api/auth/refresh` — Perfil y refresh token (opcional).
+
+- **Ensayos**
+  - `GET /api/ensayos` — Listado de ensayos. Consumido por: `src/pages/Ensayo.jsx`, `src/pages/Home.jsx` (pendientes). Backend: `server/routes/ensayos.js`.
+  - `POST /api/ensayos` — Crear nuevo ensayo. Uso: formulario de creación.
+  - `GET/PUT/DELETE /api/ensayos/:id` — Detalle, actualización y borrado de un ensayo.
+  - `PUT /api/ensayos/:id/status` — Actualizar estado (pendiente → en_proceso → completado).
+  - `POST /api/ensayos/:id/asignar` — Asignar técnico/responsable.
+
+- **Clientes**
+  - `GET /api/clientes` — Listado de clientes. Consumido por: `src/pages/Clientes.jsx`.
+  - `POST /api/clientes` — Crear cliente.
+  - `GET/PUT/DELETE /api/clientes/:id` — Operaciones sobre cliente.
+  - `GET /api/clientes/:id/ensayos` — Ensayos de un cliente.
+  - Backend sugerido: `server/routes/clientes.js`.
+
+- **Reportes**
+  - `GET /api/reportes` — Listado de reportes / entregables. Consumido por: `src/pages/Reportes.jsx` (cronograma y listados).
+  - `POST /api/reportes` — Crear/registrar reporte.
+  - `GET /api/reportes/:id` — Detalle de reporte.
+  - `GET /api/reportes/:id/download` — Descargar PDF/entregable.
+  - `POST /api/reportes/:id/upload` — Subir archivos asociados.
+  - `POST /api/reportes/:id/aprobar` — Aprobar reporte (workflow).
+  - Backend sugerido: `server/routes/reportes.js`.
+
+- **Usuarios / Personal**
+  - `GET /api/usuarios` — Listado de usuarios.
+  - `POST /api/usuarios` — Crear usuario.
+  - `GET/PUT/DELETE /api/usuarios/:id` — Operaciones sobre usuario.
+  - Backend sugerido: `server/routes/usuarios.js`.
+
+- **Dashboard**
+  - `GET /api/dashboard/stats` — Estadísticas para el dashboard (cuentas, totales).
+  - `GET /api/dashboard/pendientes` — Ensayos pendientes.
+  - `GET /api/dashboard/recientes` — Actividad reciente.
+  - Consumido por: `src/pages/Home.jsx`.
+  - Backend sugerido: `server/routes/dashboard.js`.
+
+- **Equipos**
+  - `GET /api/equipos` — Listado de equipos y estado.
+  - `GET /api/equipos/:id` — Detalle de equipo.
+  - `POST /api/equipos/:id/calibracion` — Registrar calibración / mantenimiento.
+  - Backend sugerido: `server/routes/equipos.js`.
+
+- **Contacto / Formularios**
+  - `POST /api/contacto` — Envío de formulario de contacto (web). Consumido por: formulario en `src/pages/Home.jsx`.
+  - `POST /api/contacto/cotizacion` — Solicitud de cotización.
+  - Backend sugerido: `server/routes/contacto.js`.
+
+- **Otras (ejemplo)**
+  - `GET /api/nueva-seccion` — Ejemplo en README para añadir nuevas secciones.
+
+Notas:
+
+- Ubicación frontend: las rutas están en `apps/shared_ui/src/config.js` (variable `API_CONFIG.endpoints`). El frontend hace fetch a `API_CONFIG.baseURL + endpoint`.
+- Implementación backend sugerida: crea la carpeta `server/` o `backend/` en la raíz y añade archivos por módulo (`routes/ensayos.js`, `routes/reportes.js`, etc.). Usa `express.Router()` y exporta las rutas. Registra las rutas en `index.js` con `app.use('/api/ensayos', ensayosRouter)`.
+- Si no existe backend (o durante desarrollo), puedes usar mocks locales o JSON estático en `server/mocks/` y exponerlos con rutas simples.
+
+Si quieres, puedo:
+
+- Generar archivos de ejemplo para el backend con rutas mock (`/api/reportes`, `/api/ensayos`).
+- Añadir ejemplos de request/response JSON para cada endpoint.
+
+Indícame cuál prefieres y lo implemento.
 
 ## 🎨 Personalización
 

@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { NAV_ITEMS, APP_CONFIG } from './config';
 import Home from './pages/Home';
+import Equipos from './pages/Equipos';
+import Reports from './pages/Reportes';
+import Clientes from './pages/Clientes';
+import Personal from './pages/Personal';
+import Ensayo from './pages/Ensayo';
 import './App.css';
 
 function App() {
@@ -20,6 +25,25 @@ function App() {
   const handleLogout = () => {
     // Implementar logout
     setUser(null);
+  };
+
+  const renderModule = (module, setActive) => {
+    switch (module) {
+      case 'dashboard':
+        return <Home setActiveModule={setActive} />;
+      case 'ensayos':
+        return <Ensayo />;
+      case 'clientes':
+        return <Clientes />;
+      case 'reportes':
+        return <Reports />;
+      case 'equipos':
+        return <Equipos />;
+      case 'usuarios':
+        return <Personal />;
+      default:
+        return <Home setActiveModule={setActive} />;
+    }
   };
 
   return (
@@ -122,7 +146,7 @@ function App() {
 
         {/* Main Content */}
         <main className="main-content-wrapper">
-          <Home />
+          {renderModule(activeModule, setActiveModule)}
         </main>
       </div>
 

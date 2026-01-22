@@ -6,7 +6,7 @@ import {
   APP_CONFIG,
 } from '../config';
 
-function Home() {
+function Home({ setActiveModule }) {
   const [stats, setStats] = useState({
     pendientes: 0,
     en_proceso: 0,
@@ -140,9 +140,9 @@ function Home() {
           <div className="content-grid">
             {/* Ensayos Pendientes */}
             <div className="content-card">
-              <div className="card-header">
+                <div className="card-header">
                 <h2>Ensayos Pendientes</h2>
-                <button className="btn-link">Ver todos</button>
+                <button className="btn-link" onClick={() => setActiveModule && setActiveModule('ensayos')}>Ver todos</button>
               </div>
               <div className="ensayos-list">
                 {ensayosPendientes.length === 0 ? (
@@ -185,7 +185,7 @@ function Home() {
             <div className="content-card">
               <div className="card-header">
                 <h2>Actividad Reciente</h2>
-                <button className="btn-link">Ver historial</button>
+                <button className="btn-link" onClick={() => setActiveModule && setActiveModule('reportes')}>Ver historial</button>
               </div>
               <div className="activity-list">
                 {ensayosRecientes.length === 0 ? (
@@ -223,7 +223,7 @@ function Home() {
         <div className="container">
           <h2>Accesos Rápidos</h2>
           <div className="actions-grid">
-            <button className="action-card">
+            <button className="action-card" onClick={() => setActiveModule && setActiveModule('ensayos')}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
                 <path d="M4 10h16M10 4v16" stroke="currentColor" strokeWidth="2"/>
@@ -232,7 +232,7 @@ function Home() {
               <p></p>
             </button>
 
-            <button className="action-card">
+            <button className="action-card" onClick={() => setActiveModule && setActiveModule('clientes')}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2"/>
                 <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
@@ -241,7 +241,7 @@ function Home() {
               <p>Ver y editar clientes</p>
             </button>
 
-            <button className="action-card">
+            <button className="action-card" onClick={() => setActiveModule && setActiveModule('reportes')}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2"/>
                 <path d="M14 2v6h6M16 13H8m8 4H8m2-8H8" stroke="currentColor" strokeWidth="2"/>
@@ -250,7 +250,7 @@ function Home() {
               <p>Crear informe de ensayo</p>
             </button>
 
-            <button className="action-card">
+            <button className="action-card" onClick={() => setActiveModule && setActiveModule('equipos')}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2v20M2 12h20" stroke="currentColor" strokeWidth="2"/>
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>

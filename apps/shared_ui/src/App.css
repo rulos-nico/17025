@@ -10,8 +10,10 @@
   --text-light: #718096;
   --bg-primary: #ffffff;
   --bg-secondary: #f7fafc;
+  --bg-dark-blue: #2b559a;
   --bg-dark: #1a202c;
   --border: #e2e8f0;
+  --white: #ffffff;
   --shadow: rgba(0, 0, 0, 0.1);
   --sidebar-width: 260px;
   --topbar-height: 64px;
@@ -39,13 +41,15 @@ body {
 
 .app {
   display: flex;
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100%;
+  width: 100%;
 }
 
 /* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--bg-dark);
+  background: var(--bg-dark-blue);
   color: white;
   display: flex;
   flex-direction: column;
@@ -75,7 +79,7 @@ body {
 }
 
 .logo-text .highlight {
-  color: var(--primary);
+  color: var(--white);
 }
 
 .sidebar-nav {
@@ -557,6 +561,40 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
 }
+
+/* Cronograma / Schedule styles */
+.cronograma {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+}
+.cronograma-controls {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  align-items: center;
+}
+.cronograma-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cronograma-item {
+  border-top: 1px solid var(--border);
+}
+.cronograma-item:first-child { border-top: none; }
+.cronograma-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  cursor: pointer;
+}
+.cronograma-title { font-weight: 600; }
+.cronograma-meta { font-size: 0.875rem; color: var(--text-secondary); }
+.cronograma-details { padding: var(--spacing-sm) 0 var(--spacing-md); color: var(--text-primary); }
+.cronograma-toggle { font-size: 0.9rem; color: var(--text-secondary); }
 
 /* Loading */
 .loading-container {
