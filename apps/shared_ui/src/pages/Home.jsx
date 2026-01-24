@@ -5,6 +5,7 @@ import {
   API_CONFIG,
   APP_CONFIG,
 } from '../config';
+import { dashboardStatsExample, pendientesExample, recientesExample } from '../examples/dashboard.mock';
 
 function Home({ setActiveModule }) {
   const [stats, setStats] = useState({
@@ -19,9 +20,15 @@ function Home({ setActiveModule }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cargarDatos();
-  }, []);
+    // Durante desarrollo usamos datos de ejemplo. La comunicación con la API queda comentada.
+    setStats(dashboardStatsExample);
+    setEnsayosPendientes(pendientesExample);
+    setEnsayosRecientes(recientesExample);
+    setLoading(false);
 
+    //cargarDatos();
+  }, []);
+  /*
   const cargarDatos = async () => {
     try {
       // Cargar estadísticas
@@ -56,6 +63,7 @@ function Home({ setActiveModule }) {
       setLoading(false);
     }
   };
+  */
 
   const getStatusColor = (status) => {
     return ENSAYO_STATUS[status.toUpperCase()]?.color || '#6b7280';

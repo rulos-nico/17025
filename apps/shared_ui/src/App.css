@@ -73,6 +73,13 @@ body {
   cursor: pointer;
 }
 
+.logo-img {
+  width: 200px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-text {
   font-size: 1.25rem;
   font-weight: 700;
@@ -595,6 +602,41 @@ body {
 .cronograma-meta { font-size: 0.875rem; color: var(--text-secondary); }
 .cronograma-details { padding: var(--spacing-sm) 0 var(--spacing-md); color: var(--text-primary); }
 .cronograma-toggle { font-size: 0.9rem; color: var(--text-secondary); }
+
+/* Equipos table */
+.equipos-table-wrapper { margin-top: var(--spacing-md); overflow-x: auto; }
+.equipos-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.equipos-table thead { background: var(--bg-secondary); }
+.equipos-table th, .equipos-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+.equipos-table tr.equipos-row:hover { background: #fbfcff; }
+.expand-cell { width: 40px; }
+.equipos-row-details td { background: #ffffff; }
+.equipos-details { padding: 0.5rem 0; color: var(--text-primary); }
+.status-badge { padding: 4px 8px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; color: white; display: inline-block; }
+.status-pendiente { background: var(--warning); }
+.status-en_proceso, .status-en-proceso, .status-enproceso { background: #3b82f6; }
+.status-completado { background: var(--success); }
+.status-revision { background: #8b5cf6; }
+.status-aprobado { background: #059669; }
+.status-rechazado { background: var(--error); }
+.status-desconocido { background: #718096; }
+
+/* Projects / Reportes nested lists */
+.projects-list { margin-top: var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-md); }
+.project-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: var(--spacing-md); }
+.project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm); }
+.project-body { padding-top: var(--spacing-sm); border-top: 1px dashed var(--border); }
+.perforacion-item { padding: var(--spacing-sm) 0; border-bottom: 1px solid #f1f5f9; }
+.perforacion-header { display: flex; justify-content: space-between; align-items: center; }
+.muted { color: var(--text-secondary); font-size: 0.95rem; margin-left: 0.5rem; }
+.ensayos-list { margin-top: var(--spacing-sm); overflow-x: auto; }
+
+/* Add project form */
+.add-project-form { background: white; border: 1px solid var(--border); padding: var(--spacing-md); border-radius: 8px; margin-bottom: var(--spacing-md); }
+.add-project-form .form-row { display: flex; gap: var(--spacing-sm); align-items: center; margin-bottom: var(--spacing-sm); }
+.add-project-form label { width: 120px; color: var(--text-secondary); }
+.add-project-form input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.form-actions { display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm); }
 
 /* Loading */
 .loading-container {

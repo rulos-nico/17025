@@ -61,7 +61,20 @@ export const API_CONFIG = {
     equipos: {
       list: '/api/equipos',
       detail: (id) => `/api/equipos/${id}`,
+      marcas: '/api/equipos/marcas',
+      modelos: '/api/equipos/modelos',
+      tipos: '/api/equipos/tipos',
+      localizaciones: '/api/equipos/localizaciones',
+      placas: '/api/equipos/placas',
       calibration: (id) => `/api/equipos/${id}/calibracion`,
+      incertidumbre: (id) => `/api/equipos/${id}/incertidumbre`,
+      error_maximo: (id) => `/api/equipos/${id}/error_maximo`,
+      tolerancia: (id) => `/api/equipos/${id}/tolerancia`,
+      sensores: {
+        list: '/api/equipos/sensores',
+        byEquipo: (id) => `/api/equipos/${id}/sensores`,
+        detail: (id) => `/api/sensores/${id}`,
+      },
     },
   },
 };
@@ -158,6 +171,14 @@ export const MODULOS = [
     descripcion: 'Gestión de usuarios',
     permisos: ['admin'],
   },
+  {
+    id: 'relacion_muestras',
+    nombre: 'Relación Muestras',
+    icono: 'reports',
+    ruta: '/relacion_muestras',
+    descripcion: 'Relación de muestras y ensayos',
+    permisos: ['admin', 'tecnico'],
+  }
 ];
 
 // Roles de usuario
@@ -165,14 +186,14 @@ export const ROLES = {
   ADMIN: { value: 'admin', label: 'Administrador', permisos: ['all'] },
   TECNICO: { value: 'tecnico', label: 'Técnico', permisos: ['ensayos', 'reportes', 'equipos'] },
   CLIENTE: { value: 'cliente', label: 'Cliente', permisos: ['ver_ensayos', 'ver_reportes'] },
+  DISENO: { value: 'diseno', label: 'Diseño', permisos: ['diseno_reportes'] },
 };
-
-// Navegación principal
-export const NAV_ITEMS = [
+// Navegación principal 
+export const NAV_ITEMS = [ 
   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['admin', 'tecnico', 'cliente'] },
   { label: 'Ensayos', path: '/ensayos', icon: 'test', roles: ['admin', 'tecnico'] },
-  { label: 'Clientes', path: '/clientes', icon: 'clients', roles: ['admin', 'tecnico'] },
   { label: 'Reportes', path: '/reportes', icon: 'reports', roles: ['admin', 'tecnico', 'cliente'] },
+  { label: 'Relacion Muestras', path: '/relacion_muestras', icon: 'reports', roles: ['admin', 'tecnico'] },
   { label: 'Equipos', path: '/equipos', icon: 'equipment', roles: ['admin', 'tecnico'] },
   { label: 'Usuarios', path: '/usuarios', icon: 'users', roles: ['admin'] },
 ];

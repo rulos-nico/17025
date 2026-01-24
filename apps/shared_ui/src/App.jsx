@@ -6,6 +6,7 @@ import Reports from './pages/Reportes';
 import Clientes from './pages/Clientes';
 import Personal from './pages/Personal';
 import Ensayo from './pages/Ensayo';
+import Relacion_muestras from './pages/Relacion_muestras';
 import './App.css';
 
 function App() {
@@ -37,6 +38,8 @@ function App() {
         return <Clientes />;
       case 'reportes':
         return <Reports />;
+      case 'relacion_muestras':
+        return <Relacion_muestras />;
       case 'equipos':
         return <Equipos />;
       case 'usuarios':
@@ -52,17 +55,12 @@ function App() {
       <aside className={`sidebar ${isMenuOpen ? 'active' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="18" stroke="#0066cc" strokeWidth="2"/>
-              <path d="M20 10v20M10 20h20" stroke="#0066cc" strokeWidth="2"/>
-            </svg>
-            <span className="logo-text">
-              <span className="highlight">{APP_CONFIG.name}</span>
-            </span>
+            <img src="/logos/LOGO_INGETEC_P_ROJAS.svg" className="logo-img" />
+
           </div>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav"> 
           <ul className="nav-menu">
             {NAV_ITEMS.map((item) => {
               // Verificar permisos de rol
@@ -141,7 +139,7 @@ function App() {
                 <path d="M12 1v6m0 6v6M23 12h-6m-6 0H1" stroke="currentColor" strokeWidth="2"/>
               </svg>
             </button>
-          </div>
+         </div>
         </header>
 
         {/* Main Content */}
