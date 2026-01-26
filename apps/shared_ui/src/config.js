@@ -60,21 +60,41 @@ export const API_CONFIG = {
     // Equipos y Calibración
     equipos: {
       list: '/api/equipos',
+      create: '/api/equipos',
       detail: (id) => `/api/equipos/${id}`,
+      update: (id) => `/api/equipos/${id}`,
+      delete: (id) => `/api/equipos/${id}`,
       marcas: '/api/equipos/marcas',
       modelos: '/api/equipos/modelos',
       tipos: '/api/equipos/tipos',
+      serie: '/api/equipos/serie',
       localizaciones: '/api/equipos/localizaciones',
       placas: '/api/equipos/placas',
-      calibration: (id) => `/api/equipos/${id}/calibracion`,
+      calibracion: (id) => `/api/equipos/${id}/calibracion`,
+      fechaCalibracion: (id) => `/api/equipos/${id}/fecha_calibracion`,
+      proximaCalibracion: (id) => `/api/equipos/${id}/proxima_calibracion`,
+      proximaComprobacion: (id) => `/api/equipos/${id}/proxima_comprobacion`,
       incertidumbre: (id) => `/api/equipos/${id}/incertidumbre`,
-      error_maximo: (id) => `/api/equipos/${id}/error_maximo`,
+      errorMaximo: (id) => `/api/equipos/${id}/error_maximo`,
       tolerancia: (id) => `/api/equipos/${id}/tolerancia`,
-      sensores: {
-        list: '/api/equipos/sensores',
-        byEquipo: (id) => `/api/equipos/${id}/sensores`,
-        detail: (id) => `/api/sensores/${id}`,
-      },
+      sensores: (id) => `/api/equipos/${id}/sensores`,
+    },
+    // Sensores (entidad independiente)
+    sensores: {
+      list: '/api/sensores',
+      create: '/api/sensores',
+      detail: (id) => `/api/sensores/${id}`,
+      update: (id) => `/api/sensores/${id}`,
+      delete: (id) => `/api/sensores/${id}`,
+      byEquipo: (equipoId) => `/api/equipos/${equipoId}/sensores`,
+      factorCalibracion: (id) => `/api/sensores/${id}/factor_calibracion`,
+      calibracion: (id) => `/api/sensores/${id}/calibracion`,
+      proximaCalibracion: (id) => `/api/sensores/${id}/proxima_calibracion`,
+      fechaCalibracion: (id) => `/api/sensores/${id}/fecha_calibracion`,
+      intercambio: (id) => `/api/sensores/${id}/intercambio`,
+      errorMaximo: (id) => `/api/sensores/${id}/error_maximo`,
+      tolerancia: (id) => `/api/sensores/${id}/tolerancia`,
+      rangos: (id) => `/api/sensores/${id}/rangos`,
     },
   },
 };
@@ -184,7 +204,7 @@ export const MODULOS = [
 // Roles de usuario
 export const ROLES = {
   ADMIN: { value: 'admin', label: 'Administrador', permisos: ['all'] },
-  TECNICO: { value: 'tecnico', label: 'Técnico', permisos: ['ensayos', 'reportes', 'equipos'] },
+  COORDINACION: { value: 'tecnico', label: 'Técnico', permisos: ['ensayos', 'reportes', 'equipos'] },
   CLIENTE: { value: 'cliente', label: 'Cliente', permisos: ['ver_ensayos', 'ver_reportes'] },
   DISENO: { value: 'diseno', label: 'Diseño', permisos: ['diseno_reportes'] },
 };
@@ -200,8 +220,19 @@ export const NAV_ITEMS = [
 
 // Estadísticas del dashboard
 export const DASHBOARD_STATS = [
-  { key: 'pendientes', label: 'Ensayos Pendientes', icon: 'pending' },
-  { key: 'en_proceso', label: 'En Proceso', icon: 'process' },
-  { key: 'completados_mes', label: 'Completados Este Mes', icon: 'completed' },
-  { key: 'clientes_activos', label: 'Clientes Activos', icon: 'clients' },
+  { key: 'E1', label: 'Sin programacion', icon: 'pending' },
+  { key: 'E2', label: 'Programado sin ejecutar', icon: 'pendig' },
+  { key: 'E3', label: 'Anulado', icon: 'pending' },
+  { key: 'E4', label: 'Repeticion', icon: 'pending' },
+  { key: 'E5', label: 'Novedad', icon: 'pending'},
+  { key: 'E6', label: 'En ejecucion', icon: 'pending'},
+  { key: 'E7', label: 'En espera de ensayos basicos', icon: 'pending'},
+  { key: 'E8', label: 'Procesamiento', icon: 'pending'},
+  { key: 'E9', label: 'En revision tecnica', icon: 'pending'},
+  { key: 'E10',label: 'En revision Coordinacion', icon: 'pending'},
+  { key: 'E11',label: 'En revision Direccion', icon: 'pending'},
+  { key: 'E12',label: 'Por enviar', icon: 'pending'},
+  { key: 'E13',label: 'Enviado', icon: 'pending'},
+  { key: 'E14',label: 'Entregado', icon: 'pending'},
+  { key: 'E15',label: 'Facturado', icon: 'pending'},
 ];
