@@ -174,4 +174,81 @@ impl GoogleSheetsClient {
 
         Ok(())
     }
+
+    /// Actualiza una fila buscándola por ID (columna A)
+    pub async fn update_row(
+        &self,
+        sheet_name: &str,
+        id: &str,
+        values: Vec<String>,
+    ) -> Result<(), AppError> {
+        // Primero encontrar el número de fila
+        let row_number = self.find_row_number_by_id(sheet_name, id).await?;
+        
+        let range = format!("{}!A{}:Z{}", sheet_name, row_number, row_number);
+
+        let value_range = ValueRange {
+            values: Some(vec![values.into_iter().map(|s| s.into()).collect()]),
+            ..Default::default()
+        };
+
+        self.hub
+            .spreadsheets()
+            .values_update(value_range, &self.spreadsheet_id, &range)
+            .value_input_option("USER_ENTERED")
+            .doit()
+            .await
+            .map_err(|e| AppError::SheetsError(format!("Failed to update row by id: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Reemplaza todos los datos de una hoja (excepto el header)
+    pub async fn replace_sheet_data(
+        &self,
+        sheet_name: &str,
+        rows: Vec<Vec<String>>,
+    ) -> Result<(), AppError> {
+        // Primero limpiar los datos existentes (excepto header, fila 1)
+        let clear_range = format!("{}!A2:Z10000", sheet_name);
+        
+        let clear_value_range = ValueRange {
+            values: Some(vec![vec![]]),
+            ..Default::default()
+        };
+
+        self.hub
+            .spreadsheets()
+            .values_clear(clear_value_range, &self.spreadsheet_id, &clear_range)
+            .doit()
+            .await
+            .map_err(|e| AppError::SheetsError(format!("Failed to clear sheet: {}", e)))?;
+
+        // Si no hay datos, terminamos aquí
+        if rows.is_empty() {
+            return Ok(());
+        }
+
+        // Escribir los nuevos datos
+        let write_range = format!("{}!A2:Z{}", sheet_name, rows.len() + 1);
+
+        let value_range = ValueRange {
+            values: Some(
+                rows.into_iter()
+                    .map(|row| row.into_iter().map(|s| s.into()).collect())
+                    .collect(),
+            ),
+            ..Default::default()
+        };
+
+        self.hub
+            .spreadsheets()
+            .values_update(value_range, &self.spreadsheet_id, &write_range)
+            .value_input_option("USER_ENTERED")
+            .doit()
+            .await
+            .map_err(|e| AppError::SheetsError(format!("Failed to write sheet data: {}", e)))?;
+
+        Ok(())
+    }
 }

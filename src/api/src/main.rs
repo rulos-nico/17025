@@ -1,6 +1,8 @@
 mod config;
+mod db;
 mod errors;
 mod models;
+mod repositories;
 mod routes;
 mod services;
 
@@ -11,11 +13,13 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::Config;
+use crate::db::DbPool;
 use crate::services::google_sheets::GoogleSheetsClient;
 
 #[derive(Clone)]
 pub struct AppState {
     pub sheets_client: GoogleSheetsClient,
+    pub db_pool: DbPool,
     pub config: Config,
 }
 
@@ -30,6 +34,20 @@ async fn main() {
     dotenvy::dotenv().ok();
     let config = Config::from_env();
 
+    // Inicializar conexión a base de datos
+    let db_pool = db::create_pool(&config.database_url)
+        .await
+        .expect("Failed to create database pool");
+
+    // Ejecutar migraciones si está configurado
+    if config.run_migrations {
+        tracing::info!("Running database migrations...");
+        db::run_migrations(&db_pool)
+            .await
+            .expect("Failed to run migrations");
+        tracing::info!("Migrations completed successfully");
+    }
+
     // Inicializar cliente de Google Sheets
     let sheets_client = GoogleSheetsClient::new(&config)
         .await
@@ -37,6 +55,7 @@ async fn main() {
 
     let state = AppState {
         sheets_client,
+        db_pool,
         config: config.clone(),
     };
 

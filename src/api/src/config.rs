@@ -5,7 +5,10 @@ pub struct Config {
     pub spreadsheet_id: String,
     pub drive_root_folder_id: String,
     pub allowed_origins: Vec<String>,
+    pub database_url: String,
+    pub run_migrations: bool,
 }
+
 impl Config {
     pub fn from_env() -> Self {
         Self {
@@ -24,6 +27,11 @@ impl Config {
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .collect(),
+            database_url: std::env::var("DATABASE_URL")
+                .unwrap_or_else(|_| "postgres://localhost/lab17025".to_string()),
+            run_migrations: std::env::var("RUN_MIGRATIONS")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(true),
         }
     }
 }
