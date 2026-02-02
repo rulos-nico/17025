@@ -1,0 +1,1121 @@
+import { useState, useEffect } from 'react';
+import PageLayout from '../components/PageLayout';
+import { Badge, Card, Modal } from '../components/ui';
+import { useEnsayoCompleto } from '../hooks/useEnsayoSheet';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { 
+  TIPOS_ENSAYO, 
+  API_CONFIG,
+  ESTADO_PROYECTO,
+  ESTADO_MUESTRA,
+  getWorkflowInfo,
+} from '../config';
+
+// Alias para perforaciones (mismo estado que muestras)
+const ESTADO_PERFORACION = {
+  ...ESTADO_MUESTRA,
+  sin_relacionar: { label: 'Sin relacionar', color: '#9CA3AF' },
+  relacionado: { label: 'Relacionado', color: '#10B981' },
+};
+
+// ============================================
+// DATOS MOCK PARA MODO BYPASS
+// ============================================
+
+const MOCK_CLIENTES = [
+  { id: 'cli-001', nombre: 'Constructora ABC', email: 'contacto@abc.com' },
+  { id: 'cli-002', nombre: 'Minera del Norte', email: 'lab@minera.com' },
+  { id: 'cli-003', nombre: 'Ingeniería Total', email: 'proyectos@ingtotal.com' },
+];
+
+const MOCK_PROYECTOS = [
+  { 
+    id: 'pry-001', 
+    codigo: 'PRY-2025-001', 
+    nombre: 'Edificio Central', 
+    clienteId: 'cli-001', 
+    estado: 'activo',
+    fecha_inicio: '2025-01-15',
+    ensayosCotizados: { traccion: 10, dureza: 15, impacto: 5 },
+  },
+  { 
+    id: 'pry-002', 
+    codigo: 'PRY-2025-002', 
+    nombre: 'Puente Río Grande', 
+    clienteId: 'cli-002', 
+    estado: 'activo',
+    fecha_inicio: '2025-01-20',
+    ensayosCotizados: { traccion: 20, quimico_oes: 10 },
+  },
+];
+
+const MOCK_PERFORACIONES = [
+  { id: 'perf-001', codigo: 'PER-001-A', proyectoId: 'pry-001', descripcion: 'Perforación Sector A', estado: 'relacionado', ubicacion: 'Sector Norte', fecha_recepcion: '2025-01-18', muestraFisica: 'MF-2025-0001' },
+  { id: 'perf-002', codigo: 'PER-001-B', proyectoId: 'pry-001', descripcion: 'Perforación Sector B', estado: 'sin_relacionar', ubicacion: 'Sector Sur', fecha_recepcion: null, muestraFisica: null },
+  { id: 'perf-003', codigo: 'PER-001-C', proyectoId: 'pry-001', descripcion: 'Perforación Sector C', estado: 'sin_relacionar', ubicacion: 'Sector Este', fecha_recepcion: null, muestraFisica: null },
+  { id: 'perf-004', codigo: 'PER-002-A', proyectoId: 'pry-002', descripcion: 'Perforación Estribo 1', estado: 'relacionado', ubicacion: 'Estribo Izquierdo', fecha_recepcion: '2025-01-22', muestraFisica: 'MF-2025-0002' },
+];
+
+const MOCK_ENSAYOS = [
+  { id: 'ens-001', codigo: 'ENS-2025-001', tipo: 'traccion', perforacionId: 'perf-001', proyectoId: 'pry-001', workflow_state: 'E6', norma: 'ASTM E8' },
+  { id: 'ens-002', codigo: 'ENS-2025-002', tipo: 'dureza', perforacionId: 'perf-001', proyectoId: 'pry-001', workflow_state: 'E1', norma: 'ASTM E18' },
+  { id: 'ens-003', codigo: 'ENS-2025-003', tipo: 'traccion', perforacionId: 'perf-004', proyectoId: 'pry-002', workflow_state: 'E9', norma: 'ASTM E8' },
+];
+
+// ============================================
+// HELPERS DE PERMISOS
+// ============================================
+
+const canCreateProject = (rol) => ['admin', 'coordinador'].includes(rol);
+const canRelatePhysicalSample = (rol) => ['admin', 'coordinador', 'tecnico'].includes(rol);
+const canRequestTest = (rol) => ['cliente'].includes(rol);
+// Nota: canCreatePerforations se usará cuando se implemente la función de agregar perforaciones a proyectos existentes
+const _canCreatePerforations = (rol) => ['admin', 'coordinador'].includes(rol);
+
+// ============================================
+// MODAL: NUEVO PROYECTO (MEJORADO)
+// ============================================
+
+function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
+  const [form, setForm] = useState({
+    nombre: '',
+    descripcion: '',
+    clienteId: '',
+    contacto: '',
+    fecha_fin_estimada: '',
+  });
+  
+  // Lista de perforaciones a crear
+  const [perforaciones, setPerforaciones] = useState([
+    { codigo: '', descripcion: '', ubicacion: '' }
+  ]);
+  
+  // Ensayos cotizados por tipo
+  const [ensayosCotizados, setEnsayosCotizados] = useState({});
+
+  const handleAddPerforacion = () => {
+    setPerforaciones([...perforaciones, { codigo: '', descripcion: '', ubicacion: '' }]);
+  };
+
+  const handleRemovePerforacion = (index) => {
+    if (perforaciones.length > 1) {
+      setPerforaciones(perforaciones.filter((_, i) => i !== index));
+    }
+  };
+
+  const handlePerforacionChange = (index, field, value) => {
+    const updated = [...perforaciones];
+    updated[index][field] = value;
+    setPerforaciones(updated);
+  };
+
+  const handleEnsayoCotizadoChange = (tipoId, cantidad) => {
+    const num = parseInt(cantidad) || 0;
+    if (num > 0) {
+      setEnsayosCotizados({ ...ensayosCotizados, [tipoId]: num });
+    } else {
+      const updated = { ...ensayosCotizados };
+      delete updated[tipoId];
+      setEnsayosCotizados(updated);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Filtrar perforaciones vacías
+    const perfsValidas = perforaciones.filter(p => p.codigo.trim() !== '');
+    
+    onCreate({
+      ...form,
+      perforaciones: perfsValidas,
+      ensayosCotizados,
+    });
+    
+    // Reset form
+    setForm({ nombre: '', descripcion: '', clienteId: '', contacto: '', fecha_fin_estimada: '' });
+    setPerforaciones([{ codigo: '', descripcion: '', ubicacion: '' }]);
+    setEnsayosCotizados({});
+  };
+
+  const totalEnsayosCotizados = Object.values(ensayosCotizados).reduce((a, b) => a + b, 0);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Nuevo Proyecto">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto', paddingRight: '8px' }}>
+          
+          {/* Datos básicos del proyecto */}
+          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+            <legend style={{ fontWeight: '600', padding: '0 8px' }}>Datos del Proyecto</legend>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Nombre del Proyecto *</label>
+                <input
+                  type="text"
+                  value={form.nombre}
+                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  required
+                  placeholder="Ej: Construcción Edificio Central"
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+                />
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Cliente *</label>
+                  <select
+                    value={form.clienteId}
+                    onChange={(e) => setForm({ ...form, clienteId: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Fecha Fin Estimada</label>
+                  <input
+                    type="date"
+                    value={form.fecha_fin_estimada}
+                    onChange={(e) => setForm({ ...form, fecha_fin_estimada: e.target.value })}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Descripción</label>
+                <textarea
+                  value={form.descripcion}
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                  rows={2}
+                  placeholder="Descripción del proyecto..."
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Perforaciones */}
+          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
+              Perforaciones ({perforaciones.length})
+            </legend>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {perforaciones.map((perf, index) => (
+                <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '4px' }}>
+                  <div style={{ flex: '0 0 100px' }}>
+                    <input
+                      type="text"
+                      value={perf.codigo}
+                      onChange={(e) => handlePerforacionChange(index, 'codigo', e.target.value)}
+                      placeholder="Código *"
+                      style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="text"
+                      value={perf.descripcion}
+                      onChange={(e) => handlePerforacionChange(index, 'descripcion', e.target.value)}
+                      placeholder="Descripción"
+                      style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <div style={{ flex: '0 0 120px' }}>
+                    <input
+                      type="text"
+                      value={perf.ubicacion}
+                      onChange={(e) => handlePerforacionChange(index, 'ubicacion', e.target.value)}
+                      placeholder="Ubicación"
+                      style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePerforacion(index)}
+                    disabled={perforaciones.length <= 1}
+                    style={{ 
+                      padding: '6px 10px', 
+                      borderRadius: '4px', 
+                      border: 'none', 
+                      backgroundColor: perforaciones.length <= 1 ? '#E5E7EB' : '#EF4444', 
+                      color: 'white', 
+                      cursor: perforaciones.length <= 1 ? 'not-allowed' : 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              
+              <button
+                type="button"
+                onClick={handleAddPerforacion}
+                style={{ 
+                  padding: '8px', 
+                  borderRadius: '4px', 
+                  border: '1px dashed #9CA3AF', 
+                  backgroundColor: 'transparent', 
+                  cursor: 'pointer',
+                  color: '#6B7280',
+                  fontSize: '0.875rem'
+                }}
+              >
+                + Agregar perforación
+              </button>
+            </div>
+          </fieldset>
+
+          {/* Ensayos Cotizados */}
+          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
+              Ensayos Cotizados (Total: {totalEnsayosCotizados})
+            </legend>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              {TIPOS_ENSAYO.map((tipo) => (
+                <div key={tipo.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    value={ensayosCotizados[tipo.id] || ''}
+                    onChange={(e) => handleEnsayoCotizadoChange(tipo.id, e.target.value)}
+                    placeholder="0"
+                    style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+                  />
+                  <span style={{ fontSize: '0.875rem', color: '#374151' }}>{tipo.nombre}</span>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+
+          {/* Botones */}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid #E5E7EB' }}>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #D1D5DB', backgroundColor: 'white', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#3B82F6', color: 'white', cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Creando...' : 'Crear Proyecto'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: RELACIONAR MUESTRA FÍSICA
+// ============================================
+
+function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loading }) {
+  const [form, setForm] = useState({
+    codigoMuestra: '',
+    fechaRecepcion: new Date().toISOString().split('T')[0],
+    observaciones: '',
+    condicionMuestra: 'buena',
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onRelate({
+      perforacionId: perforacion.id,
+      ...form,
+    });
+    setForm({
+      codigoMuestra: '',
+      fechaRecepcion: new Date().toISOString().split('T')[0],
+      observaciones: '',
+      condicionMuestra: 'buena',
+    });
+  };
+
+  if (!perforacion) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Relacionar Muestra Física">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          {/* Info de la perforación */}
+          <div style={{ padding: '12px', backgroundColor: '#FEF3C7', borderRadius: '8px', border: '1px solid #F59E0B' }}>
+            <div style={{ fontWeight: '600', color: '#92400E' }}>Perforación a relacionar:</div>
+            <div style={{ marginTop: '4px' }}>
+              <strong>{perforacion.codigo}</strong> - {perforacion.descripcion}
+            </div>
+            {perforacion.ubicacion && (
+              <div style={{ fontSize: '0.875rem', color: '#78716C' }}>
+                Ubicación: {perforacion.ubicacion}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Código de Muestra Física *</label>
+            <input
+              type="text"
+              value={form.codigoMuestra}
+              onChange={(e) => setForm({ ...form, codigoMuestra: e.target.value })}
+              required
+              placeholder="Ej: MF-2025-0001"
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+            />
+            <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+              Código de la etiqueta de la muestra física recibida
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Fecha de Recepción *</label>
+              <input
+                type="date"
+                value={form.fechaRecepcion}
+                onChange={(e) => setForm({ ...form, fechaRecepcion: e.target.value })}
+                required
+                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Condición de Muestra</label>
+              <select
+                value={form.condicionMuestra}
+                onChange={(e) => setForm({ ...form, condicionMuestra: e.target.value })}
+                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+              >
+                <option value="buena">Buena</option>
+                <option value="regular">Regular</option>
+                <option value="deteriorada">Deteriorada</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Observaciones</label>
+            <textarea
+              value={form.observaciones}
+              onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
+              rows={2}
+              placeholder="Observaciones de recepción..."
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB', resize: 'vertical' }}
+            />
+          </div>
+
+          <div style={{ padding: '12px', backgroundColor: '#DBEAFE', borderRadius: '8px', fontSize: '0.875rem' }}>
+            <strong>Nota:</strong> Al relacionar la muestra, se notificará automáticamente al cliente para que pueda solicitar los ensayos.
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #D1D5DB', backgroundColor: 'white', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#10B981', color: 'white', cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Relacionando...' : 'Relacionar Muestra'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: SOLICITAR ENSAYO (PARA CLIENTES)
+// ============================================
+
+function SolicitarEnsayoModal({ isOpen, onClose, onCreate, perforacion, proyecto, loading }) {
+  const [form, setForm] = useState({
+    tipo: '',
+    norma: '',
+    observaciones: '',
+    cantidad: 1,
+  });
+
+  const { crearEnsayoCompleto, inicializarGoogle } = useEnsayoCompleto(null);
+  const [creando, setCreando] = useState(false);
+
+  // Ensayos disponibles según lo cotizado en el proyecto
+  const ensayosDisponibles = proyecto?.ensayosCotizados || {};
+  const tiposDisponibles = TIPOS_ENSAYO.filter(t => ensayosDisponibles[t.id] > 0);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setCreando(true);
+    
+    try {
+      await inicializarGoogle();
+      
+      const datosEnsayo = {
+        ...form,
+        perforacionId: perforacion.id,
+        proyectoId: proyecto.id,
+        muestra: perforacion.descripcion,
+      };
+      
+      const ensayoCompleto = await crearEnsayoCompleto(datosEnsayo);
+      onCreate(ensayoCompleto);
+      setForm({ tipo: '', norma: '', observaciones: '', cantidad: 1 });
+      
+      if (ensayoCompleto.spreadsheet_url) {
+        window.open(ensayoCompleto.spreadsheet_url, '_blank');
+      }
+    } catch (err) {
+      console.error('Error creando ensayo:', err);
+      onCreate({
+        ...form,
+        perforacionId: perforacion.id,
+        proyectoId: proyecto.id,
+        muestra: perforacion.descripcion,
+      });
+      setForm({ tipo: '', norma: '', observaciones: '', cantidad: 1 });
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  const tipoSeleccionado = TIPOS_ENSAYO.find(t => t.id === form.tipo);
+  const cotizadosRestantes = tipoSeleccionado ? (ensayosDisponibles[form.tipo] || 0) : 0;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Solicitar Ensayo - ${perforacion?.codigo}`}>
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <div style={{ padding: '12px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
+            <strong>Muestra:</strong> {perforacion?.descripcion}
+            {perforacion?.muestraFisica && (
+              <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
+                <strong>Código físico:</strong> {perforacion.muestraFisica}
+              </div>
+            )}
+          </div>
+
+          {tiposDisponibles.length === 0 ? (
+            <div style={{ padding: '16px', backgroundColor: '#FEE2E2', borderRadius: '8px', color: '#991B1B' }}>
+              No hay ensayos cotizados disponibles para este proyecto.
+            </div>
+          ) : (
+            <>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Tipo de Ensayo *</label>
+                <select
+                  value={form.tipo}
+                  onChange={(e) => {
+                    const tipo = TIPOS_ENSAYO.find(t => t.id === e.target.value);
+                    setForm({ ...form, tipo: e.target.value, norma: tipo?.norma || '' });
+                  }}
+                  required
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+                >
+                  <option value="">Seleccionar tipo...</option>
+                  {tiposDisponibles.map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.nombre} (Cotizados: {ensayosDisponibles[tipo.id]})
+                    </option>
+                  ))}
+                </select>
+                {tipoSeleccionado && (
+                  <div style={{ marginTop: '4px', fontSize: '0.875rem', color: '#6B7280' }}>
+                    Disponibles: {cotizadosRestantes} | Norma: {tipoSeleccionado.norma}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Norma de Referencia</label>
+                <input
+                  type="text"
+                  value={form.norma}
+                  onChange={(e) => setForm({ ...form, norma: e.target.value })}
+                  placeholder="Ej: ASTM E8"
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Observaciones</label>
+                <textarea
+                  value={form.observaciones}
+                  onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
+                  rows={2}
+                  placeholder="Condiciones especiales, requerimientos..."
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #D1D5DB', resize: 'vertical' }}
+                />
+              </div>
+            </>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #D1D5DB', backgroundColor: 'white', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading || creando || tiposDisponibles.length === 0} 
+              style={{ 
+                padding: '8px 16px', 
+                borderRadius: '4px', 
+                border: 'none', 
+                backgroundColor: tiposDisponibles.length === 0 ? '#9CA3AF' : '#10B981', 
+                color: 'white', 
+                cursor: (loading || creando || tiposDisponibles.length === 0) ? 'not-allowed' : 'pointer' 
+              }}
+            >
+              {creando ? 'Creando...' : 'Solicitar Ensayo'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// COMPONENTE PRINCIPAL
+// ============================================
+
+export default function Proyectos() {
+  const { user, isBypassMode } = useGoogleAuth();
+  const userRole = user?.rol || 'tecnico';
+  
+  const [proyectos, setProyectos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [perforaciones, setPerforaciones] = useState([]);
+  const [ensayos, setEnsayos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Selección actual
+  const [selectedProyecto, setSelectedProyecto] = useState(null);
+  const [selectedPerforacion, setSelectedPerforacion] = useState(null);
+  
+  // Modales
+  const [showNuevoProyecto, setShowNuevoProyecto] = useState(false);
+  const [showRelacionarMuestra, setShowRelacionarMuestra] = useState(false);
+  const [showSolicitarEnsayo, setShowSolicitarEnsayo] = useState(false);
+  
+  // Filtros
+  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroCliente, setFiltroCliente] = useState('todos');
+
+  // Cargar datos
+  useEffect(() => {
+    const fetchData = async () => {
+      // En modo bypass, usar datos mock
+      if (isBypassMode) {
+        setProyectos(MOCK_PROYECTOS);
+        setClientes(MOCK_CLIENTES);
+        setPerforaciones(MOCK_PERFORACIONES);
+        setEnsayos(MOCK_ENSAYOS);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [proyectosRes, clientesRes, perforacionesRes, ensayosRes] = await Promise.all([
+          fetch(`${API_CONFIG.baseURL}/api/proyectos`),
+          fetch(`${API_CONFIG.baseURL}/api/clientes`),
+          fetch(`${API_CONFIG.baseURL}/api/perforaciones`),
+          fetch(`${API_CONFIG.baseURL}/api/ensayos`),
+        ]);
+        
+        setProyectos(await proyectosRes.json());
+        setClientes(await clientesRes.json());
+        setPerforaciones(await perforacionesRes.json());
+        setEnsayos(await ensayosRes.json());
+      } catch (err) {
+        console.error('Error cargando datos:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [isBypassMode]);
+
+  // Handlers
+  const handleCrearProyecto = async (data) => {
+    // Generar ID y código
+    const nuevoId = `pry-${Date.now()}`;
+    const nuevoCodigo = `PRY-2025-${String(proyectos.length + 1).padStart(3, '0')}`;
+    
+    // Crear el proyecto
+    const nuevoProyecto = {
+      id: nuevoId,
+      codigo: nuevoCodigo,
+      nombre: data.nombre,
+      descripcion: data.descripcion,
+      clienteId: data.clienteId,
+      contacto: data.contacto,
+      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_fin_estimada: data.fecha_fin_estimada,
+      estado: 'activo',
+      ensayosCotizados: data.ensayosCotizados,
+    };
+    
+    // Crear las perforaciones
+    const nuevasPerforaciones = data.perforaciones.map((perf, index) => ({
+      id: `perf-${Date.now()}-${index}`,
+      codigo: perf.codigo || `${nuevoCodigo}-P${String(index + 1).padStart(2, '0')}`,
+      proyectoId: nuevoId,
+      descripcion: perf.descripcion,
+      ubicacion: perf.ubicacion,
+      estado: 'sin_relacionar',
+      fecha_recepcion: null,
+      muestraFisica: null,
+    }));
+    
+    setProyectos([...proyectos, nuevoProyecto]);
+    setPerforaciones([...perforaciones, ...nuevasPerforaciones]);
+    setShowNuevoProyecto(false);
+    setSelectedProyecto(nuevoProyecto);
+  };
+
+  const handleRelacionarMuestra = async (data) => {
+    // Actualizar la perforación con la muestra física
+    const updatedPerforaciones = perforaciones.map(perf => {
+      if (perf.id === data.perforacionId) {
+        return {
+          ...perf,
+          estado: 'relacionado',
+          muestraFisica: data.codigoMuestra,
+          fecha_recepcion: data.fechaRecepcion,
+          condicionMuestra: data.condicionMuestra,
+          observacionesRecepcion: data.observaciones,
+        };
+      }
+      return perf;
+    });
+    
+    setPerforaciones(updatedPerforaciones);
+    setShowRelacionarMuestra(false);
+    
+    // Actualizar la perforación seleccionada
+    const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
+    setSelectedPerforacion(updatedPerf);
+    
+    // Simular notificación al cliente (en producción esto sería una llamada a API)
+    // TODO: Implementar notificación real cuando se conecte el backend
+  };
+
+  const handleSolicitarEnsayo = async (data) => {
+    const nuevoEnsayo = {
+      id: `ens-${Date.now()}`,
+      codigo: `ENS-2025-${String(ensayos.length + 1).padStart(3, '0')}`,
+      tipo: data.tipo,
+      norma: data.norma,
+      perforacionId: data.perforacionId,
+      proyectoId: selectedProyecto.id,
+      workflow_state: 'E1',
+      observaciones: data.observaciones,
+      spreadsheet_url: data.spreadsheet_url,
+    };
+    
+    setEnsayos([...ensayos, nuevoEnsayo]);
+    setShowSolicitarEnsayo(false);
+  };
+
+  // Datos filtrados y relacionados
+  const proyectosFiltrados = proyectos.filter((p) => {
+    if (filtroEstado !== 'todos' && p.estado !== filtroEstado) return false;
+    if (filtroCliente !== 'todos' && p.clienteId !== filtroCliente) return false;
+    return true;
+  });
+
+  const perforacionesProyecto = selectedProyecto
+    ? perforaciones.filter((p) => p.proyectoId === selectedProyecto.id)
+    : [];
+
+  const ensayosPerforacion = selectedPerforacion
+    ? ensayos.filter((e) => e.perforacionId === selectedPerforacion.id)
+    : [];
+
+  const getClienteNombre = (clienteId) => {
+    return clientes.find((c) => c.id === clienteId)?.nombre || 'Desconocido';
+  };
+
+  const getEstadoProyecto = (estado) => ESTADO_PROYECTO[estado] || { label: estado, color: '#6B7280' };
+  const getEstadoPerforacion = (estado) => ESTADO_PERFORACION[estado] || { label: estado, color: '#6B7280' };
+
+  // Contar perforaciones sin relacionar
+  const perfsSinRelacionar = perforacionesProyecto.filter(p => p.estado === 'sin_relacionar').length;
+
+  if (loading) {
+    return (
+      <PageLayout title="Proyectos">
+        <div style={{ textAlign: 'center', padding: '48px' }}>Cargando proyectos...</div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout title="Proyectos">
+      {/* Indicador de modo y rol */}
+      {isBypassMode && (
+        <div style={{ marginBottom: '16px', padding: '8px 12px', backgroundColor: '#FEF3C7', borderRadius: '6px', fontSize: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Modo Demo - Rol actual: <strong>{userRole}</strong></span>
+          <span style={{ color: '#92400E' }}>
+            {canCreateProject(userRole) && '✓ Crear proyectos '}
+            {canRelatePhysicalSample(userRole) && '✓ Relacionar muestras '}
+            {canRequestTest(userRole) && '✓ Solicitar ensayos'}
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', height: 'calc(100vh - 240px)' }}>
+        
+        {/* COLUMNA 1: PROYECTOS */}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>Proyectos</h3>
+            {canCreateProject(userRole) && (
+              <button
+                onClick={() => setShowNuevoProyecto(true)}
+                style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#3B82F6', color: 'white', cursor: 'pointer', fontSize: '0.875rem' }}
+              >
+                + Nuevo
+              </button>
+            )}
+          </div>
+          
+          {/* Filtros */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+            >
+              <option value="todos">Todos</option>
+              <option value="activo">Activos</option>
+              <option value="completado">Completados</option>
+            </select>
+            <select
+              value={filtroCliente}
+              onChange={(e) => setFiltroCliente(e.target.value)}
+              style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #D1D5DB', fontSize: '0.875rem' }}
+            >
+              <option value="todos">Todos clientes</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Lista de proyectos */}
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {proyectosFiltrados.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>No hay proyectos</div>
+            ) : (
+              proyectosFiltrados.map((proyecto) => {
+                const estado = getEstadoProyecto(proyecto.estado);
+                const numPerfs = perforaciones.filter(p => p.proyectoId === proyecto.id).length;
+                const numEnsayos = ensayos.filter(e => e.proyectoId === proyecto.id).length;
+                const totalCotizados = Object.values(proyecto.ensayosCotizados || {}).reduce((a, b) => a + b, 0);
+                
+                return (
+                  <Card
+                    key={proyecto.id}
+                    onClick={() => {
+                      setSelectedProyecto(proyecto);
+                      setSelectedPerforacion(null);
+                    }}
+                    selected={selectedProyecto?.id === proyecto.id}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div>
+                        <div style={{ fontWeight: '600' }}>{proyecto.codigo}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#374151' }}>{proyecto.nombre}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                          {getClienteNombre(proyecto.clienteId)}
+                        </div>
+                      </div>
+                      <Badge color={estado.color}>{estado.label}</Badge>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
+                      <span>{numPerfs} perforaciones</span>
+                      <span>{numEnsayos}/{totalCotizados} ensayos</span>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* COLUMNA 2: PERFORACIONES */}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>
+              Perforaciones
+              {selectedProyecto && perfsSinRelacionar > 0 && (
+                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#F59E0B' }}>
+                  ({perfsSinRelacionar} sin relacionar)
+                </span>
+              )}
+            </h3>
+          </div>
+          
+          {!selectedProyecto ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+              Selecciona un proyecto
+            </div>
+          ) : (
+            <>
+              {/* Resumen de ensayos cotizados */}
+              {selectedProyecto.ensayosCotizados && Object.keys(selectedProyecto.ensayosCotizados).length > 0 && (
+                <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#F3F4F6', borderRadius: '6px', fontSize: '0.75rem' }}>
+                  <strong>Ensayos cotizados:</strong>{' '}
+                  {Object.entries(selectedProyecto.ensayosCotizados).map(([tipo, cant]) => {
+                    const tipoInfo = TIPOS_ENSAYO.find(t => t.id === tipo);
+                    return `${tipoInfo?.nombre || tipo}: ${cant}`;
+                  }).join(', ')}
+                </div>
+              )}
+              
+              <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {perforacionesProyecto.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
+                    No hay perforaciones definidas
+                  </div>
+                ) : (
+                  perforacionesProyecto.map((perf) => {
+                    const estado = getEstadoPerforacion(perf.estado);
+                    const numEnsayos = ensayos.filter(e => e.perforacionId === perf.id).length;
+                    const puedeRelacionar = perf.estado === 'sin_relacionar' && canRelatePhysicalSample(userRole);
+                    
+                    return (
+                      <Card
+                        key={perf.id}
+                        onClick={() => setSelectedPerforacion(perf)}
+                        selected={selectedPerforacion?.id === perf.id}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{perf.codigo}</div>
+                            <div style={{ fontSize: '0.875rem', color: '#374151' }}>{perf.descripcion}</div>
+                            {perf.ubicacion && (
+                              <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
+                                {perf.ubicacion}
+                              </div>
+                            )}
+                            {perf.muestraFisica && (
+                              <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '2px' }}>
+                                Muestra: {perf.muestraFisica}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                            <Badge color={estado.color}>{estado.label}</Badge>
+                            {puedeRelacionar && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPerforacion(perf);
+                                  setShowRelacionarMuestra(true);
+                                }}
+                                style={{ 
+                                  padding: '4px 8px', 
+                                  borderRadius: '4px', 
+                                  border: 'none', 
+                                  backgroundColor: '#F59E0B', 
+                                  color: 'white', 
+                                  cursor: 'pointer', 
+                                  fontSize: '0.7rem' 
+                                }}
+                              >
+                                Relacionar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
+                          {numEnsayos} ensayos
+                          {perf.fecha_recepcion && ` • Recibido: ${perf.fecha_recepcion}`}
+                        </div>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* COLUMNA 3: ENSAYOS */}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>Ensayos</h3>
+            {selectedPerforacion && selectedPerforacion.estado === 'relacionado' && canRequestTest(userRole) && (
+              <button
+                onClick={() => setShowSolicitarEnsayo(true)}
+                style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#10B981', color: 'white', cursor: 'pointer', fontSize: '0.875rem' }}
+              >
+                + Solicitar
+              </button>
+            )}
+          </div>
+          
+          {!selectedPerforacion ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+              Selecciona una perforación
+            </div>
+          ) : selectedPerforacion.estado === 'sin_relacionar' ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B', textAlign: 'center', padding: '24px' }}>
+              <div>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⏳</div>
+                <div>Esta perforación aún no tiene muestra física relacionada.</div>
+                {canRelatePhysicalSample(userRole) && (
+                  <button
+                    onClick={() => setShowRelacionarMuestra(true)}
+                    style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#F59E0B', color: 'white', cursor: 'pointer' }}
+                  >
+                    Relacionar muestra
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {ensayosPerforacion.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
+                  No hay ensayos solicitados
+                  {canRequestTest(userRole) && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        onClick={() => setShowSolicitarEnsayo(true)}
+                        style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#10B981', color: 'white', cursor: 'pointer' }}
+                      >
+                        Solicitar primer ensayo
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                ensayosPerforacion.map((ensayo) => {
+                  const workflow = getWorkflowInfo(ensayo.workflow_state);
+                  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+                  
+                  return (
+                    <Card key={ensayo.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{ensayo.codigo}</div>
+                          <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                            {tipoEnsayo?.nombre || ensayo.tipo}
+                          </div>
+                          {ensayo.norma && (
+                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                              Norma: {ensayo.norma}
+                            </div>
+                          )}
+                        </div>
+                        <Badge color={workflow.color}>{workflow.nombre}</Badge>
+                      </div>
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                        {ensayo.spreadsheet_url && (
+                          <a
+                            href={ensayo.spreadsheet_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#34A853',
+                              color: 'white',
+                              textDecoration: 'none',
+                              fontSize: '0.75rem',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Abrir Sheet
+                          </a>
+                        )}
+                        <a
+                          href={`/ensayos?id=${ensayo.id}`}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: '#3B82F6',
+                            color: 'white',
+                            textDecoration: 'none',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          Ver detalle
+                        </a>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Resumen inferior */}
+      <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div><strong>Total Proyectos:</strong> {proyectos.length}</div>
+        <div><strong>Activos:</strong> {proyectos.filter(p => p.estado === 'activo').length}</div>
+        <div><strong>Perforaciones:</strong> {perforaciones.length} ({perforaciones.filter(p => p.estado === 'sin_relacionar').length} sin relacionar)</div>
+        <div><strong>Total Ensayos:</strong> {ensayos.length}</div>
+        <div><strong>Pendientes:</strong> {ensayos.filter(e => e.workflow_state === 'E1').length}</div>
+        <div><strong>En proceso:</strong> {ensayos.filter(e => ['E2', 'E6', 'E7', 'E8'].includes(e.workflow_state)).length}</div>
+      </div>
+
+      {/* Modales */}
+      <NuevoProyectoModal
+        isOpen={showNuevoProyecto}
+        onClose={() => setShowNuevoProyecto(false)}
+        onCreate={handleCrearProyecto}
+        clientes={clientes}
+        loading={false}
+      />
+
+      <RelacionarMuestraModal
+        isOpen={showRelacionarMuestra}
+        onClose={() => setShowRelacionarMuestra(false)}
+        onRelate={handleRelacionarMuestra}
+        perforacion={selectedPerforacion}
+        loading={false}
+      />
+
+      {selectedPerforacion && selectedProyecto && (
+        <SolicitarEnsayoModal
+          isOpen={showSolicitarEnsayo}
+          onClose={() => setShowSolicitarEnsayo(false)}
+          onCreate={handleSolicitarEnsayo}
+          perforacion={selectedPerforacion}
+          proyecto={selectedProyecto}
+          loading={false}
+        />
+      )}
+    </PageLayout>
+  );
+}

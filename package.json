@@ -1,24 +1,48 @@
 {
-  "name": "17025",
+  "name": "lab-17025",
   "version": "1.0.0",
+  "private": true,
   "description": "Plataforma web para gestión de entregables de un laboratorio de ensayos acreditado bajo la norma ISO/IEC 17025.",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rulos-nico/17025.git"
   },
-  "keywords": [],
   "author": "Rulos Nico",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/rulos-nico/17025/issues"
   },
   "homepage": "https://github.com/rulos-nico/17025#readme",
-  "type": "module",
   "dependencies": {
-    "express": "^4.22.1"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.1",
+    "vite": "npm:rolldown-vite@7.2.5"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.2.5"
   }
 }

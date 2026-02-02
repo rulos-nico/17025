@@ -1,0 +1,31 @@
+[package]
+name = "lab-17025-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Serialización
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Google APIs
+google-sheets4 = "6"
+google-drive3 = "6"
+yup-oauth2 = "11"
+hyper = "1"
+hyper-rustls = "0.27"
+hyper-util = "0.1"
+
+# Utilidades
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
