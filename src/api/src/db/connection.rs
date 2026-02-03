@@ -16,7 +16,7 @@ pub async fn create_pool(database_url: &str) -> Result<DbPool, sqlx::Error> {
 
 /// Ejecuta las migraciones pendientes
 pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::migrate::MigrateError> {
-    sqlx::migrate!("./src/db/migrations").run(pool).await
+    sqlx::migrate!("./migrations").run(pool).await
 }
 
 #[cfg(test)]

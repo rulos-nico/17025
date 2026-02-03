@@ -95,7 +95,7 @@ impl DatabaseToSheetsSync {
                     result.total_processed += 1;
                     let row = cliente.to_row();
                     
-                    match self.sheets_client.update_row("Clientes", &cliente.id, row).await {
+                    match self.sheets_client.update_row_id("Clientes", &cliente.id, row).await {
                         Ok(_) => {
                             result.updated += 1;
                         }
@@ -137,7 +137,7 @@ impl DatabaseToSheetsSync {
                     result.total_processed += 1;
                     let row = proyecto.to_row();
                     
-                    match self.sheets_client.update_row("Proyectos", &proyecto.id, row).await {
+                    match self.sheets_client.update_row_id("Proyectos", &proyecto.id, row).await {
                         Ok(_) => {
                             result.updated += 1;
                         }
@@ -178,7 +178,7 @@ impl DatabaseToSheetsSync {
                     result.total_processed += 1;
                     let row = ensayo.to_row();
                     
-                    match self.sheets_client.update_row("Ensayos", &ensayo.id, row).await {
+                    match self.sheets_client.update_row_id("Ensayos", &ensayo.id, row).await {
                         Ok(_) => {
                             result.updated += 1;
                         }
@@ -219,7 +219,7 @@ impl DatabaseToSheetsSync {
                     result.total_processed += 1;
                     let row = equipo.to_row();
                     
-                    match self.sheets_client.update_row("Equipos", &equipo.id, row).await {
+                    match self.sheets_client.update_row_id("Equipos", &equipo.id, row).await {
                         Ok(_) => {
                             result.updated += 1;
                         }

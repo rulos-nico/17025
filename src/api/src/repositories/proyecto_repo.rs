@@ -320,4 +320,22 @@ impl ProyectoRepository {
             .await?;
         Ok(row.0)
     }
+
+    /// Elimina un proyecto (soft delete: estado = 'eliminado')
+    pub async fn delete(&self, id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE proyectos
+            SET estado = 'eliminado', 
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1 AND estado != 'eliminado'
+            "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
 }

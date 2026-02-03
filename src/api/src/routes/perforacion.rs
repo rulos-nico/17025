@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    routing::{get, post, put, delete},
+    routing::get,
     Json, Router,
 };
 use chrono::Utc;
@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{CreatePerforacion, Perforacion, UpdatePerforacion};
+use crate::repositories::{PerforacionRepository, ProyectoRepository, EnsayoRepository};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,11 +23,9 @@ pub fn routes() -> Router<AppState> {
 async fn list_perforaciones(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Perforacion>>, AppError> {
-    let rows = state.sheets_client.read_sheet("Perforaciones").await?;
-    let perforaciones: Vec<Perforacion> = rows
-        .iter()
-        .filter_map(|row| Perforacion::from_row(row))
-        .collect();
+    let repo = PerforacionRepository::new(state.db_pool.clone());
+    let perforaciones = repo.find_all().await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(perforaciones))
 }
 
@@ -35,45 +34,38 @@ async fn get_perforacion(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Perforacion>, AppError> {
-    let row = state.sheets_client.find_by_id("Perforaciones", &id).await?;
-    let perforacion = Perforacion::from_row(&row).ok_or(AppError::NotFound)?;
+    let repo = PerforacionRepository::new(state.db_pool.clone());
+    let perforacion = repo.find_by_id(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(perforacion))
 }
 
 /// POST /api/perforaciones
+/// Creates a new perforacion in PostgreSQL
+/// TODO: In the future, add Google Drive folder creation when drive_client is integrated
 async fn create_perforacion(
     State(state): State<AppState>,
     Json(payload): Json<CreatePerforacion>,
 ) -> Result<(StatusCode, Json<Perforacion>), AppError> {
-    let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    // Generate ID and code
     let id = Uuid::new_v4().to_string();
-
     let codigo = format!(
         "PER-{}-{:04}",
         Utc::now().format("%Y%m%d"),
         rand_suffix()
     );
 
-    let perforacion = Perforacion {
-        id,
-        codigo,
-        proyecto_id: payload.proyecto_id,
-        nombre: payload.nombre,
-        descripcion: payload.descripcion,
-        ubicacion: payload.ubicacion,
-        profundidad: payload.profundidad,
-        fecha_inicio: payload.fecha_inicio,
-        fecha_fin: None,
-        estado: "activo".to_string(),
-        drive_folder_id: None,
-        created_at: now.clone(),
-        updated_at: now,
-    };
+    // Verify project exists
+    let proyecto_repo = ProyectoRepository::new(state.db_pool.clone());
+    let _proyecto = proyecto_repo.find_by_id(&payload.proyecto_id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or_else(|| AppError::BadRequest("Proyecto no encontrado".to_string()))?;
 
-    state
-        .sheets_client
-        .append_row("Perforaciones", perforacion.to_row())
-        .await?;
+    // Create perforacion in database
+    let perforacion_repo = PerforacionRepository::new(state.db_pool.clone());
+    let perforacion = perforacion_repo.create(&id, &codigo, payload).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok((StatusCode::CREATED, Json(perforacion)))
 }
@@ -84,43 +76,10 @@ async fn update_perforacion(
     State(state): State<AppState>,
     Json(payload): Json<UpdatePerforacion>,
 ) -> Result<Json<Perforacion>, AppError> {
-    let row_number = state
-        .sheets_client
-        .find_row_number_by_id("Perforaciones", &id)
-        .await?;
-
-    let row = state.sheets_client.find_by_id("Perforaciones", &id).await?;
-    let mut perforacion = Perforacion::from_row(&row).ok_or(AppError::NotFound)?;
-
-    if let Some(nombre) = payload.nombre {
-        perforacion.nombre = nombre;
-    }
-    if let Some(descripcion) = payload.descripcion {
-        perforacion.descripcion = Some(descripcion);
-    }
-    if let Some(ubicacion) = payload.ubicacion {
-        perforacion.ubicacion = Some(ubicacion);
-    }
-    if let Some(profundidad) = payload.profundidad {
-        perforacion.profundidad = Some(profundidad);
-    }
-    if let Some(fecha_inicio) = payload.fecha_inicio {
-        perforacion.fecha_inicio = Some(fecha_inicio);
-    }
-    if let Some(fecha_fin) = payload.fecha_fin {
-        perforacion.fecha_fin = Some(fecha_fin);
-    }
-    if let Some(estado) = payload.estado {
-        perforacion.estado = estado;
-    }
-
-    perforacion.updated_at = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-    state
-        .sheets_client
-        .update_row("Perforaciones", row_number, perforacion.to_row())
-        .await?;
-
+    let repo = PerforacionRepository::new(state.db_pool.clone());
+    let perforacion = repo.update(&id, payload).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(perforacion))
 }
 
@@ -129,14 +88,15 @@ async fn delete_perforacion(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
-    let row_number = state
-        .sheets_client
-        .find_row_number_by_id("Perforaciones", &id)
-        .await?;
-
-    state.sheets_client.delete_row("Perforaciones", row_number).await?;
-
-    Ok(StatusCode::NO_CONTENT)
+    let repo = PerforacionRepository::new(state.db_pool.clone());
+    let deleted = repo.delete(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    
+    if deleted {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(AppError::NotFound)
+    }
 }
 
 /// GET /api/perforaciones/:id/ensayos
@@ -144,13 +104,16 @@ async fn get_ensayos_by_perforacion(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<crate::models::Ensayo>>, AppError> {
-    let rows = state.sheets_client.read_sheet("Ensayos").await?;
+    // First verify the perforacion exists
+    let perforacion_repo = PerforacionRepository::new(state.db_pool.clone());
+    let _ = perforacion_repo.find_by_id(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
     
-    let ensayos: Vec<crate::models::Ensayo> = rows
-        .iter()
-        .filter_map(|row| crate::models::Ensayo::from_row(row))
-        .filter(|e| e.perforacion_id == id)
-        .collect();
+    // Get ensayos for this perforacion
+    let ensayo_repo = EnsayoRepository::new(state.db_pool.clone());
+    let ensayos = ensayo_repo.find_by_perforacion(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok(Json(ensayos))
 }

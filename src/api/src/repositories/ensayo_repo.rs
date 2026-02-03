@@ -2,7 +2,7 @@ use sqlx::FromRow;
 use chrono::{DateTime, Utc, NaiveDate};
 
 use crate::db::DbPool;
-use crate::models::{Ensayo, CreateEnsayo, UpdateEnsayo};
+use crate::models::{Ensayo, CreateEnsayo, UpdateEnsayo, WorkflowState};
 
 /// Modelo de base de datos para Ensayo
 #[derive(Debug, Clone, FromRow)]
@@ -27,6 +27,11 @@ pub struct EnsayoRow {
     pub equipos_utilizados: Option<Vec<String>>,
     pub observaciones: Option<String>,
     pub urgente: bool,
+    // PDF-related fields
+    pub pdf_drive_id: Option<String>,
+    pub pdf_url: Option<String>,
+    pub pdf_generated_at: Option<DateTime<Utc>>,
+    pub perforacion_folder_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub synced_at: Option<DateTime<Utc>>,
@@ -35,6 +40,11 @@ pub struct EnsayoRow {
 
 impl From<EnsayoRow> for Ensayo {
     fn from(row: EnsayoRow) -> Self {
+        // Parsear workflow_state de String a enum
+        let workflow_state = row.workflow_state
+            .parse::<WorkflowState>()
+            .unwrap_or_default();
+        
         Ensayo {
             id: row.id,
             codigo: row.codigo,
@@ -43,7 +53,7 @@ impl From<EnsayoRow> for Ensayo {
             proyecto_id: row.proyecto_id,
             muestra: row.muestra,
             norma: row.norma,
-            workflow_state: row.workflow_state,
+            workflow_state,
             fecha_solicitud: row.fecha_solicitud.to_string(),
             fecha_programacion: row.fecha_programacion.map(|d| d.to_string()),
             fecha_ejecucion: row.fecha_ejecucion.map(|d| d.to_string()),
@@ -56,6 +66,11 @@ impl From<EnsayoRow> for Ensayo {
             equipos_utilizados: row.equipos_utilizados.unwrap_or_default(),
             observaciones: row.observaciones,
             urgente: row.urgente,
+            // PDF-related fields
+            pdf_drive_id: row.pdf_drive_id,
+            pdf_url: row.pdf_url,
+            pdf_generated_at: row.pdf_generated_at.map(|d| d.to_rfc3339()),
+            perforacion_folder_id: row.perforacion_folder_id,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
         }
@@ -80,6 +95,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             ORDER BY fecha_solicitud DESC
@@ -99,6 +115,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             WHERE proyecto_id = $1
@@ -120,6 +137,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             WHERE workflow_state = $1
@@ -141,6 +159,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             WHERE urgente = true AND workflow_state NOT IN ('entregado', 'cancelado')
@@ -161,6 +180,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             WHERE id = $1
@@ -187,6 +207,7 @@ impl EnsayoRepository {
                       workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                       fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                       sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                      pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                       created_at, updated_at, synced_at, sync_source
             "#,
         )
@@ -241,11 +262,12 @@ impl EnsayoRepository {
                       workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                       fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                       sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                      pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                       created_at, updated_at, synced_at, sync_source
             "#,
         )
         .bind(id)
-        .bind(&dto.workflow_state)
+        .bind(dto.workflow_state.as_ref().map(|ws| ws.to_string()))
         .bind(fecha_programacion)
         .bind(fecha_ejecucion)
         .bind(fecha_reporte)
@@ -336,7 +358,7 @@ impl EnsayoRepository {
         .bind(&ensayo.proyecto_id)
         .bind(&ensayo.muestra)
         .bind(&ensayo.norma)
-        .bind(&ensayo.workflow_state)
+        .bind(ensayo.workflow_state.to_string())
         .bind(fecha_solicitud)
         .bind(fecha_programacion)
         .bind(fecha_ejecucion)
@@ -363,6 +385,7 @@ impl EnsayoRepository {
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
                    created_at, updated_at, synced_at, sync_source
             FROM ensayos
             WHERE updated_at > $1 AND sync_source = 'db'
@@ -407,10 +430,146 @@ impl EnsayoRepository {
     /// Cuenta ensayos pendientes (no entregados ni cancelados)
     pub async fn count_pending(&self) -> Result<i64, sqlx::Error> {
         let row: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM ensayos WHERE workflow_state NOT IN ('entregado', 'cancelado')"
+            "SELECT COUNT(*) FROM ensayos WHERE workflow_state NOT IN ('E14', 'E15')"
         )
         .fetch_one(&self.pool)
         .await?;
         Ok(row.0)
+    }
+
+    /// Busca un ensayo por código
+    pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Ensayo>, sqlx::Error> {
+        let row = sqlx::query_as::<_, EnsayoRow>(
+            r#"
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
+                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
+                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
+                   created_at, updated_at, synced_at, sync_source
+            FROM ensayos
+            WHERE codigo = $1
+            "#,
+        )
+        .bind(codigo)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(Ensayo::from))
+    }
+
+    /// Busca ensayos por perforación
+    pub async fn find_by_perforacion(&self, perforacion_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, EnsayoRow>(
+            r#"
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
+                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
+                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
+                   created_at, updated_at, synced_at, sync_source
+            FROM ensayos
+            WHERE perforacion_id = $1
+            ORDER BY created_at DESC
+            "#,
+        )
+        .bind(perforacion_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(Ensayo::from).collect())
+    }
+
+    /// Elimina un ensayo (soft delete: workflow_state = 'E15' cancelado)
+    pub async fn delete(&self, id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE ensayos
+            SET workflow_state = 'E15',
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1 AND workflow_state != 'E15'
+            "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// Actualiza la información del PDF generado
+    pub async fn update_pdf_info(
+        &self,
+        id: &str,
+        pdf_drive_id: &str,
+        pdf_url: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE ensayos
+            SET pdf_drive_id = $2,
+                pdf_url = $3,
+                pdf_generated_at = NOW(),
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(pdf_drive_id)
+        .bind(pdf_url)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// Actualiza la información del Sheet asociado al ensayo
+    pub async fn update_sheet_info(
+        &self,
+        id: &str,
+        sheet_id: &str,
+        sheet_url: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE ensayos
+            SET sheet_id = $2,
+                sheet_url = $3,
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(sheet_id)
+        .bind(sheet_url)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// Actualiza el perforacion_folder_id (cache para evitar queries repetidas)
+    pub async fn update_perforacion_folder_id(
+        &self,
+        id: &str,
+        folder_id: &str,
+    ) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE ensayos
+            SET perforacion_folder_id = $2,
+                updated_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(folder_id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
     }
 }

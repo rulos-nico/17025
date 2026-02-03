@@ -371,4 +371,22 @@ impl EquipoRepository {
             .await?;
         Ok(row.0)
     }
+
+    /// Elimina un equipo (soft delete: activo = false)
+    pub async fn delete(&self, id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE equipos
+            SET activo = false, 
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1 AND activo = true
+            "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
 }

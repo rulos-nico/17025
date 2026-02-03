@@ -15,10 +15,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::config::Config;
 use crate::db::DbPool;
 use crate::services::google_sheets::GoogleSheetsClient;
+use crate::services::google_drive::GoogleDriveClient;
+use crate::services::ensayo_sheets::EnsayoSheetsService;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub sheets_client: GoogleSheetsClient,
+    pub sheets_client: Option<GoogleSheetsClient>,
+    pub ensayo_sheets_service: Option<EnsayoSheetsService>,
     pub db_pool: DbPool,
     pub config: Config,
 }
@@ -48,13 +51,45 @@ async fn main() {
         tracing::info!("Migrations completed successfully");
     }
 
-    // Inicializar cliente de Google Sheets
-    let sheets_client = GoogleSheetsClient::new(&config)
-        .await
-        .expect("Failed to initialize Google Sheets client");
+    // Inicializar cliente de Google Sheets (opcional)
+    let sheets_client = if config.has_google_sheets() {
+        match GoogleSheetsClient::new(&config).await {
+            Ok(client) => {
+                tracing::info!("Google Sheets client initialized successfully");
+                Some(client)
+            }
+            Err(e) => {
+                tracing::warn!("Google Sheets disabled: {}", e);
+                None
+            }
+        }
+    } else {
+        tracing::info!("Google Sheets not configured - running in database-only mode");
+        None
+    };
+
+    // Inicializar EnsayoSheetsService (para plantillas y PDFs)
+    let ensayo_sheets_service = if config.has_google_drive() {
+        match GoogleDriveClient::new(&config).await {
+            Ok(drive_client) => {
+                tracing::info!("Google Drive client initialized successfully");
+                let service = EnsayoSheetsService::new(drive_client);
+                tracing::info!("EnsayoSheetsService initialized - PDF generation enabled");
+                Some(service)
+            }
+            Err(e) => {
+                tracing::warn!("EnsayoSheetsService disabled: {}", e);
+                None
+            }
+        }
+    } else {
+        tracing::info!("Google Drive not configured - PDF generation disabled");
+        None
+    };
 
     let state = AppState {
         sheets_client,
+        ensayo_sheets_service,
         db_pool,
         config: config.clone(),
     };

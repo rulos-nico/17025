@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    routing::{get, post, put, delete},
+    routing::get,
     Json, Router,
 };
 use chrono::Utc;
@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{CreateProyecto, Proyecto, UpdateProyecto, Perforacion};
+use crate::repositories::{ProyectoRepository, PerforacionRepository};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,11 +23,9 @@ pub fn routes() -> Router<AppState> {
 async fn list_proyectos(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Proyecto>>, AppError> {
-    let rows = state.sheets_client.read_sheet("Proyectos").await?;
-    let proyectos: Vec<Proyecto> = rows
-        .iter()
-        .filter_map(|row| Proyecto::from_row(row))
-        .collect();
+    let repo = ProyectoRepository::new(state.db_pool.clone());
+    let proyectos = repo.find_all().await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(proyectos))
 }
 
@@ -35,8 +34,10 @@ async fn get_proyecto(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Proyecto>, AppError> {
-    let row = state.sheets_client.find_by_id("Proyectos", &id).await?;
-    let proyecto = Proyecto::from_row(&row).ok_or(AppError::NotFound)?;
+    let repo = ProyectoRepository::new(state.db_pool.clone());
+    let proyecto = repo.find_by_id(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(proyecto))
 }
 
@@ -45,37 +46,16 @@ async fn create_proyecto(
     State(state): State<AppState>,
     Json(payload): Json<CreateProyecto>,
 ) -> Result<(StatusCode, Json<Proyecto>), AppError> {
-    let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let repo = ProyectoRepository::new(state.db_pool.clone());
     let id = Uuid::new_v4().to_string();
-
     let codigo = format!(
         "PRY-{}-{:04}",
         Utc::now().format("%Y%m%d"),
         rand_suffix()
     );
 
-    let proyecto = Proyecto {
-        id,
-        codigo,
-        nombre: payload.nombre,
-        descripcion: payload.descripcion,
-        fecha_inicio: payload.fecha_inicio,
-        fecha_fin_estimada: payload.fecha_fin_estimada,
-        cliente_id: payload.cliente_id,
-        cliente_nombre: payload.cliente_nombre,
-        contacto: payload.contacto,
-        estado: "activo".to_string(),
-        fecha_fin_real: None,
-        drive_folder_id: None,
-        created_at: now.clone(),
-        updated_at: now,
-        created_by: None,
-    };
-
-    state
-        .sheets_client
-        .append_row("Proyectos", proyecto.to_row())
-        .await?;
+    let proyecto = repo.create(&id, &codigo, payload).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok((StatusCode::CREATED, Json(proyecto)))
 }
@@ -86,40 +66,10 @@ async fn update_proyecto(
     State(state): State<AppState>,
     Json(payload): Json<UpdateProyecto>,
 ) -> Result<Json<Proyecto>, AppError> {
-    let row_number = state
-        .sheets_client
-        .find_row_number_by_id("Proyectos", &id)
-        .await?;
-
-    let row = state.sheets_client.find_by_id("Proyectos", &id).await?;
-    let mut proyecto = Proyecto::from_row(&row).ok_or(AppError::NotFound)?;
-
-    if let Some(nombre) = payload.nombre {
-        proyecto.nombre = nombre;
-    }
-    if let Some(descripcion) = payload.descripcion {
-        proyecto.descripcion = descripcion;
-    }
-    if let Some(contacto) = payload.contacto {
-        proyecto.contacto = Some(contacto);
-    }
-    if let Some(estado) = payload.estado {
-        proyecto.estado = estado;
-    }
-    if let Some(fecha) = payload.fecha_fin_estimada {
-        proyecto.fecha_fin_estimada = Some(fecha);
-    }
-    if let Some(fecha) = payload.fecha_fin_real {
-        proyecto.fecha_fin_real = Some(fecha);
-    }
-
-    proyecto.updated_at = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-    state
-        .sheets_client
-        .update_row("Proyectos", row_number, proyecto.to_row())
-        .await?;
-
+    let repo = ProyectoRepository::new(state.db_pool.clone());
+    let proyecto = repo.update(&id, payload).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(proyecto))
 }
 
@@ -128,14 +78,15 @@ async fn delete_proyecto(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
-    let row_number = state
-        .sheets_client
-        .find_row_number_by_id("Proyectos", &id)
-        .await?;
-
-    state.sheets_client.delete_row("Proyectos", row_number).await?;
-
-    Ok(StatusCode::NO_CONTENT)
+    let repo = ProyectoRepository::new(state.db_pool.clone());
+    let deleted = repo.delete(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    
+    if deleted {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(AppError::NotFound)
+    }
 }
 
 /// GET /api/proyectos/:id/perforaciones
@@ -143,14 +94,9 @@ async fn get_perforaciones_by_proyecto(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Perforacion>>, AppError> {
-    let rows = state.sheets_client.read_sheet("Perforaciones").await?;
-    
-    let perforaciones: Vec<Perforacion> = rows
-        .iter()
-        .filter_map(|row| Perforacion::from_row(row))
-        .filter(|p| p.proyecto_id == id)
-        .collect();
-
+    let repo = PerforacionRepository::new(state.db_pool.clone());
+    let perforaciones = repo.find_by_proyecto(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(perforaciones))
 }
 

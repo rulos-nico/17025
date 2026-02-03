@@ -1,10 +1,10 @@
 /**
  * Hook para autenticación con Google OAuth
  * Laboratorio ISO 17025
- * 
+ *
  * Maneja el estado de autenticación y proporciona funciones
  * para login/logout con Google.
- * 
+ *
  * MODO DEMO: Si VITE_AUTH_BYPASS=true, permite acceso sin Google OAuth
  */
 
@@ -15,6 +15,7 @@ import {
   isAuthenticated,
   getAccessToken,
 } from '../services/driveService.js';
+import { setAuthToken } from '../services/apiService.js';
 
 // ============================================
 // CONFIGURACIÓN DE MODO DEMO/BYPASS
@@ -44,12 +45,8 @@ const GoogleAuthContext = createContext(null);
  */
 export const GoogleAuthProvider = ({ children }) => {
   const auth = useGoogleAuthState();
-  
-  return (
-    <GoogleAuthContext.Provider value={auth}>
-      {children}
-    </GoogleAuthContext.Provider>
-  );
+
+  return <GoogleAuthContext.Provider value={auth}>{children}</GoogleAuthContext.Provider>;
 };
 
 /**
@@ -58,12 +55,12 @@ export const GoogleAuthProvider = ({ children }) => {
  */
 export const useGoogleAuth = () => {
   const context = useContext(GoogleAuthContext);
-  
+
   if (!context) {
     // Throw para indicar uso incorrecto en desarrollo
     throw new Error('useGoogleAuth debe usarse dentro de GoogleAuthProvider');
   }
-  
+
   return context;
 };
 
@@ -96,17 +93,20 @@ const useGoogleAuthState = () => {
   const fetchUserInfo = useCallback(async () => {
     // En modo bypass, no intentar obtener info de Google
     if (AUTH_BYPASS) return;
-    
+
     try {
       const token = getAccessToken();
       if (!token) return;
-      
+
+      // Guardar token para el API service
+      setAuthToken(token);
+
       const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         const user = await response.json();
         setState(prev => ({
@@ -129,7 +129,7 @@ const useGoogleAuthState = () => {
   // Inicializar al montar
   useEffect(() => {
     let mounted = true;
-    
+
     const init = async () => {
       // MODO BYPASS: Autenticar automáticamente con usuario demo
       if (AUTH_BYPASS) {
@@ -150,7 +150,7 @@ const useGoogleAuthState = () => {
       // MODO NORMAL: Inicializar Google Services
       try {
         await initGoogleServices();
-        
+
         if (mounted) {
           const authenticated = isAuthenticated();
           setState(prev => ({
@@ -159,7 +159,7 @@ const useGoogleAuthState = () => {
             isAuthenticated: authenticated,
             isLoading: false,
           }));
-          
+
           // Si ya está autenticado, obtener info del usuario
           if (authenticated) {
             fetchUserInfo();
@@ -178,7 +178,7 @@ const useGoogleAuthState = () => {
     };
 
     init();
-    
+
     return () => {
       mounted = false;
     };
@@ -197,17 +197,17 @@ const useGoogleAuthState = () => {
     }
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+
     try {
       await requestAuthorization();
       await fetchUserInfo();
-      
+
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
         isLoading: false,
       }));
-      
+
       return true;
     } catch (err) {
       setState(prev => ({
@@ -221,6 +221,9 @@ const useGoogleAuthState = () => {
 
   // Función para cerrar sesión
   const logout = useCallback(() => {
+    // Limpiar token del API service
+    setAuthToken(null);
+
     // En modo bypass, solo limpiar el estado
     if (AUTH_BYPASS) {
       setState(prev => ({
@@ -232,12 +235,12 @@ const useGoogleAuthState = () => {
     }
 
     const token = getAccessToken();
-    
+
     if (token && window.google?.accounts?.oauth2) {
       // Revocar el token
       window.google.accounts.oauth2.revoke(token);
     }
-    
+
     setState(prev => ({
       ...prev,
       isAuthenticated: false,
@@ -258,12 +261,12 @@ const useGoogleAuthState = () => {
     error: state.error,
     user: state.user,
     isBypassMode: state.isBypassMode,
-    
+
     // Acciones
     login,
     logout,
     clearError,
-    
+
     // Token (para uso directo si es necesario)
     getToken: AUTH_BYPASS ? () => null : getAccessToken,
   };
@@ -279,14 +282,14 @@ const useGoogleAuthState = () => {
  */
 export const useRequireAuth = (redirectTo = null) => {
   const auth = useGoogleAuth();
-  
+
   useEffect(() => {
     if (auth.isInitialized && !auth.isAuthenticated && redirectTo) {
       // Aquí podrías usar un router para redirigir
       console.warn('Usuario no autenticado. Redirigir a:', redirectTo);
     }
   }, [auth.isInitialized, auth.isAuthenticated, redirectTo]);
-  
+
   return auth;
 };
 
@@ -296,7 +299,7 @@ export const useRequireAuth = (redirectTo = null) => {
  */
 export const useHasPermission = (_requiredRoles = []) => {
   const { user, isAuthenticated: authenticated } = useGoogleAuth();
-  
+
   // Calcular permiso basado en estado de autenticación
   const hasPermission = useMemo(() => {
     if (!authenticated || !user) {
@@ -306,7 +309,7 @@ export const useHasPermission = (_requiredRoles = []) => {
     // Esto se puede expandir para verificar roles desde la BD
     return true;
   }, [authenticated, user]);
-  
+
   return hasPermission;
 };
 

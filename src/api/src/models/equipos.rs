@@ -82,7 +82,7 @@ impl Equipo {
 
     pub fn to_row(&self) -> Vec<String> {
         vec![
-            self.id.clone(),
+            self.id.to_string(),
             self.codigo.clone(),
             self.nombre.clone(),
             self.serie.clone(),

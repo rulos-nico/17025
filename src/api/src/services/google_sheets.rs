@@ -1,5 +1,5 @@
 use google_sheets4::{
-    api::ValueRange,
+    api::{ClearValuesRequest, ValueRange},
     hyper_rustls::HttpsConnector,
     hyper_util::{client::legacy::connect::HttpConnector, rt::TokioExecutor},
     Sheets,
@@ -19,6 +19,12 @@ pub struct GoogleSheetsClient {
 
 impl GoogleSheetsClient {
     pub async fn new(config: &Config) -> Result<Self, AppError> {
+        // Verificar que tenemos spreadsheet_id configurado
+        let spreadsheet_id = config.spreadsheet_id.clone()
+            .ok_or_else(|| AppError::SheetsError(
+                "GOOGLE_SPREADSHEET_ID not configured. Google Sheets integration disabled.".to_string()
+            ))?;
+        
         // Leer credenciales del service account
         let creds_json = std::fs::read_to_string(&config.google_credentials_path)
             .map_err(|e| AppError::SheetsError(format!("Failed to read credentials: {}", e)))?;
@@ -47,7 +53,7 @@ impl GoogleSheetsClient {
 
         Ok(Self {
             hub,
-            spreadsheet_id: config.spreadsheet_id.clone(),
+            spreadsheet_id,
         })
     }
 
@@ -160,14 +166,11 @@ impl GoogleSheetsClient {
     pub async fn delete_row(&self, sheet_name: &str, row_number: usize) -> Result<(), AppError> {
         let range = format!("{}!A{}:Z{}", sheet_name, row_number, row_number);
 
-        let value_range = ValueRange {
-            values: Some(vec![vec![]]),
-            ..Default::default()
-        };
+        let clear_request = ClearValuesRequest::default();
 
         self.hub
             .spreadsheets()
-            .values_clear(value_range, &self.spreadsheet_id, &range)
+            .values_clear(clear_request, &self.spreadsheet_id, &range)
             .doit()
             .await
             .map_err(|e| AppError::SheetsError(format!("Failed to delete row: {}", e)))?;
@@ -176,7 +179,7 @@ impl GoogleSheetsClient {
     }
 
     /// Actualiza una fila buscándola por ID (columna A)
-    pub async fn update_row(
+    pub async fn update_row_id(
         &self,
         sheet_name: &str,
         id: &str,
@@ -203,6 +206,48 @@ impl GoogleSheetsClient {
         Ok(())
     }
 
+    /// Lee una hoja y retorna como objetos JSON (usa la primera fila como headers)
+    pub async fn read_sheet_as_objects(
+        &self,
+        sheet_name: &str,
+    ) -> Result<Vec<serde_json::Map<String, serde_json::Value>>, AppError> {
+        let range = format!("{}!A:Z", sheet_name);
+
+        let result = self
+            .hub
+            .spreadsheets()
+            .values_get(&self.spreadsheet_id, &range)
+            .doit()
+            .await
+            .map_err(|e| AppError::SheetsError(format!("Failed to read sheet: {}", e)))?;
+
+        let values = result.1.values.unwrap_or_default();
+        
+        if values.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Primera fila son los headers
+        let headers: Vec<String> = values[0].iter().map(|v| v.to_string().to_lowercase()).collect();
+
+        // Convertir filas a objetos
+        let objects: Vec<serde_json::Map<String, serde_json::Value>> = values
+            .into_iter()
+            .skip(1) // Skip header row
+            .map(|row| {
+                let mut obj = serde_json::Map::new();
+                for (i, cell) in row.into_iter().enumerate() {
+                    if let Some(key) = headers.get(i) {
+                        obj.insert(key.clone(), serde_json::Value::String(cell.to_string()));
+                    }
+                }
+                obj
+            })
+            .collect();
+
+        Ok(objects)
+    }
+
     /// Reemplaza todos los datos de una hoja (excepto el header)
     pub async fn replace_sheet_data(
         &self,
@@ -212,14 +257,11 @@ impl GoogleSheetsClient {
         // Primero limpiar los datos existentes (excepto header, fila 1)
         let clear_range = format!("{}!A2:Z10000", sheet_name);
         
-        let clear_value_range = ValueRange {
-            values: Some(vec![vec![]]),
-            ..Default::default()
-        };
+        let clear_request = ClearValuesRequest::default();
 
         self.hub
             .spreadsheets()
-            .values_clear(clear_value_range, &self.spreadsheet_id, &clear_range)
+            .values_clear(clear_request, &self.spreadsheet_id, &clear_range)
             .doit()
             .await
             .map_err(|e| AppError::SheetsError(format!("Failed to clear sheet: {}", e)))?;

@@ -1,13 +1,31 @@
 /**
  * Servicios de la aplicación
  * Laboratorio ISO 17025
- * 
+ *
  * Arquitectura de servicios:
+ * - apiService: Cliente HTTP para backend Rust
  * - driveService: Gestión de archivos y carpetas en Google Drive
  * - sheetsDBService: Base de datos usando Google Sheets
  * - googleSheets: Operaciones de bajo nivel con Sheets API
  * - ensayoSheetService: Workflow de ensayos
  */
+
+// ============================================
+// SERVICIO DE API (Backend Rust)
+// ============================================
+export {
+  default as API,
+  AuthAPI,
+  ProyectosAPI,
+  ClientesAPI,
+  EnsayosAPI,
+  PerforacionesAPI,
+  EquiposAPI,
+  SensoresAPI,
+  SyncAPI,
+  DashboardAPI,
+  setAuthToken,
+} from './apiService.js';
 
 // ============================================
 // SERVICIO DE GOOGLE DRIVE

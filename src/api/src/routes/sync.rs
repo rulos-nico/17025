@@ -48,9 +48,10 @@ pub struct EntitySyncStatus {
 async fn sync_sheets_to_db(
     State(state): State<AppState>,
 ) -> Result<Json<FullSyncSummary>, AppError> {
+    let sheets = super::require_sheets(&state.sheets_client)?;
     let sync_service = SheetsToDatabaseSync::new(
         state.db_pool.clone(),
-        state.sheets_client.clone(),
+        sheets.clone(),
     );
 
     let summary = sync_service.sync_all().await;
@@ -64,9 +65,10 @@ async fn sync_db_to_sheets(
     State(state): State<AppState>,
     Json(request): Json<IncrementalSyncRequest>,
 ) -> Result<Json<FullSyncSummary>, AppError> {
+    let sheets = super::require_sheets(&state.sheets_client)?;
     let sync_service = DatabaseToSheetsSync::new(
         state.db_pool.clone(),
-        state.sheets_client.clone(),
+        sheets.clone(),
     );
 
     // Parsear fecha o usar últimas 24 horas
@@ -86,10 +88,12 @@ async fn sync_db_to_sheets(
 async fn sync_full(
     State(state): State<AppState>,
 ) -> Result<Json<FullSyncResponse>, AppError> {
+    let sheets = super::require_sheets(&state.sheets_client)?;
+    
     // Primero: Sheets -> DB (para obtener datos actuales de Sheets)
     let sheets_to_db = SheetsToDatabaseSync::new(
         state.db_pool.clone(),
-        state.sheets_client.clone(),
+        sheets.clone(),
     );
     let sheets_summary = sheets_to_db.sync_all().await;
 
@@ -97,7 +101,7 @@ async fn sync_full(
     // Nota: Esto solo envía cambios con sync_source = 'db'
     let db_to_sheets = DatabaseToSheetsSync::new(
         state.db_pool.clone(),
-        state.sheets_client.clone(),
+        sheets.clone(),
     );
     let since = Utc::now() - Duration::hours(24);
     let db_summary = db_to_sheets.sync_changes_since(since).await;
@@ -127,12 +131,11 @@ async fn sync_status(
         .await
         .is_ok();
 
-    // Verificar conexión a Sheets
-    let sheets_connected = state
-        .sheets_client
-        .read_sheet("Clientes")
-        .await
-        .is_ok();
+    // Verificar conexión a Sheets (solo si está configurado)
+    let sheets_connected = match super::require_sheets(&state.sheets_client) {
+        Ok(sheets) => sheets.read_sheet("Clientes").await.is_ok(),
+        Err(_) => false,
+    };
 
     // Obtener conteos de cada entidad
     let mut entities = Vec::new();

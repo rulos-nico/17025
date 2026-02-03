@@ -1,3 +1,4 @@
+use super::workflow::WorkflowState;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,7 +10,7 @@ pub struct Ensayo {
     pub proyecto_id: String,
     pub muestra: String,
     pub norma: String,
-    pub workflow_state: String,
+    pub workflow_state: WorkflowState,
     pub fecha_solicitud: String,
     pub fecha_programacion: Option<String>,
     pub fecha_ejecucion: Option<String>,
@@ -22,6 +23,11 @@ pub struct Ensayo {
     pub equipos_utilizados: Vec<String>,
     pub observaciones: Option<String>,
     pub urgente: bool,
+    // PDF-related fields
+    pub pdf_drive_id: Option<String>,
+    pub pdf_url: Option<String>,
+    pub pdf_generated_at: Option<String>,
+    pub perforacion_folder_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -40,7 +46,7 @@ pub struct CreateEnsayo {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateEnsayo {
-    pub workflow_state: Option<String>,
+    pub workflow_state: Option<WorkflowState>,
     pub fecha_programacion: Option<String>,
     pub fecha_ejecucion: Option<String>,
     pub fecha_reporte: Option<String>,
@@ -52,14 +58,18 @@ pub struct UpdateEnsayo {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateEnsayoStatus {
-    pub workflow_state: String,
+    pub workflow_state: WorkflowState,
 }
 
 impl Ensayo {
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 22 {
+        if row.len() < 26 {
             return None;
         }
+
+        // Parsear workflow_state de String a enum, default E1 si falla
+        let workflow_state = row.get(7)?.parse::<WorkflowState>().unwrap_or_default();
+
         Some(Ensayo {
             id: row.get(0)?.clone(),
             codigo: row.get(1)?.clone(),
@@ -68,7 +78,7 @@ impl Ensayo {
             proyecto_id: row.get(4)?.clone(),
             muestra: row.get(5)?.clone(),
             norma: row.get(6)?.clone(),
-            workflow_state: row.get(7)?.clone(),
+            workflow_state,
             fecha_solicitud: row.get(8)?.clone(),
             fecha_programacion: row.get(9).cloned().filter(|s| !s.is_empty()),
             fecha_ejecucion: row.get(10).cloned().filter(|s| !s.is_empty()),
@@ -87,8 +97,13 @@ impl Ensayo {
                 .get(19)
                 .map(|s| s == "true" || s == "1")
                 .unwrap_or(false),
-            created_at: row.get(20)?.clone(),
-            updated_at: row.get(21)?.clone(),
+            // PDF-related fields
+            pdf_drive_id: row.get(20).cloned().filter(|s| !s.is_empty()),
+            pdf_url: row.get(21).cloned().filter(|s| !s.is_empty()),
+            pdf_generated_at: row.get(22).cloned().filter(|s| !s.is_empty()),
+            perforacion_folder_id: row.get(23).cloned().filter(|s| !s.is_empty()),
+            created_at: row.get(24)?.clone(),
+            updated_at: row.get(25)?.clone(),
         })
     }
 
@@ -101,7 +116,7 @@ impl Ensayo {
             self.proyecto_id.clone(),
             self.muestra.clone(),
             self.norma.clone(),
-            self.workflow_state.clone(),
+            self.workflow_state.to_string(),
             self.fecha_solicitud.clone(),
             self.fecha_programacion.clone().unwrap_or_default(),
             self.fecha_ejecucion.clone().unwrap_or_default(),
@@ -114,6 +129,10 @@ impl Ensayo {
             self.equipos_utilizados.join(","),
             self.observaciones.clone().unwrap_or_default(),
             self.urgente.to_string(),
+            self.pdf_drive_id.clone().unwrap_or_default(),
+            self.pdf_url.clone().unwrap_or_default(),
+            self.pdf_generated_at.clone().unwrap_or_default(),
+            self.perforacion_folder_id.clone().unwrap_or_default(),
             self.created_at.clone(),
             self.updated_at.clone(),
         ]

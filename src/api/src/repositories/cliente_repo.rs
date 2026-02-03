@@ -1,4 +1,4 @@
-use sqlx::{FromRow, Row};
+use sqlx::FromRow;
 use chrono::{DateTime, Utc};
 
 use crate::db::DbPool;

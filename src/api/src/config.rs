@@ -2,8 +2,8 @@
 pub struct Config {
     pub port: u16,
     pub google_credentials_path: String,
-    pub spreadsheet_id: String,
-    pub drive_root_folder_id: String,
+    pub spreadsheet_id: Option<String>,
+    pub drive_root_folder_id: Option<String>,
     pub allowed_origins: Vec<String>,
     pub database_url: String,
     pub run_migrations: bool,
@@ -18,10 +18,8 @@ impl Config {
                 .unwrap_or(3000),
             google_credentials_path: std::env::var("GOOGLE_CREDENTIALS_PATH")
                 .unwrap_or_else(|_| "credentials.json".to_string()),
-            spreadsheet_id: std::env::var("GOOGLE_SPREADSHEET_ID")
-                .expect("GOOGLE_SPREADSHEET_ID is required"),
-            drive_root_folder_id: std::env::var("GOOGLE_DRIVE_ROOT_FOLDER_ID")
-                .unwrap_or_default(),
+            spreadsheet_id: std::env::var("GOOGLE_SPREADSHEET_ID").ok(),
+            drive_root_folder_id: std::env::var("GOOGLE_DRIVE_ROOT_FOLDER_ID").ok(),
             allowed_origins: std::env::var("ALLOWED_ORIGINS")
                 .unwrap_or_else(|_| "http://localhost:5173".to_string())
                 .split(',')
@@ -33,5 +31,15 @@ impl Config {
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(true),
         }
+    }
+
+    /// Verifica si Google Sheets está configurado
+    pub fn has_google_sheets(&self) -> bool {
+        self.spreadsheet_id.is_some()
+    }
+
+    /// Verifica si Google Drive está configurado
+    pub fn has_google_drive(&self) -> bool {
+        std::path::Path::new(&self.google_credentials_path).exists()
     }
 }
