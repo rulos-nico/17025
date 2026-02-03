@@ -4,7 +4,14 @@ import { Badge, Card, Modal } from '../components/ui';
 import { useEnsayoCompleto } from '../hooks/useEnsayoSheet';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ProyectosAPI, ClientesAPI, PerforacionesAPI, EnsayosAPI } from '../services/apiService';
-import { TIPOS_ENSAYO, ESTADO_PROYECTO, ESTADO_MUESTRA, getWorkflowInfo } from '../config';
+import {
+  TIPOS_ENSAYO,
+  TIPOS_MUESTRA,
+  getTipoMuestra,
+  ESTADO_PROYECTO,
+  ESTADO_MUESTRA,
+  getWorkflowInfo,
+} from '../config';
 
 // Alias para perforaciones (mismo estado que muestras)
 const ESTADO_PERFORACION = {
@@ -87,12 +94,54 @@ const MOCK_PERFORACIONES = [
   },
 ];
 
+const MOCK_MUESTRAS = [
+  // Muestras de perf-001 (Perforación Sector A - Proyecto 1)
+  {
+    id: 'mue-001',
+    codigo: 'M-001',
+    perforacionId: 'perf-001',
+    profundidadInicio: 0.5,
+    profundidadFin: 1.0,
+    tipoMuestra: 'alterado',
+    descripcion: 'Arcilla café oscura con gravas',
+  },
+  {
+    id: 'mue-002',
+    codigo: 'M-002',
+    perforacionId: 'perf-001',
+    profundidadInicio: 3.0,
+    profundidadFin: 3.5,
+    tipoMuestra: 'spt',
+    descripcion: 'Arena limosa, N=15',
+  },
+  // Muestras de perf-004 (Perforación Estribo 1 - Proyecto 2)
+  {
+    id: 'mue-003',
+    codigo: 'M-001',
+    perforacionId: 'perf-004',
+    profundidadInicio: 2.0,
+    profundidadFin: 2.5,
+    tipoMuestra: 'shelby',
+    descripcion: 'Limo arcilloso gris',
+  },
+  {
+    id: 'mue-004',
+    codigo: 'M-002',
+    perforacionId: 'perf-004',
+    profundidadInicio: 8.0,
+    profundidadFin: 10.0,
+    tipoMuestra: 'roca',
+    descripcion: 'Basalto fracturado RQD=70%',
+  },
+];
+
 const MOCK_ENSAYOS = [
   {
     id: 'ens-001',
     codigo: 'ENS-2025-001',
     tipo: 'traccion',
     perforacionId: 'perf-001',
+    muestraId: 'mue-001',
     proyectoId: 'pry-001',
     workflow_state: 'E6',
     norma: 'ASTM E8',
@@ -102,6 +151,7 @@ const MOCK_ENSAYOS = [
     codigo: 'ENS-2025-002',
     tipo: 'dureza',
     perforacionId: 'perf-001',
+    muestraId: 'mue-001',
     proyectoId: 'pry-001',
     workflow_state: 'E1',
     norma: 'ASTM E18',
@@ -111,6 +161,7 @@ const MOCK_ENSAYOS = [
     codigo: 'ENS-2025-003',
     tipo: 'traccion',
     perforacionId: 'perf-004',
+    muestraId: 'mue-003',
     proyectoId: 'pry-002',
     workflow_state: 'E9',
     norma: 'ASTM E8',
@@ -123,6 +174,7 @@ const MOCK_ENSAYOS = [
 
 const canCreateProject = rol => ['admin', 'coordinador'].includes(rol);
 const canRelatePhysicalSample = rol => ['admin', 'coordinador', 'tecnico'].includes(rol);
+const canAddMuestras = rol => ['admin', 'coordinador', 'tecnico'].includes(rol);
 const canRequestTest = rol => ['cliente'].includes(rol);
 // Nota: canCreatePerforations se usará cuando se implemente la función de agregar perforaciones a proyectos existentes
 const _canCreatePerforations = rol => ['admin', 'coordinador'].includes(rol);
@@ -470,7 +522,7 @@ function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
 }
 
 // ============================================
-// MODAL: RELACIONAR MUESTRA FÍSICA
+// MODAL: RELACIONAR MUESTRA FÍSICA + AGREGAR MUESTRAS
 // ============================================
 
 function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loading }) {
@@ -481,26 +533,69 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
     condicionMuestra: 'buena',
   });
 
+  // Lista de muestras a crear
+  const [muestrasForm, setMuestrasForm] = useState([
+    { profundidadInicio: '', profundidadFin: '', tipoMuestra: 'alterado', descripcion: '' },
+  ]);
+
+  const handleAddMuestra = () => {
+    setMuestrasForm([
+      ...muestrasForm,
+      { profundidadInicio: '', profundidadFin: '', tipoMuestra: 'alterado', descripcion: '' },
+    ]);
+  };
+
+  const handleRemoveMuestra = index => {
+    if (muestrasForm.length > 1) {
+      setMuestrasForm(muestrasForm.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleMuestraChange = (index, field, value) => {
+    const updated = [...muestrasForm];
+    updated[index][field] = value;
+    setMuestrasForm(updated);
+  };
+
   const handleSubmit = e => {
     e.preventDefault();
+
+    // Filtrar muestras válidas (que tengan al menos profundidad inicio)
+    const muestrasValidas = muestrasForm.filter(m => m.profundidadInicio !== '');
+
     onRelate({
       perforacionId: perforacion.id,
       ...form,
+      muestras: muestrasValidas,
     });
+
+    // Reset form
     setForm({
       codigoMuestra: '',
       fechaRecepcion: new Date().toISOString().split('T')[0],
       observaciones: '',
       condicionMuestra: 'buena',
     });
+    setMuestrasForm([
+      { profundidadInicio: '', profundidadFin: '', tipoMuestra: 'alterado', descripcion: '' },
+    ]);
   };
 
   if (!perforacion) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Relacionar Muestra Física">
+    <Modal isOpen={isOpen} onClose={onClose} title="Relacionar Perforación y Agregar Muestras">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            maxHeight: '70vh',
+            overflowY: 'auto',
+            paddingRight: '8px',
+          }}
+        >
           {/* Info de la perforación */}
           <div
             style={{
@@ -521,85 +616,279 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
             )}
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Código de Muestra Física *
-            </label>
-            <input
-              type="text"
-              value={form.codigoMuestra}
-              onChange={e => setForm({ ...form, codigoMuestra: e.target.value })}
-              required
-              placeholder="Ej: MF-2025-0001"
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
-            />
-            <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
-              Código de la etiqueta de la muestra física recibida
-            </div>
-          </div>
+          {/* Datos de recepción */}
+          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+            <legend style={{ fontWeight: '600', padding: '0 8px' }}>Datos de Recepción</legend>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Fecha de Recepción *
-              </label>
-              <input
-                type="date"
-                value={form.fechaRecepcion}
-                onChange={e => setForm({ ...form, fechaRecepcion: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                  Código de Muestra Física *
+                </label>
+                <input
+                  type="text"
+                  value={form.codigoMuestra}
+                  onChange={e => setForm({ ...form, codigoMuestra: e.target.value })}
+                  required
+                  placeholder="Ej: MF-2025-0001"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #D1D5DB',
+                  }}
+                />
+                <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                  Código de la etiqueta de la muestra física recibida
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                    Fecha de Recepción *
+                  </label>
+                  <input
+                    type="date"
+                    value={form.fechaRecepcion}
+                    onChange={e => setForm({ ...form, fechaRecepcion: e.target.value })}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #D1D5DB',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                    Condición de Muestra
+                  </label>
+                  <select
+                    value={form.condicionMuestra}
+                    onChange={e => setForm({ ...form, condicionMuestra: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #D1D5DB',
+                    }}
+                  >
+                    <option value="buena">Buena</option>
+                    <option value="regular">Regular</option>
+                    <option value="deteriorada">Deteriorada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                  Observaciones de Recepción
+                </label>
+                <textarea
+                  value={form.observaciones}
+                  onChange={e => setForm({ ...form, observaciones: e.target.value })}
+                  rows={2}
+                  placeholder="Observaciones de recepción..."
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #D1D5DB',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Condición de Muestra
-              </label>
-              <select
-                value={form.condicionMuestra}
-                onChange={e => setForm({ ...form, condicionMuestra: e.target.value })}
+          </fieldset>
+
+          {/* Muestras */}
+          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
+            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
+              Muestras de la Perforación ({muestrasForm.length})
+            </legend>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {muestrasForm.map((muestra, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: '#FFFBEB',
+                    borderRadius: '6px',
+                    border: '1px solid #FDE68A',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <span style={{ fontWeight: '500', fontSize: '0.875rem', color: '#92400E' }}>
+                      Muestra M-{String(index + 1).padStart(3, '0')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMuestra(index)}
+                      disabled={muestrasForm.length <= 1}
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: muestrasForm.length <= 1 ? '#E5E7EB' : '#EF4444',
+                        color: 'white',
+                        cursor: muestrasForm.length <= 1 ? 'not-allowed' : 'pointer',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: '8px',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: '2px',
+                          fontSize: '0.75rem',
+                          color: '#6B7280',
+                        }}
+                      >
+                        Prof. Inicio (m) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={muestra.profundidadInicio}
+                        onChange={e =>
+                          handleMuestraChange(index, 'profundidadInicio', e.target.value)
+                        }
+                        placeholder="0.0"
+                        style={{
+                          width: '100%',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          border: '1px solid #D1D5DB',
+                          fontSize: '0.875rem',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: '2px',
+                          fontSize: '0.75rem',
+                          color: '#6B7280',
+                        }}
+                      >
+                        Prof. Fin (m) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={muestra.profundidadFin}
+                        onChange={e => handleMuestraChange(index, 'profundidadFin', e.target.value)}
+                        placeholder="0.5"
+                        style={{
+                          width: '100%',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          border: '1px solid #D1D5DB',
+                          fontSize: '0.875rem',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          marginBottom: '2px',
+                          fontSize: '0.75rem',
+                          color: '#6B7280',
+                        }}
+                      >
+                        Tipo de Muestra
+                      </label>
+                      <select
+                        value={muestra.tipoMuestra}
+                        onChange={e => handleMuestraChange(index, 'tipoMuestra', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          border: '1px solid #D1D5DB',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        {TIPOS_MUESTRA.map(tipo => (
+                          <option key={tipo.id} value={tipo.id}>
+                            {tipo.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        marginBottom: '2px',
+                        fontSize: '0.75rem',
+                        color: '#6B7280',
+                      }}
+                    >
+                      Descripción
+                    </label>
+                    <input
+                      type="text"
+                      value={muestra.descripcion}
+                      onChange={e => handleMuestraChange(index, 'descripcion', e.target.value)}
+                      placeholder="Ej: Arcilla café con gravas, N=15..."
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        borderRadius: '4px',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={handleAddMuestra}
                 style={{
-                  width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px dashed #F59E0B',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  color: '#92400E',
+                  fontSize: '0.875rem',
                 }}
               >
-                <option value="buena">Buena</option>
-                <option value="regular">Regular</option>
-                <option value="deteriorada">Deteriorada</option>
-              </select>
+                + Agregar otra muestra
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Observaciones
-            </label>
-            <textarea
-              value={form.observaciones}
-              onChange={e => setForm({ ...form, observaciones: e.target.value })}
-              rows={2}
-              placeholder="Observaciones de recepción..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                resize: 'vertical',
-              }}
-            />
-          </div>
+          </fieldset>
 
           <div
             style={{
@@ -609,8 +898,8 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
               fontSize: '0.875rem',
             }}
           >
-            <strong>Nota:</strong> Al relacionar la muestra, se notificará automáticamente al
-            cliente para que pueda solicitar los ensayos.
+            <strong>Nota:</strong> Al relacionar la perforación y registrar las muestras, el cliente
+            podrá solicitar ensayos para cada muestra específica.
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -639,7 +928,204 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              {loading ? 'Relacionando...' : 'Relacionar Muestra'}
+              {loading ? 'Relacionando...' : 'Relacionar y Guardar'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: AGREGAR MUESTRA A PERFORACIÓN RELACIONADA
+// ============================================
+
+function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExistentes, loading }) {
+  const [form, setForm] = useState({
+    profundidadInicio: '',
+    profundidadFin: '',
+    tipoMuestra: 'alterado',
+    descripcion: '',
+  });
+
+  const handleSubmit = e => {
+    e.preventDefault();
+
+    // Calcular el siguiente código de muestra
+    const siguienteNumero = muestrasExistentes.length + 1;
+    const codigo = `M-${String(siguienteNumero).padStart(3, '0')}`;
+
+    onAdd({
+      perforacionId: perforacion.id,
+      codigo,
+      profundidadInicio: parseFloat(form.profundidadInicio),
+      profundidadFin: parseFloat(form.profundidadFin),
+      tipoMuestra: form.tipoMuestra,
+      descripcion: form.descripcion,
+    });
+
+    // Reset form
+    setForm({
+      profundidadInicio: '',
+      profundidadFin: '',
+      tipoMuestra: 'alterado',
+      descripcion: '',
+    });
+  };
+
+  if (!perforacion) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Nueva Muestra">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Info de la perforación */}
+          <div
+            style={{
+              padding: '12px',
+              backgroundColor: '#DBEAFE',
+              borderRadius: '8px',
+              border: '1px solid #3B82F6',
+            }}
+          >
+            <div style={{ fontWeight: '600', color: '#1E40AF' }}>Perforación:</div>
+            <div style={{ marginTop: '4px' }}>
+              <strong>{perforacion.codigo}</strong> - {perforacion.descripcion}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#1E40AF', marginTop: '4px' }}>
+              Muestra física: {perforacion.muestraFisica}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '2px' }}>
+              Muestras registradas: {muestrasExistentes.length}
+            </div>
+          </div>
+
+          {/* Código automático */}
+          <div
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#F3F4F6',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+            }}
+          >
+            <strong>Código asignado:</strong> M-
+            {String(muestrasExistentes.length + 1).padStart(3, '0')}
+          </div>
+
+          {/* Formulario */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                Profundidad Inicio (m) *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.profundidadInicio}
+                onChange={e => setForm({ ...form, profundidadInicio: e.target.value })}
+                required
+                placeholder="0.0"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #D1D5DB',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                Profundidad Fin (m) *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.profundidadFin}
+                onChange={e => setForm({ ...form, profundidadFin: e.target.value })}
+                required
+                placeholder="0.5"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #D1D5DB',
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Tipo de Muestra *
+            </label>
+            <select
+              value={form.tipoMuestra}
+              onChange={e => setForm({ ...form, tipoMuestra: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+              }}
+            >
+              {TIPOS_MUESTRA.map(tipo => (
+                <option key={tipo.id} value={tipo.id}>
+                  {tipo.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Descripción
+            </label>
+            <textarea
+              value={form.descripcion}
+              onChange={e => setForm({ ...form, descripcion: e.target.value })}
+              rows={2}
+              placeholder="Ej: Arcilla café con gravas, N=15..."
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: '#F59E0B',
+                color: 'white',
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? 'Agregando...' : 'Agregar Muestra'}
             </button>
           </div>
         </div>
@@ -652,7 +1138,15 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
 // MODAL: SOLICITAR ENSAYO (PARA CLIENTES)
 // ============================================
 
-function SolicitarEnsayoModal({ isOpen, onClose, onCreate, perforacion, proyecto, loading }) {
+function SolicitarEnsayoModal({
+  isOpen,
+  onClose,
+  onCreate,
+  perforacion,
+  muestra,
+  proyecto,
+  loading,
+}) {
   const [form, setForm] = useState({
     tipo: '',
     norma: '',
@@ -677,8 +1171,11 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, perforacion, proyecto
       const datosEnsayo = {
         ...form,
         perforacionId: perforacion.id,
+        muestraId: muestra?.id || null,
         proyectoId: proyecto.id,
-        muestra: perforacion.descripcion,
+        muestra: muestra
+          ? `${muestra.codigo} (${muestra.profundidadInicio}m-${muestra.profundidadFin}m)`
+          : perforacion.descripcion,
       };
 
       const ensayoCompleto = await crearEnsayoCompleto(datosEnsayo);
@@ -693,8 +1190,11 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, perforacion, proyecto
       onCreate({
         ...form,
         perforacionId: perforacion.id,
+        muestraId: muestra?.id || null,
         proyectoId: proyecto.id,
-        muestra: perforacion.descripcion,
+        muestra: muestra
+          ? `${muestra.codigo} (${muestra.profundidadInicio}m-${muestra.profundidadFin}m)`
+          : perforacion.descripcion,
       });
       setForm({ tipo: '', norma: '', observaciones: '', cantidad: 1 });
     } finally {
@@ -705,16 +1205,52 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, perforacion, proyecto
   const tipoSeleccionado = TIPOS_ENSAYO.find(t => t.id === form.tipo);
   const cotizadosRestantes = tipoSeleccionado ? ensayosDisponibles[form.tipo] || 0 : 0;
 
+  // Obtener información del tipo de muestra
+  const tipoMuestraInfo = muestra ? getTipoMuestra(muestra.tipoMuestra) : null;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Solicitar Ensayo - ${perforacion?.codigo}`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Solicitar Ensayo${muestra ? ` - ${muestra.codigo}` : ''}`}
+    >
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Información de la muestra */}
           <div style={{ padding: '12px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
-            <strong>Muestra:</strong> {perforacion?.descripcion}
-            {perforacion?.muestraFisica && (
-              <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
-                <strong>Código físico:</strong> {perforacion.muestraFisica}
-              </div>
+            {muestra ? (
+              <>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}
+                >
+                  <div>
+                    <strong>Muestra:</strong> {muestra.codigo}
+                    <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '2px' }}>
+                      Profundidad: {muestra.profundidadInicio}m - {muestra.profundidadFin}m
+                    </div>
+                  </div>
+                  {tipoMuestraInfo && (
+                    <Badge color={tipoMuestraInfo.color}>{tipoMuestraInfo.nombre}</Badge>
+                  )}
+                </div>
+                {muestra.descripcion && (
+                  <div style={{ fontSize: '0.875rem', color: '#374151', marginTop: '8px' }}>
+                    {muestra.descripcion}
+                  </div>
+                )}
+                <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '8px' }}>
+                  Perforación: {perforacion?.codigo} • Muestra física: {perforacion?.muestraFisica}
+                </div>
+              </>
+            ) : (
+              <>
+                <strong>Perforación:</strong> {perforacion?.descripcion}
+                {perforacion?.muestraFisica && (
+                  <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
+                    <strong>Código físico:</strong> {perforacion.muestraFisica}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -849,16 +1385,19 @@ export default function Proyectos() {
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [perforaciones, setPerforaciones] = useState([]);
+  const [muestras, setMuestras] = useState([]);
   const [ensayos, setEnsayos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Selección actual
   const [selectedProyecto, setSelectedProyecto] = useState(null);
   const [selectedPerforacion, setSelectedPerforacion] = useState(null);
+  const [selectedMuestra, setSelectedMuestra] = useState(null);
 
   // Modales
   const [showNuevoProyecto, setShowNuevoProyecto] = useState(false);
   const [showRelacionarMuestra, setShowRelacionarMuestra] = useState(false);
+  const [showAgregarMuestra, setShowAgregarMuestra] = useState(false);
   const [showSolicitarEnsayo, setShowSolicitarEnsayo] = useState(false);
 
   // Filtros
@@ -873,6 +1412,7 @@ export default function Proyectos() {
         setProyectos(MOCK_PROYECTOS);
         setClientes(MOCK_CLIENTES);
         setPerforaciones(MOCK_PERFORACIONES);
+        setMuestras(MOCK_MUESTRAS);
         setEnsayos(MOCK_ENSAYOS);
         setLoading(false);
         return;
@@ -890,6 +1430,7 @@ export default function Proyectos() {
         setProyectos(proyectosRes || []);
         setClientes(clientesRes || []);
         setPerforaciones(perforacionesRes || []);
+        setMuestras([]); // TODO: Cargar muestras desde API cuando esté disponible
         setEnsayos(ensayosRes || []);
       } catch (err) {
         console.error('Error cargando datos:', err);
@@ -897,6 +1438,7 @@ export default function Proyectos() {
         setProyectos([]);
         setClientes([]);
         setPerforaciones([]);
+        setMuestras([]);
         setEnsayos([]);
       } finally {
         setLoading(false);
@@ -959,7 +1501,19 @@ export default function Proyectos() {
       return perf;
     });
 
+    // Crear las muestras asociadas a la perforación
+    const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
+      id: `mue-${Date.now()}-${index}`,
+      codigo: `M-${String(index + 1).padStart(3, '0')}`,
+      perforacionId: data.perforacionId,
+      profundidadInicio: parseFloat(muestra.profundidadInicio),
+      profundidadFin: parseFloat(muestra.profundidadFin),
+      tipoMuestra: muestra.tipoMuestra,
+      descripcion: muestra.descripcion,
+    }));
+
     setPerforaciones(updatedPerforaciones);
+    setMuestras([...muestras, ...nuevasMuestras]);
     setShowRelacionarMuestra(false);
 
     // Actualizar la perforación seleccionada
@@ -977,6 +1531,7 @@ export default function Proyectos() {
       tipo: data.tipo,
       norma: data.norma,
       perforacionId: data.perforacionId,
+      muestraId: data.muestraId || null,
       proyectoId: selectedProyecto.id,
       workflow_state: 'E1',
       observaciones: data.observaciones,
@@ -985,6 +1540,22 @@ export default function Proyectos() {
 
     setEnsayos([...ensayos, nuevoEnsayo]);
     setShowSolicitarEnsayo(false);
+    setSelectedMuestra(null);
+  };
+
+  const handleAgregarMuestra = async data => {
+    const nuevaMuestra = {
+      id: `mue-${Date.now()}`,
+      codigo: data.codigo,
+      perforacionId: data.perforacionId,
+      profundidadInicio: data.profundidadInicio,
+      profundidadFin: data.profundidadFin,
+      tipoMuestra: data.tipoMuestra,
+      descripcion: data.descripcion,
+    };
+
+    setMuestras([...muestras, nuevaMuestra]);
+    setShowAgregarMuestra(false);
   };
 
   // Datos filtrados y relacionados
@@ -1001,6 +1572,13 @@ export default function Proyectos() {
   const ensayosPerforacion = selectedPerforacion
     ? ensayos.filter(e => e.perforacionId === selectedPerforacion.id)
     : [];
+
+  const muestrasPerforacion = selectedPerforacion
+    ? muestras.filter(m => m.perforacionId === selectedPerforacion.id)
+    : [];
+
+  // Obtener ensayos por muestra para la vista jerárquica
+  const getEnsayosMuestra = muestraId => ensayos.filter(e => e.muestraId === muestraId);
 
   const getClienteNombre = clienteId => {
     return clientes.find(c => c.id === clienteId)?.nombre || 'Desconocido';
@@ -1352,7 +1930,7 @@ export default function Proyectos() {
           )}
         </div>
 
-        {/* COLUMNA 3: ENSAYOS */}
+        {/* COLUMNA 3: MUESTRAS Y ENSAYOS */}
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div
             style={{
@@ -1362,23 +1940,30 @@ export default function Proyectos() {
               marginBottom: '16px',
             }}
           >
-            <h3 style={{ margin: 0 }}>Ensayos</h3>
+            <h3 style={{ margin: 0 }}>
+              Muestras
+              {selectedPerforacion && muestrasPerforacion.length > 0 && (
+                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
+                  ({muestrasPerforacion.length})
+                </span>
+              )}
+            </h3>
             {selectedPerforacion &&
               selectedPerforacion.estado === 'relacionado' &&
-              canRequestTest(userRole) && (
+              canAddMuestras(userRole) && (
                 <button
-                  onClick={() => setShowSolicitarEnsayo(true)}
+                  onClick={() => setShowAgregarMuestra(true)}
                   style={{
                     padding: '6px 12px',
                     borderRadius: '4px',
                     border: 'none',
-                    backgroundColor: '#10B981',
+                    backgroundColor: '#F59E0B',
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '0.875rem',
                   }}
                 >
-                  + Solicitar
+                  + Agregar
                 </button>
               )}
           </div>
@@ -1438,92 +2023,250 @@ export default function Proyectos() {
                 gap: '8px',
               }}
             >
-              {ensayosPerforacion.length === 0 ? (
+              {muestrasPerforacion.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                  No hay ensayos solicitados
-                  {canRequestTest(userRole) && (
+                  No hay muestras registradas
+                  {canAddMuestras(userRole) && (
                     <div style={{ marginTop: '8px' }}>
                       <button
-                        onClick={() => setShowSolicitarEnsayo(true)}
+                        onClick={() => setShowAgregarMuestra(true)}
                         style={{
                           padding: '8px 16px',
                           borderRadius: '4px',
                           border: 'none',
-                          backgroundColor: '#10B981',
+                          backgroundColor: '#F59E0B',
                           color: 'white',
                           cursor: 'pointer',
                         }}
                       >
-                        Solicitar primer ensayo
+                        Agregar primera muestra
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                ensayosPerforacion.map(ensayo => {
-                  const workflow = getWorkflowInfo(ensayo.workflow_state);
-                  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+                muestrasPerforacion
+                  .sort((a, b) => a.profundidadInicio - b.profundidadInicio)
+                  .map(muestra => {
+                    const tipoMuestra = getTipoMuestra(muestra.tipoMuestra);
+                    const ensayosMuestra = getEnsayosMuestra(muestra.id);
+                    const isSelected = selectedMuestra?.id === muestra.id;
 
-                  return (
-                    <Card key={ensayo.id}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'start',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                            {ensayo.codigo}
+                    return (
+                      <div key={muestra.id}>
+                        {/* Card de la muestra */}
+                        <Card
+                          onClick={() => setSelectedMuestra(isSelected ? null : muestra)}
+                          selected={isSelected}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'start',
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1rem' }}>📍</span>
+                                <div>
+                                  <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
+                                    {muestra.codigo}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                    {muestra.profundidadInicio}m - {muestra.profundidadFin}m
+                                  </div>
+                                </div>
+                              </div>
+                              {muestra.descripcion && (
+                                <div
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    color: '#374151',
+                                    marginTop: '4px',
+                                    marginLeft: '28px',
+                                  }}
+                                >
+                                  {muestra.descripcion}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                alignItems: 'flex-end',
+                              }}
+                            >
+                              <Badge color={tipoMuestra?.color || '#6B7280'}>
+                                {tipoMuestra?.nombre || muestra.tipoMuestra}
+                              </Badge>
+                              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                                {ensayosMuestra.length} ensayo
+                                {ensayosMuestra.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.875rem', color: '#374151' }}>
-                            {tipoEnsayo?.nombre || ensayo.tipo}
-                          </div>
-                          {ensayo.norma && (
-                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                              Norma: {ensayo.norma}
+
+                          {/* Botón solicitar ensayo (solo para clientes) */}
+                          {canRequestTest(userRole) && (
+                            <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setSelectedMuestra(muestra);
+                                  setShowSolicitarEnsayo(true);
+                                }}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  backgroundColor: '#10B981',
+                                  color: 'white',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                + Solicitar Ensayo
+                              </button>
                             </div>
                           )}
-                        </div>
-                        <Badge color={workflow.color}>{workflow.nombre}</Badge>
-                      </div>
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                        {ensayo.spreadsheet_url && (
-                          <a
-                            href={ensayo.spreadsheet_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        </Card>
+
+                        {/* Ensayos de la muestra (expandible) */}
+                        {isSelected && ensayosMuestra.length > 0 && (
+                          <div
                             style={{
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: '#34A853',
-                              color: 'white',
-                              textDecoration: 'none',
-                              fontSize: '0.75rem',
+                              marginLeft: '20px',
+                              marginTop: '4px',
+                              borderLeft: '2px solid #E5E7EB',
+                              paddingLeft: '12px',
                             }}
-                            onClick={e => e.stopPropagation()}
                           >
-                            Abrir Sheet
-                          </a>
+                            {ensayosMuestra.map(ensayo => {
+                              const workflow = getWorkflowInfo(ensayo.workflow_state);
+                              const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+
+                              return (
+                                <div
+                                  key={ensayo.id}
+                                  style={{
+                                    padding: '8px 12px',
+                                    marginBottom: '4px',
+                                    backgroundColor: '#F9FAFB',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                    }}
+                                  >
+                                    <div>
+                                      <span style={{ fontWeight: '500' }}>{ensayo.codigo}</span>
+                                      <span style={{ color: '#6B7280', marginLeft: '8px' }}>
+                                        {tipoEnsayo?.nombre || ensayo.tipo}
+                                      </span>
+                                    </div>
+                                    <Badge color={workflow.color} small>
+                                      {workflow.nombre}
+                                    </Badge>
+                                  </div>
+                                  <div
+                                    style={{
+                                      marginTop: '4px',
+                                      display: 'flex',
+                                      gap: '8px',
+                                    }}
+                                  >
+                                    {ensayo.spreadsheet_url && (
+                                      <a
+                                        href={ensayo.spreadsheet_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          backgroundColor: '#34A853',
+                                          color: 'white',
+                                          textDecoration: 'none',
+                                          fontSize: '0.7rem',
+                                        }}
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        Sheet
+                                      </a>
+                                    )}
+                                    <a
+                                      href={`/ensayos?id=${ensayo.id}`}
+                                      style={{
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        backgroundColor: '#3B82F6',
+                                        color: 'white',
+                                        textDecoration: 'none',
+                                        fontSize: '0.7rem',
+                                      }}
+                                    >
+                                      Ver
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
-                        <a
-                          href={`/ensayos?id=${ensayo.id}`}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            backgroundColor: '#3B82F6',
-                            color: 'white',
-                            textDecoration: 'none',
-                            fontSize: '0.75rem',
-                          }}
-                        >
-                          Ver detalle
-                        </a>
                       </div>
-                    </Card>
-                  );
-                })
+                    );
+                  })
+              )}
+
+              {/* Mostrar ensayos sin muestra asignada (legacy) */}
+              {ensayosPerforacion.filter(e => !e.muestraId).length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: '#9CA3AF',
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Ensayos sin muestra asignada
+                  </div>
+                  {ensayosPerforacion
+                    .filter(e => !e.muestraId)
+                    .map(ensayo => {
+                      const workflow = getWorkflowInfo(ensayo.workflow_state);
+                      const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+
+                      return (
+                        <Card key={ensayo.id}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'start',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
+                                {ensayo.codigo}
+                              </div>
+                              <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                                {tipoEnsayo?.nombre || ensayo.tipo}
+                              </div>
+                            </div>
+                            <Badge color={workflow.color}>{workflow.nombre}</Badge>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                </div>
               )}
             </div>
           )}
@@ -1582,12 +2325,27 @@ export default function Proyectos() {
         loading={false}
       />
 
+      {selectedPerforacion && (
+        <AgregarMuestraModal
+          isOpen={showAgregarMuestra}
+          onClose={() => setShowAgregarMuestra(false)}
+          onAdd={handleAgregarMuestra}
+          perforacion={selectedPerforacion}
+          muestrasExistentes={muestrasPerforacion}
+          loading={false}
+        />
+      )}
+
       {selectedPerforacion && selectedProyecto && (
         <SolicitarEnsayoModal
           isOpen={showSolicitarEnsayo}
-          onClose={() => setShowSolicitarEnsayo(false)}
+          onClose={() => {
+            setShowSolicitarEnsayo(false);
+            setSelectedMuestra(null);
+          }}
           onCreate={handleSolicitarEnsayo}
           perforacion={selectedPerforacion}
+          muestra={selectedMuestra}
           proyecto={selectedProyecto}
           loading={false}
         />
