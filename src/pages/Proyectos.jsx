@@ -1378,9 +1378,19 @@ function SolicitarEnsayoModal({
 // COMPONENTE PRINCIPAL
 // ============================================
 
+const ROLES_DISPONIBLES = [
+  { id: 'admin', nombre: 'Administrador' },
+  { id: 'coordinador', nombre: 'Coordinador' },
+  { id: 'tecnico', nombre: 'Técnico' },
+  { id: 'cliente', nombre: 'Cliente' },
+];
+
 export default function Proyectos() {
   const { user, isBypassMode } = useGoogleAuth();
-  const userRole = user?.rol || 'tecnico';
+
+  // En modo bypass, permitir cambiar rol para pruebas
+  const [devRole, setDevRole] = useState('tecnico');
+  const userRole = isBypassMode ? devRole : user?.rol || 'tecnico';
 
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -1399,6 +1409,9 @@ export default function Proyectos() {
   const [showRelacionarMuestra, setShowRelacionarMuestra] = useState(false);
   const [showAgregarMuestra, setShowAgregarMuestra] = useState(false);
   const [showSolicitarEnsayo, setShowSolicitarEnsayo] = useState(false);
+
+  // Perforación seleccionada para agregar muestra (desde columna 2)
+  const [perforacionParaMuestra, setPerforacionParaMuestra] = useState(null);
 
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -1604,28 +1617,50 @@ export default function Proyectos() {
 
   return (
     <PageLayout title="Proyectos">
-      {/* Indicador de modo y rol */}
+      {/* Indicador de modo y selector de rol */}
       {isBypassMode && (
         <div
           style={{
             marginBottom: '16px',
-            padding: '8px 12px',
+            padding: '12px 16px',
             backgroundColor: '#FEF3C7',
             borderRadius: '6px',
             fontSize: '0.875rem',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
-          <span>
-            Modo Demo - Rol actual: <strong>{userRole}</strong>
-          </span>
-          <span style={{ color: '#92400E' }}>
-            {canCreateProject(userRole) && '✓ Crear proyectos '}
-            {canRelatePhysicalSample(userRole) && '✓ Relacionar muestras '}
-            {canRequestTest(userRole) && '✓ Solicitar ensayos'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontWeight: '500' }}>Modo Demo</span>
+            <select
+              value={devRole}
+              onChange={e => setDevRole(e.target.value)}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '4px',
+                border: '1px solid #F59E0B',
+                backgroundColor: 'white',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+            >
+              {ROLES_DISPONIBLES.map(rol => (
+                <option key={rol.id} value={rol.id}>
+                  {rol.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ color: '#92400E', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {canCreateProject(userRole) && <span>✓ Crear proyectos</span>}
+            {canRelatePhysicalSample(userRole) && <span>✓ Relacionar muestras</span>}
+            {canAddMuestras(userRole) && <span>✓ Agregar muestras</span>}
+            {canRequestTest(userRole) && <span>✓ Solicitar ensayos</span>}
+          </div>
         </div>
       )}
 
@@ -1848,8 +1883,11 @@ export default function Proyectos() {
                   perforacionesProyecto.map(perf => {
                     const estado = getEstadoPerforacion(perf.estado);
                     const numEnsayos = ensayos.filter(e => e.perforacionId === perf.id).length;
+                    const numMuestras = muestras.filter(m => m.perforacionId === perf.id).length;
                     const puedeRelacionar =
                       perf.estado === 'sin_relacionar' && canRelatePhysicalSample(userRole);
+                    const puedeAgregarMuestra =
+                      perf.estado === 'relacionado' && canAddMuestras(userRole);
 
                     return (
                       <Card
@@ -1915,10 +1953,31 @@ export default function Proyectos() {
                                 Relacionar
                               </button>
                             )}
+                            {puedeAgregarMuestra && (
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setPerforacionParaMuestra(perf);
+                                  setShowAgregarMuestra(true);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  backgroundColor: '#3B82F6',
+                                  color: 'white',
+                                  cursor: 'pointer',
+                                  fontSize: '0.7rem',
+                                }}
+                              >
+                                + Muestra
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
-                          {numEnsayos} ensayos
+                          {numMuestras} muestra{numMuestras !== 1 ? 's' : ''} • {numEnsayos} ensayo
+                          {numEnsayos !== 1 ? 's' : ''}
                           {perf.fecha_recepcion && ` • Recibido: ${perf.fecha_recepcion}`}
                         </div>
                       </Card>
@@ -1941,31 +2000,13 @@ export default function Proyectos() {
             }}
           >
             <h3 style={{ margin: 0 }}>
-              Muestras
+              Muestras y Ensayos
               {selectedPerforacion && muestrasPerforacion.length > 0 && (
                 <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
                   ({muestrasPerforacion.length})
                 </span>
               )}
             </h3>
-            {selectedPerforacion &&
-              selectedPerforacion.estado === 'relacionado' &&
-              canAddMuestras(userRole) && (
-                <button
-                  onClick={() => setShowAgregarMuestra(true)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    border: 'none',
-                    backgroundColor: '#F59E0B',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  + Agregar
-                </button>
-              )}
           </div>
 
           {!selectedPerforacion ? (
@@ -2025,24 +2066,12 @@ export default function Proyectos() {
             >
               {muestrasPerforacion.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                  No hay muestras registradas
-                  {canAddMuestras(userRole) && (
-                    <div style={{ marginTop: '8px' }}>
-                      <button
-                        onClick={() => setShowAgregarMuestra(true)}
-                        style={{
-                          padding: '8px 16px',
-                          borderRadius: '4px',
-                          border: 'none',
-                          backgroundColor: '#F59E0B',
-                          color: 'white',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Agregar primera muestra
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>📋</div>
+                  <div>No hay muestras registradas</div>
+                  <div style={{ fontSize: '0.75rem', marginTop: '8px', color: '#9CA3AF' }}>
+                    El personal del laboratorio debe agregar muestras desde la columna de
+                    perforaciones
+                  </div>
                 </div>
               ) : (
                 muestrasPerforacion
@@ -2325,13 +2354,16 @@ export default function Proyectos() {
         loading={false}
       />
 
-      {selectedPerforacion && (
+      {perforacionParaMuestra && (
         <AgregarMuestraModal
           isOpen={showAgregarMuestra}
-          onClose={() => setShowAgregarMuestra(false)}
+          onClose={() => {
+            setShowAgregarMuestra(false);
+            setPerforacionParaMuestra(null);
+          }}
           onAdd={handleAgregarMuestra}
-          perforacion={selectedPerforacion}
-          muestrasExistentes={muestrasPerforacion}
+          perforacion={perforacionParaMuestra}
+          muestrasExistentes={muestras.filter(m => m.perforacionId === perforacionParaMuestra.id)}
           loading={false}
         />
       )}
