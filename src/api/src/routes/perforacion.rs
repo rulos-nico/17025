@@ -8,8 +8,8 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::errors::AppError;
-use crate::models::{CreatePerforacion, Perforacion, UpdatePerforacion};
-use crate::repositories::{PerforacionRepository, ProyectoRepository, EnsayoRepository};
+use crate::models::{CreatePerforacion, Perforacion, UpdatePerforacion, Muestra};
+use crate::repositories::{PerforacionRepository, ProyectoRepository, EnsayoRepository, MuestraRepository};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -17,6 +17,7 @@ pub fn routes() -> Router<AppState> {
         .route("/", get(list_perforaciones).post(create_perforacion))
         .route("/{id}", get(get_perforacion).put(update_perforacion).delete(delete_perforacion))
         .route("/{id}/ensayos", get(get_ensayos_by_perforacion))
+        .route("/{id}/muestras", get(get_muestras_by_perforacion))
 }
 
 /// GET /api/perforaciones
@@ -116,6 +117,25 @@ async fn get_ensayos_by_perforacion(
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok(Json(ensayos))
+}
+
+/// GET /api/perforaciones/:id/muestras
+async fn get_muestras_by_perforacion(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Muestra>>, AppError> {
+    // Verificar que la perforación existe
+    let perforacion_repo = PerforacionRepository::new(state.db_pool.clone());
+    let _ = perforacion_repo.find_by_id(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .ok_or(AppError::NotFound)?;
+    
+    // Obtener muestras de esta perforación
+    let muestra_repo = MuestraRepository::new(state.db_pool.clone());
+    let muestras = muestra_repo.find_by_perforacion(&id).await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    Ok(Json(muestras))
 }
 
 fn rand_suffix() -> u16 {

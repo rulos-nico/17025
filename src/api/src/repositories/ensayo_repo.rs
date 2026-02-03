@@ -13,6 +13,7 @@ pub struct EnsayoRow {
     pub perforacion_id: String,
     pub proyecto_id: String,
     pub muestra: String,
+    pub muestra_id: Option<String>,
     pub norma: String,
     pub workflow_state: String,
     pub fecha_solicitud: NaiveDate,
@@ -52,6 +53,7 @@ impl From<EnsayoRow> for Ensayo {
             perforacion_id: row.perforacion_id,
             proyecto_id: row.proyecto_id,
             muestra: row.muestra,
+            muestra_id: row.muestra_id,
             norma: row.norma,
             workflow_state,
             fecha_solicitud: row.fecha_solicitud.to_string(),
@@ -91,7 +93,7 @@ impl EnsayoRepository {
     pub async fn find_all(&self) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -111,7 +113,7 @@ impl EnsayoRepository {
     pub async fn find_by_proyecto(&self, proyecto_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -133,7 +135,7 @@ impl EnsayoRepository {
     pub async fn find_by_workflow_state(&self, state: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -155,7 +157,7 @@ impl EnsayoRepository {
     pub async fn find_urgent_pending(&self) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -176,7 +178,7 @@ impl EnsayoRepository {
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Ensayo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -200,10 +202,10 @@ impl EnsayoRepository {
 
         let row = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            INSERT INTO ensayos (id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            INSERT INTO ensayos (id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                                  workflow_state, fecha_solicitud, observaciones, urgente, sync_source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, 'solicitado', $8, $9, $10, 'db')
-            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'solicitado', $9, $10, $11, 'db')
+            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                       workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                       fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                       sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -217,6 +219,7 @@ impl EnsayoRepository {
         .bind(&dto.perforacion_id)
         .bind(&dto.proyecto_id)
         .bind(&dto.muestra)
+        .bind(&dto.muestra_id)
         .bind(&dto.norma)
         .bind(fecha_solicitud)
         .bind(&dto.observaciones)
@@ -258,7 +261,7 @@ impl EnsayoRepository {
                 observaciones = COALESCE($9, observaciones),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                       workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                       fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                       sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -381,7 +384,7 @@ impl EnsayoRepository {
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -441,7 +444,7 @@ impl EnsayoRepository {
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Ensayo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -462,7 +465,7 @@ impl EnsayoRepository {
     pub async fn find_by_perforacion(&self, perforacion_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
             r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, norma,
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                    workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
                    fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
                    sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
@@ -474,6 +477,28 @@ impl EnsayoRepository {
             "#,
         )
         .bind(perforacion_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(Ensayo::from).collect())
+    }
+
+    /// Busca ensayos por muestra
+    pub async fn find_by_muestra(&self, muestra_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, EnsayoRow>(
+            r#"
+            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
+                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
+                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
+                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
+                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
+                   created_at, updated_at, synced_at, sync_source
+            FROM ensayos
+            WHERE muestra_id = $1
+            ORDER BY created_at DESC
+            "#,
+        )
+        .bind(muestra_id)
         .fetch_all(&self.pool)
         .await?;
 

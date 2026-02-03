@@ -1,6 +1,7 @@
 pub mod cliente_repo;
 pub mod ensayo_repo;
 pub mod equipo_repo;
+pub mod muestra_repo;
 pub mod perforacion_repo;
 pub mod proyecto_repo;
 pub mod sensor_repo;
@@ -8,6 +9,7 @@ pub mod sensor_repo;
 pub use cliente_repo::ClienteRepository;
 pub use ensayo_repo::EnsayoRepository;
 pub use equipo_repo::EquipoRepository;
+pub use muestra_repo::MuestraRepository;
 pub use perforacion_repo::PerforacionRepository;
 pub use proyecto_repo::ProyectoRepository;
 pub use sensor_repo::SensorRepository;

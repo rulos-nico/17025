@@ -9,6 +9,7 @@ pub struct Ensayo {
     pub perforacion_id: String,
     pub proyecto_id: String,
     pub muestra: String,
+    pub muestra_id: Option<String>, // Referencia a la tabla muestras
     pub norma: String,
     pub workflow_state: WorkflowState,
     pub fecha_solicitud: String,
@@ -38,6 +39,7 @@ pub struct CreateEnsayo {
     pub perforacion_id: String,
     pub proyecto_id: String,
     pub muestra: String,
+    pub muestra_id: Option<String>, // Referencia opcional a la tabla muestras
     pub norma: String,
     pub fecha_solicitud: String,
     pub urgente: Option<bool>,
@@ -63,12 +65,12 @@ pub struct UpdateEnsayoStatus {
 
 impl Ensayo {
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 26 {
+        if row.len() < 27 {
             return None;
         }
 
         // Parsear workflow_state de String a enum, default E1 si falla
-        let workflow_state = row.get(7)?.parse::<WorkflowState>().unwrap_or_default();
+        let workflow_state = row.get(8)?.parse::<WorkflowState>().unwrap_or_default();
 
         Some(Ensayo {
             id: row.get(0)?.clone(),
@@ -77,33 +79,34 @@ impl Ensayo {
             perforacion_id: row.get(3)?.clone(),
             proyecto_id: row.get(4)?.clone(),
             muestra: row.get(5)?.clone(),
-            norma: row.get(6)?.clone(),
+            muestra_id: row.get(6).cloned().filter(|s| !s.is_empty()),
+            norma: row.get(7)?.clone(),
             workflow_state,
-            fecha_solicitud: row.get(8)?.clone(),
-            fecha_programacion: row.get(9).cloned().filter(|s| !s.is_empty()),
-            fecha_ejecucion: row.get(10).cloned().filter(|s| !s.is_empty()),
-            fecha_reporte: row.get(11).cloned().filter(|s| !s.is_empty()),
-            fecha_entrega: row.get(12).cloned().filter(|s| !s.is_empty()),
-            tecnico_id: row.get(13).cloned().filter(|s| !s.is_empty()),
-            tecnico_nombre: row.get(14).cloned().filter(|s| !s.is_empty()),
-            sheet_id: row.get(15).cloned().filter(|s| !s.is_empty()),
-            sheet_url: row.get(16).cloned().filter(|s| !s.is_empty()),
+            fecha_solicitud: row.get(9)?.clone(),
+            fecha_programacion: row.get(10).cloned().filter(|s| !s.is_empty()),
+            fecha_ejecucion: row.get(11).cloned().filter(|s| !s.is_empty()),
+            fecha_reporte: row.get(12).cloned().filter(|s| !s.is_empty()),
+            fecha_entrega: row.get(13).cloned().filter(|s| !s.is_empty()),
+            tecnico_id: row.get(14).cloned().filter(|s| !s.is_empty()),
+            tecnico_nombre: row.get(15).cloned().filter(|s| !s.is_empty()),
+            sheet_id: row.get(16).cloned().filter(|s| !s.is_empty()),
+            sheet_url: row.get(17).cloned().filter(|s| !s.is_empty()),
             equipos_utilizados: row
-                .get(17)
+                .get(18)
                 .map(|s| s.split(',').map(|x| x.trim().to_string()).collect())
                 .unwrap_or_default(),
-            observaciones: row.get(18).cloned().filter(|s| !s.is_empty()),
+            observaciones: row.get(19).cloned().filter(|s| !s.is_empty()),
             urgente: row
-                .get(19)
+                .get(20)
                 .map(|s| s == "true" || s == "1")
                 .unwrap_or(false),
             // PDF-related fields
-            pdf_drive_id: row.get(20).cloned().filter(|s| !s.is_empty()),
-            pdf_url: row.get(21).cloned().filter(|s| !s.is_empty()),
-            pdf_generated_at: row.get(22).cloned().filter(|s| !s.is_empty()),
-            perforacion_folder_id: row.get(23).cloned().filter(|s| !s.is_empty()),
-            created_at: row.get(24)?.clone(),
-            updated_at: row.get(25)?.clone(),
+            pdf_drive_id: row.get(21).cloned().filter(|s| !s.is_empty()),
+            pdf_url: row.get(22).cloned().filter(|s| !s.is_empty()),
+            pdf_generated_at: row.get(23).cloned().filter(|s| !s.is_empty()),
+            perforacion_folder_id: row.get(24).cloned().filter(|s| !s.is_empty()),
+            created_at: row.get(25)?.clone(),
+            updated_at: row.get(26)?.clone(),
         })
     }
 
@@ -115,6 +118,7 @@ impl Ensayo {
             self.perforacion_id.clone(),
             self.proyecto_id.clone(),
             self.muestra.clone(),
+            self.muestra_id.clone().unwrap_or_default(),
             self.norma.clone(),
             self.workflow_state.to_string(),
             self.fecha_solicitud.clone(),
