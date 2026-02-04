@@ -1,0 +1,1414 @@
+{
+	"info": {
+		"_postman_id": "lab-17025-api-collection",
+		"name": "Lab 17025 API",
+		"description": "API REST para el sistema de gestión de laboratorio ISO/IEC 17025:2017.\n\nEste sistema gestiona:\n- Proyectos y clientes\n- Perforaciones y muestras\n- Ensayos con workflow de estados\n- Equipos y sensores\n- Sincronización con Google Sheets\n\n## Base URL\n`http://localhost:3000`\n\n## Autenticación\nLa API utiliza Google OAuth. Incluir el token en el header:\n```\nAuthorization: Bearer {{access_token}}\n```",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Endpoints de autenticación con Google OAuth",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "health"]
+						},
+						"description": "Verifica el estado del servidor. Retorna versión y estado."
+					},
+					"response": []
+				},
+				{
+					"name": "Login with Google",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"access_token\": \"{{google_access_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Autentica un usuario con su token de Google OAuth. Retorna perfil del usuario y rol."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "profile"]
+						},
+						"description": "Obtiene el perfil del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "logout"]
+						},
+						"description": "Cierra la sesión del usuario (notifica al backend)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Proyectos",
+			"description": "Gestión de proyectos del laboratorio",
+			"item": [
+				{
+					"name": "List Proyectos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/proyectos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos"]
+						},
+						"description": "Obtiene la lista de todos los proyectos."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Proyecto",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/proyectos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{proyecto_id}}",
+									"description": "ID del proyecto (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene un proyecto específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Proyecto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Proyecto de ejemplo\",\n    \"descripcion\": \"Descripción del proyecto\",\n    \"fecha_inicio\": \"2025-01-15\",\n    \"fecha_fin_estimada\": \"2025-06-30\",\n    \"cliente_id\": \"{{cliente_id}}\",\n    \"cliente_nombre\": \"Cliente Ejemplo S.A.\",\n    \"contacto\": \"Juan Pérez\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/proyectos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos"]
+						},
+						"description": "Crea un nuevo proyecto. El código se genera automáticamente con formato PRY-YYYYMMDD-XXXX."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Proyecto",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Proyecto actualizado\",\n    \"descripcion\": \"Nueva descripción\",\n    \"fecha_fin_estimada\": \"2025-07-31\",\n    \"contacto\": \"María García\",\n    \"estado\": \"activo\",\n    \"fecha_fin_real\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/proyectos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{proyecto_id}}",
+									"description": "ID del proyecto (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza un proyecto existente. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Proyecto",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/proyectos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{proyecto_id}}",
+									"description": "ID del proyecto (UUID)"
+								}
+							]
+						},
+						"description": "Elimina un proyecto. Retorna 204 No Content si es exitoso."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Perforaciones by Proyecto",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/proyectos/:id/perforaciones",
+							"host": ["{{base_url}}"],
+							"path": ["api", "proyectos", ":id", "perforaciones"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{proyecto_id}}",
+									"description": "ID del proyecto (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene todas las perforaciones asociadas a un proyecto."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Clientes",
+			"description": "Gestión de clientes del laboratorio",
+			"item": [
+				{
+					"name": "List Clientes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clientes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "clientes"]
+						},
+						"description": "Obtiene la lista de todos los clientes."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cliente",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clientes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "clientes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{cliente_id}}",
+									"description": "ID del cliente (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene un cliente específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Cliente",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Empresa Ejemplo S.A.\",\n    \"rut\": \"12.345.678-9\",\n    \"direccion\": \"Av. Principal 123\",\n    \"ciudad\": \"Santiago\",\n    \"telefono\": \"+56 2 1234 5678\",\n    \"email\": \"contacto@empresa.cl\",\n    \"contacto_nombre\": \"Juan Pérez\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/clientes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "clientes"]
+						},
+						"description": "Crea un nuevo cliente. El código se genera automáticamente con formato CLI-XXXX."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Cliente",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Empresa Actualizada S.A.\",\n    \"rut\": \"12.345.678-9\",\n    \"direccion\": \"Nueva Dirección 456\",\n    \"ciudad\": \"Valparaíso\",\n    \"telefono\": \"+56 2 9876 5432\",\n    \"email\": \"nuevo@empresa.cl\",\n    \"contacto_nombre\": \"María García\",\n    \"contacto_cargo\": \"Gerente de Proyectos\",\n    \"contacto_email\": \"maria@empresa.cl\",\n    \"contacto_telefono\": \"+56 9 1234 5678\",\n    \"activo\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/clientes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "clientes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{cliente_id}}",
+									"description": "ID del cliente (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza un cliente existente. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Cliente",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clientes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "clientes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{cliente_id}}",
+									"description": "ID del cliente (UUID)"
+								}
+							]
+						},
+						"description": "Elimina un cliente. Retorna 204 No Content si es exitoso."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Perforaciones",
+			"description": "Gestión de perforaciones (puntos de muestreo)",
+			"item": [
+				{
+					"name": "List Perforaciones",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones"]
+						},
+						"description": "Obtiene la lista de todas las perforaciones."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Perforacion",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{perforacion_id}}",
+									"description": "ID de la perforación (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene una perforación específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Perforacion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"proyecto_id\": \"{{proyecto_id}}\",\n    \"nombre\": \"Perforación P-01\",\n    \"descripcion\": \"Perforación principal del sitio\",\n    \"ubicacion\": \"Coordenadas: -33.4489, -70.6693\",\n    \"profundidad\": 15.5,\n    \"fecha_inicio\": \"2025-01-20\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones"]
+						},
+						"description": "Crea una nueva perforación. El código se genera automáticamente con formato PER-YYYYMMDD-XXXX."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Perforacion",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Perforación P-01 Actualizada\",\n    \"descripcion\": \"Nueva descripción\",\n    \"ubicacion\": \"Coordenadas actualizadas\",\n    \"profundidad\": 20.0,\n    \"fecha_inicio\": \"2025-01-20\",\n    \"fecha_fin\": \"2025-01-25\",\n    \"estado\": \"completado\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{perforacion_id}}",
+									"description": "ID de la perforación (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza una perforación existente. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Perforacion",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{perforacion_id}}",
+									"description": "ID de la perforación (UUID)"
+								}
+							]
+						},
+						"description": "Elimina una perforación. Retorna 204 No Content si es exitoso."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ensayos by Perforacion",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones/:id/ensayos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones", ":id", "ensayos"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{perforacion_id}}",
+									"description": "ID de la perforación (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene todos los ensayos asociados a una perforación."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Muestras by Perforacion",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/perforaciones/:id/muestras",
+							"host": ["{{base_url}}"],
+							"path": ["api", "perforaciones", ":id", "muestras"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{perforacion_id}}",
+									"description": "ID de la perforación (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene todas las muestras asociadas a una perforación."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Muestras",
+			"description": "Gestión de muestras extraídas de perforaciones",
+			"item": [
+				{
+					"name": "List Muestras",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/muestras",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras"]
+						},
+						"description": "Obtiene la lista de todas las muestras."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Muestra",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/muestras/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{muestra_id}}",
+									"description": "ID de la muestra (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene una muestra específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Muestra",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"perforacion_id\": \"{{perforacion_id}}\",\n    \"profundidad_inicio\": 1.5,\n    \"profundidad_fin\": 2.0,\n    \"tipo_muestra\": \"alterado\",\n    \"descripcion\": \"Muestra de suelo arcilloso\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/muestras",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras"]
+						},
+						"description": "Crea una nueva muestra.\n\nTipos de muestra válidos:\n- `alterado`: Suelo Alterado\n- `inalterado`: Suelo Inalterado\n- `roca`: Núcleo de Roca\n- `spt`: SPT (Penetración Estándar)\n- `shelby`: Muestra Shelby"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Muestra",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"profundidad_inicio\": 1.5,\n    \"profundidad_fin\": 2.5,\n    \"tipo_muestra\": \"inalterado\",\n    \"descripcion\": \"Descripción actualizada\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/muestras/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{muestra_id}}",
+									"description": "ID de la muestra (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza una muestra existente. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Muestra",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/muestras/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{muestra_id}}",
+									"description": "ID de la muestra (UUID)"
+								}
+							]
+						},
+						"description": "Elimina una muestra. No se puede eliminar si tiene ensayos asociados."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ensayos by Muestra",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/muestras/:id/ensayos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "muestras", ":id", "ensayos"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{muestra_id}}",
+									"description": "ID de la muestra (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene todos los ensayos asociados a una muestra."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ensayos",
+			"description": "Gestión de ensayos de laboratorio con workflow de estados",
+			"item": [
+				{
+					"name": "List Ensayos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ensayos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos"]
+						},
+						"description": "Obtiene la lista de todos los ensayos."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ensayo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene un ensayo específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ensayo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"traccion\",\n    \"perforacion_id\": \"{{perforacion_id}}\",\n    \"proyecto_id\": \"{{proyecto_id}}\",\n    \"muestra\": \"M-001\",\n    \"muestra_id\": \"{{muestra_id}}\",\n    \"norma\": \"ASTM E8\",\n    \"fecha_solicitud\": \"2025-01-20\",\n    \"urgente\": false,\n    \"observaciones\": \"Ensayo de tracción estándar\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ensayos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos"]
+						},
+						"description": "Crea un nuevo ensayo. El código se genera automáticamente con formato ENS-YYYYMMDD-XXXX.\n\nTipos de ensayo disponibles:\n- `traccion`: Ensayo de Tracción (ASTM E8)\n- `dureza`: Ensayo de Dureza (ASTM E18)\n- `impacto`: Ensayo de Impacto (ASTM E23)\n- `compresion`: Ensayo de Compresión (ASTM E9)\n- `quimico_oes`: Análisis Químico OES (ASTM E415)\n- `quimico_xrf`: Análisis XRF (ASTM E1621)\n- `ultrasonido`: Ultrasonido Industrial (ASTM E114)\n- `radiografia`: Radiografía Industrial (ASTM E94)\n- `metalografia`: Análisis Metalográfico (ASTM E3)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ensayo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workflow_state\": \"E2\",\n    \"fecha_programacion\": \"2025-01-25\",\n    \"fecha_ejecucion\": null,\n    \"fecha_reporte\": null,\n    \"fecha_entrega\": null,\n    \"tecnico_id\": \"{{tecnico_id}}\",\n    \"tecnico_nombre\": \"Carlos Técnico\",\n    \"observaciones\": \"Programado para la próxima semana\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza un ensayo existente. Valida las transiciones de workflow."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ensayo Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workflow_state\": \"E6\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza solo el estado del workflow de un ensayo.\n\nEstados del workflow:\n- E1: Sin programación\n- E2: Programado\n- E3: Anulado\n- E4: Repetición\n- E5: Novedad\n- E6: En ejecución\n- E7: Espera ensayos\n- E8: Procesamiento\n- E9: Rev. Técnica\n- E10: Rev. Coordinación\n- E11: Rev. Dirección\n- E12: Por enviar (genera PDF automáticamente)\n- E13: Enviado\n- E14: Entregado\n- E15: Facturado"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Ensayo",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Elimina un ensayo (soft delete - cambia estado a E15 Cancelado)."
+					},
+					"response": []
+				},
+				{
+					"name": "Download PDF",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id/pdf",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id", "pdf"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Descarga el PDF generado del ensayo. El ensayo debe estar en estado E12 o superior."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate PDF",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ensayos/:id/pdf/generate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ensayos", ":id", "pdf", "generate"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{ensayo_id}}",
+									"description": "ID del ensayo (UUID)"
+								}
+							]
+						},
+						"description": "Fuerza la regeneración del PDF desde el Sheet. Útil si el Sheet fue actualizado después de la generación inicial."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Equipos",
+			"description": "Gestión de equipos de laboratorio",
+			"item": [
+				{
+					"name": "List Equipos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/equipos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "equipos"]
+						},
+						"description": "Obtiene la lista de todos los equipos."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Equipo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/equipos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "equipos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{equipo_id}}",
+									"description": "ID del equipo (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene un equipo específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Equipo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Máquina Universal de Ensayos\",\n    \"serie\": \"MUE-2024-001\",\n    \"placa\": \"LAB-001\",\n    \"descripcion\": \"Máquina para ensayos de tracción y compresión\",\n    \"marca\": \"Instron\",\n    \"modelo\": \"5982\",\n    \"ubicacion\": \"Laboratorio Principal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/equipos",
+							"host": ["{{base_url}}"],
+							"path": ["api", "equipos"]
+						},
+						"description": "Crea un nuevo equipo. El código se genera automáticamente con formato EQP-XXXX."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Equipo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Máquina Universal de Ensayos Actualizada\",\n    \"descripcion\": \"Nueva descripción\",\n    \"ubicacion\": \"Laboratorio Secundario\",\n    \"estado\": \"operativo\",\n    \"fecha_calibracion\": \"2025-01-15\",\n    \"proxima_calibracion\": \"2026-01-15\",\n    \"incertidumbre\": 0.5,\n    \"error_maximo\": 1.0,\n    \"certificado_id\": \"CERT-2025-001\",\n    \"responsable\": \"Juan Técnico\",\n    \"observaciones\": \"Calibración anual completada\",\n    \"activo\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/equipos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "equipos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{equipo_id}}",
+									"description": "ID del equipo (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza un equipo existente. Todos los campos son opcionales.\n\nEstados válidos:\n- `operativo`\n- `en_calibracion`\n- `fuera_servicio`\n- `baja`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Equipo",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/equipos/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "equipos", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{equipo_id}}",
+									"description": "ID del equipo (UUID)"
+								}
+							]
+						},
+						"description": "Elimina un equipo. Retorna 204 No Content si es exitoso."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sensores",
+			"description": "Gestión de sensores de medición",
+			"item": [
+				{
+					"name": "List Sensores",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sensores",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sensores"]
+						},
+						"description": "Obtiene la lista de todos los sensores."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sensor",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sensores/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sensores", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{sensor_id}}",
+									"description": "ID del sensor (UUID)"
+								}
+							]
+						},
+						"description": "Obtiene un sensor específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Sensor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"celda_carga\",\n    \"marca\": \"HBM\",\n    \"modelo\": \"U10M\",\n    \"numero_serie\": \"SN-2024-001\",\n    \"rango_medicion\": \"0-100 kN\",\n    \"precision\": \"0.1%\",\n    \"ubicacion\": \"Máquina Universal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sensores",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sensores"]
+						},
+						"description": "Crea un nuevo sensor. El código se genera automáticamente con formato SNS-XXXX."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sensor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"celda_carga\",\n    \"marca\": \"HBM\",\n    \"modelo\": \"U10M\",\n    \"rango_medicion\": \"0-100 kN\",\n    \"precision\": \"0.05%\",\n    \"ubicacion\": \"Máquina Universal Principal\",\n    \"estado\": \"operativo\",\n    \"fecha_calibracion\": \"2025-01-10\",\n    \"proxima_calibracion\": \"2026-01-10\",\n    \"error_maximo\": 0.5,\n    \"certificado_id\": \"CERT-SNS-2025-001\",\n    \"responsable\": \"María Calibradora\",\n    \"observaciones\": \"Calibración completada\",\n    \"activo\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sensores/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sensores", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{sensor_id}}",
+									"description": "ID del sensor (UUID)"
+								}
+							]
+						},
+						"description": "Actualiza un sensor existente. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Sensor",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sensores/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sensores", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{sensor_id}}",
+									"description": "ID del sensor (UUID)"
+								}
+							]
+						},
+						"description": "Elimina un sensor. Retorna 204 No Content si es exitoso."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sync",
+			"description": "Sincronización entre base de datos PostgreSQL y Google Sheets",
+			"item": [
+				{
+					"name": "Sync Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sync/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sync", "status"]
+						},
+						"description": "Obtiene el estado actual de sincronización, incluyendo conexión a DB y Sheets, y conteos de entidades."
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Sheets to DB",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sync/sheets-to-db",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sync", "sheets-to-db"]
+						},
+						"description": "Sincroniza datos desde Google Sheets hacia la base de datos PostgreSQL."
+					},
+					"response": []
+				},
+				{
+					"name": "Sync DB to Sheets",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"since\": \"2025-01-01T00:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sync/db-to-sheets",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sync", "db-to-sheets"]
+						},
+						"description": "Sincroniza cambios desde la base de datos hacia Google Sheets.\n\nEl campo `since` es opcional (formato ISO 8601). Si no se proporciona, sincroniza los cambios de las últimas 24 horas."
+					},
+					"response": []
+				},
+				{
+					"name": "Full Sync",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sync/full",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sync", "full"]
+						},
+						"description": "Ejecuta sincronización bidireccional completa:\n1. Sheets → DB (obtener datos actuales de Sheets)\n2. DB → Sheets (enviar cambios locales)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "google_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "proyecto_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cliente_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "perforacion_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "muestra_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ensayo_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "equipo_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sensor_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "tecnico_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
