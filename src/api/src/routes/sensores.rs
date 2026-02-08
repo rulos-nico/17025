@@ -47,7 +47,6 @@ async fn create_sensor(
     let repo = SensorRepository::new(state.db_pool.clone());
     let id = Uuid::new_v4().to_string();
     let codigo = format!("SNS-{:04}", rand_suffix());
-
     let sensor = repo.create(&id, &codigo, payload).await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

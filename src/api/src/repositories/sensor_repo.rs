@@ -29,6 +29,8 @@ pub struct SensorRow {
     pub updated_at: DateTime<Utc>,
     pub synced_at: Option<DateTime<Utc>>,
     pub sync_source: Option<String>,
+    /// ID del equipo al que pertenece este sensor (opcional)
+    pub equipo_id: Option<String>,
 }
 
 impl From<SensorRow> for Sensor {
@@ -53,6 +55,7 @@ impl From<SensorRow> for Sensor {
             activo: row.activo,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
+            equipo_id: row.equipo_id,
         }
     }
 }
@@ -74,7 +77,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             ORDER BY codigo
             "#,
@@ -92,7 +95,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE activo = true
             ORDER BY codigo
@@ -111,7 +114,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE id = $1
             "#,
@@ -130,7 +133,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE codigo = $1
             "#,
@@ -149,7 +152,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE numero_serie = $1
             "#,
@@ -166,12 +169,12 @@ impl SensorRepository {
         let row = sqlx::query_as::<_, SensorRow>(
             r#"
             INSERT INTO sensores (id, codigo, tipo, marca, modelo, numero_serie, rango_medicion,
-                                  precision, ubicacion, estado, activo, sync_source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'operativo', true, 'db')
+                                  precision, ubicacion, estado, activo, sync_source, equipo_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'operativo', true, 'db', $10)
             RETURNING id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                       ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                       certificado_id, responsable, observaciones, activo,
-                      created_at, updated_at, synced_at, sync_source
+                      created_at, updated_at, synced_at, sync_source, equipo_id
             "#,
         )
         .bind(id)
@@ -183,6 +186,7 @@ impl SensorRepository {
         .bind(&dto.rango_medicion)
         .bind(&dto.precision)
         .bind(&dto.ubicacion)
+        .bind(&dto.equipo_id)
         .fetch_one(&self.pool)
         .await?;
 
@@ -217,12 +221,13 @@ impl SensorRepository {
                 responsable = COALESCE($13, responsable),
                 observaciones = COALESCE($14, observaciones),
                 activo = COALESCE($15, activo),
+                equipo_id = COALESCE($16, equipo_id),
                 sync_source = 'db'
             WHERE id = $1
             RETURNING id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                       ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                       certificado_id, responsable, observaciones, activo,
-                      created_at, updated_at, synced_at, sync_source
+                      created_at, updated_at, synced_at, sync_source, equipo_id
             "#,
         )
         .bind(id)
@@ -240,6 +245,7 @@ impl SensorRepository {
         .bind(&dto.responsable)
         .bind(&dto.observaciones)
         .bind(&dto.activo)
+        .bind(&dto.equipo_id)
         .fetch_optional(&self.pool)
         .await?;
 
@@ -327,7 +333,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE updated_at > $1 AND sync_source = 'db'
             ORDER BY updated_at
@@ -363,7 +369,7 @@ impl SensorRepository {
             SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
                    ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
                    certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source
+                   created_at, updated_at, synced_at, sync_source, equipo_id
             FROM sensores
             WHERE activo = true 
               AND proxima_calibracion IS NOT NULL
@@ -372,6 +378,26 @@ impl SensorRepository {
             "#,
         )
         .bind(days)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(Sensor::from).collect())
+    }
+
+    /// Busca sensores por ID de equipo
+    pub async fn find_by_equipo_id(&self, equipo_id: &str) -> Result<Vec<Sensor>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, SensorRow>(
+            r#"
+            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
+                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
+                   certificado_id, responsable, observaciones, activo,
+                   created_at, updated_at, synced_at, sync_source, equipo_id
+            FROM sensores
+            WHERE equipo_id = $1 AND activo = true
+            ORDER BY codigo
+            "#,
+        )
+        .bind(equipo_id)
         .fetch_all(&self.pool)
         .await?;
 

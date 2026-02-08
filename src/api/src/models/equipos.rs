@@ -26,8 +26,11 @@ pub struct Equipo {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateEquipo {
+
     pub nombre: String,
     pub serie: String,
+
+
     pub placa: Option<String>,
     pub descripcion: Option<String>,
     pub marca: Option<String>,

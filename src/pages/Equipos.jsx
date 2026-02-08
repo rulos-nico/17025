@@ -1,9 +1,694 @@
 import { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
-import { Badge } from '../components/ui';
+import { Badge, Modal } from '../components/ui';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { EquiposAPI, SensoresAPI } from '../services/apiService';
 import { ESTADO_EQUIPO } from '../config';
+
+// ============================================
+// OPCIONES PARA FORMULARIOS
+// ============================================
+
+const ESTADOS_EQUIPO = [
+  { value: 'operativo', label: 'Operativo' },
+  { value: 'en_calibracion', label: 'En Calibraci\u00f3n' },
+  { value: 'fuera_servicio', label: 'Fuera de Servicio' },
+  { value: 'en_mantenimiento', label: 'En Mantenimiento' },
+];
+
+const TIPOS_SENSOR = [
+  { value: 'celda_carga', label: 'Celda de Carga' },
+  { value: 'extensometro', label: 'Extens\u00f3metro' },
+  { value: 'termocupla', label: 'Termocupla' },
+  { value: 'lvdt', label: 'LVDT' },
+  { value: 'pendulo', label: 'P\u00e9ndulo' },
+  { value: 'otro', label: 'Otro' },
+];
+
+const UBICACIONES = [
+  'Laboratorio Mec\u00e1nico',
+  'Laboratorio Qu\u00edmico',
+  'Laboratorio Metalogr\u00e1fico',
+  'Almac\u00e9n',
+  'Taller',
+];
+
+// ============================================
+// ESTILOS COMUNES PARA FORMULARIOS
+// ============================================
+
+const formStyles = {
+  field: {
+    marginBottom: '16px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '4px',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    border: '1px solid #D1D5DB',
+    fontSize: '0.875rem',
+    boxSizing: 'border-box',
+  },
+  select: {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    border: '1px solid #D1D5DB',
+    fontSize: '0.875rem',
+    backgroundColor: 'white',
+    boxSizing: 'border-box',
+  },
+  textarea: {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    border: '1px solid #D1D5DB',
+    fontSize: '0.875rem',
+    minHeight: '80px',
+    resize: 'vertical',
+    boxSizing: 'border-box',
+  },
+  row: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
+  },
+  buttons: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '12px',
+    marginTop: '24px',
+    paddingTop: '16px',
+    borderTop: '1px solid #E5E7EB',
+  },
+  buttonPrimary: {
+    padding: '8px 16px',
+    backgroundColor: '#3B82F6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+  },
+  buttonSecondary: {
+    padding: '8px 16px',
+    backgroundColor: 'white',
+    color: '#374151',
+    border: '1px solid #D1D5DB',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
+  buttonDanger: {
+    padding: '8px 16px',
+    backgroundColor: '#EF4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+  },
+  required: {
+    color: '#EF4444',
+    marginLeft: '2px',
+  },
+};
+
+// ============================================
+// COMPONENTE: MODAL FORMULARIO EQUIPO
+// ============================================
+
+function EquipoFormModal({ isOpen, onClose, onSave, equipo, loading }) {
+  const isEditing = !!equipo;
+
+  const [form, setForm] = useState(() => ({
+    nombre: equipo?.nombre || '',
+    serie: equipo?.serie || '',
+    placa: equipo?.placa || '',
+    descripcion: equipo?.descripcion || '',
+    marca: equipo?.marca || '',
+    modelo: equipo?.modelo || '',
+    ubicacion: equipo?.ubicacion || '',
+    estado: equipo?.estado || 'operativo',
+  }));
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    await onSave(form);
+  };
+
+  const isValid = form.nombre.trim() && form.serie.trim();
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Editar Equipo' : 'Nuevo Equipo'}
+      width="600px"
+    >
+      <form onSubmit={handleSubmit}>
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>
+              Nombre <span style={formStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              value={form.nombre}
+              onChange={e => handleChange('nombre', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: M\u00e1quina Universal de Tracci\u00f3n"
+              required
+            />
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>
+              N\u00b0 Serie <span style={formStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              value={form.serie}
+              onChange={e => handleChange('serie', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: SN-2024-12345"
+              required
+            />
+          </div>
+        </div>
+
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Placa / Inventario</label>
+            <input
+              type="text"
+              value={form.placa}
+              onChange={e => handleChange('placa', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: INV-2024-001"
+            />
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Ubicaci\u00f3n</label>
+            <select
+              value={form.ubicacion}
+              onChange={e => handleChange('ubicacion', e.target.value)}
+              style={formStyles.select}
+            >
+              <option value="">Seleccionar ubicaci\u00f3n</option>
+              {UBICACIONES.map(ub => (
+                <option key={ub} value={ub}>
+                  {ub}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Marca</label>
+            <input
+              type="text"
+              value={form.marca}
+              onChange={e => handleChange('marca', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: Instron"
+            />
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Modelo</label>
+            <input
+              type="text"
+              value={form.modelo}
+              onChange={e => handleChange('modelo', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: 5985"
+            />
+          </div>
+        </div>
+
+        {isEditing && (
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Estado</label>
+            <select
+              value={form.estado}
+              onChange={e => handleChange('estado', e.target.value)}
+              style={formStyles.select}
+            >
+              {ESTADOS_EQUIPO.map(est => (
+                <option key={est.value} value={est.value}>
+                  {est.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div style={formStyles.field}>
+          <label style={formStyles.label}>Descripción</label>
+          <textarea
+            value={form.descripcion}
+            onChange={e => handleChange('descripcion', e.target.value)}
+            style={formStyles.textarea}
+            placeholder="Descripción del equipo..."
+          />
+        </div>
+
+        <div style={formStyles.buttons}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={formStyles.buttonSecondary}
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            style={{
+              ...formStyles.buttonPrimary,
+              opacity: !isValid || loading ? 0.6 : 1,
+              cursor: !isValid || loading ? 'not-allowed' : 'pointer',
+            }}
+            disabled={!isValid || loading}
+          >
+            {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear Equipo'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// COMPONENTE: MODAL FORMULARIO SENSOR
+// ============================================
+
+function SensorFormModal({ isOpen, onClose, onSave, sensor, loading, equiposDisponibles = [] }) {
+  const isEditing = !!sensor;
+
+  const [form, setForm] = useState(() => ({
+    tipo: sensor?.tipo || '',
+    numero_serie: sensor?.numero_serie || sensor?.serie || '',
+    marca: sensor?.marca || '',
+    modelo: sensor?.modelo || '',
+    rango_medicion: sensor?.rango_medicion || sensor?.rango || '',
+    precision: sensor?.precision || sensor?.resolucion || '',
+    ubicacion: sensor?.ubicacion || '',
+    estado: sensor?.estado || 'operativo',
+    responsable: sensor?.responsable || '',
+    observaciones: sensor?.observaciones || '',
+    equipo_id: sensor?.equipoPadre || sensor?.equipo_id || '',
+  }));
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    await onSave(form);
+  };
+
+  const isValid = form.tipo.trim() && form.numero_serie.trim();
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Editar Sensor' : 'Nuevo Sensor'}
+      width="600px"
+    >
+      <form onSubmit={handleSubmit}>
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>
+              Tipo <span style={formStyles.required}>*</span>
+            </label>
+            <select
+              value={form.tipo}
+              onChange={e => handleChange('tipo', e.target.value)}
+              style={formStyles.select}
+              required
+            >
+              <option value="">Seleccionar tipo</option>
+              {TIPOS_SENSOR.map(t => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>
+              N\u00b0 Serie <span style={formStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              value={form.numero_serie}
+              onChange={e => handleChange('numero_serie', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: SN-2024-12345"
+              required
+            />
+          </div>
+        </div>
+
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Marca</label>
+            <input
+              type="text"
+              value={form.marca}
+              onChange={e => handleChange('marca', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: HBM"
+            />
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Modelo</label>
+            <input
+              type="text"
+              value={form.modelo}
+              onChange={e => handleChange('modelo', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: U10M"
+            />
+          </div>
+        </div>
+
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Rango de Medici\u00f3n</label>
+            <input
+              type="text"
+              value={form.rango_medicion}
+              onChange={e => handleChange('rango_medicion', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: 0 - 50 kN"
+            />
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Precisi\u00f3n / Resoluci\u00f3n</label>
+            <input
+              type="text"
+              value={form.precision}
+              onChange={e => handleChange('precision', e.target.value)}
+              style={formStyles.input}
+              placeholder="Ej: 0.01 kN"
+            />
+          </div>
+        </div>
+
+        <div style={formStyles.row}>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Ubicaci\u00f3n</label>
+            <select
+              value={form.ubicacion}
+              onChange={e => handleChange('ubicacion', e.target.value)}
+              style={formStyles.select}
+            >
+              <option value="">Seleccionar ubicaci\u00f3n</option>
+              {UBICACIONES.map(ub => (
+                <option key={ub} value={ub}>
+                  {ub}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Responsable</label>
+            <input
+              type="text"
+              value={form.responsable}
+              onChange={e => handleChange('responsable', e.target.value)}
+              style={formStyles.input}
+              placeholder="Nombre del responsable"
+            />
+          </div>
+        </div>
+
+        {/* Equipo Asociado */}
+        <div style={formStyles.field}>
+          <label style={formStyles.label}>Equipo Asociado</label>
+          <select
+            value={form.equipo_id}
+            onChange={e => handleChange('equipo_id', e.target.value)}
+            style={formStyles.select}
+          >
+            <option value="">Sin equipo asociado</option>
+            {equiposDisponibles.map(eq => (
+              <option key={eq.id} value={eq.id}>
+                {eq.codigo} - {eq.nombre}
+              </option>
+            ))}
+          </select>
+          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+            Selecciona el equipo al que pertenece este sensor
+          </div>
+        </div>
+
+        {isEditing && (
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>Estado</label>
+            <select
+              value={form.estado}
+              onChange={e => handleChange('estado', e.target.value)}
+              style={formStyles.select}
+            >
+              {ESTADOS_EQUIPO.map(est => (
+                <option key={est.value} value={est.value}>
+                  {est.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div style={formStyles.field}>
+          <label style={formStyles.label}>Observaciones</label>
+          <textarea
+            value={form.observaciones}
+            onChange={e => handleChange('observaciones', e.target.value)}
+            style={formStyles.textarea}
+            placeholder="Observaciones adicionales..."
+          />
+        </div>
+
+        <div style={formStyles.buttons}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={formStyles.buttonSecondary}
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            style={{
+              ...formStyles.buttonPrimary,
+              opacity: !isValid || loading ? 0.6 : 1,
+              cursor: !isValid || loading ? 'not-allowed' : 'pointer',
+            }}
+            disabled={!isValid || loading}
+          >
+            {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear Sensor'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// COMPONENTE: MODAL CONFIRMACION ELIMINAR
+// ============================================
+
+function ConfirmDeleteModal({ isOpen, onClose, onConfirm, item, loading }) {
+  if (!item) return null;
+
+  const itemType = item.tipo === 'sensor' ? 'sensor' : 'equipo';
+  const itemName = item.nombre || item.codigo || 'este elemento';
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Confirmar Eliminaci\u00f3n" width="450px">
+      <div style={{ textAlign: 'center', padding: '16px 0' }}>
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: '#FEE2E2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            fontSize: '28px',
+          }}
+        >
+          &#9888;
+        </div>
+        <p style={{ margin: '0 0 8px', fontSize: '1rem', color: '#374151' }}>
+          \u00bfEst\u00e1s seguro de que deseas eliminar{' '}
+          {itemType === 'sensor' ? 'el sensor' : 'el equipo'}:
+        </p>
+        <p style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: '600', color: '#111827' }}>
+          {itemName}
+        </p>
+        <p style={{ margin: '0', fontSize: '0.875rem', color: '#6B7280' }}>
+          Esta acci\u00f3n no se puede deshacer.
+        </p>
+      </div>
+
+      <div style={formStyles.buttons}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={formStyles.buttonSecondary}
+          disabled={loading}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          style={{
+            ...formStyles.buttonDanger,
+            opacity: loading ? 0.6 : 1,
+            cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+          disabled={loading}
+        >
+          {loading ? 'Eliminando...' : 'Eliminar'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================
+// COMPONENTE: DROPDOWN NUEVO ITEM
+// ============================================
+
+function NuevoDropdown({ onNewEquipo, onNewSensor }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: '8px 16px',
+          backgroundColor: '#3B82F6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+        }}
+      >
+        + Nuevo
+        <span style={{ fontSize: '0.7rem' }}>{isOpen ? '\u25B2' : '\u25BC'}</span>
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Overlay para cerrar */}
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10,
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Menu dropdown */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: '4px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              border: '1px solid #E5E7EB',
+              minWidth: '160px',
+              zIndex: 20,
+              overflow: 'hidden',
+            }}
+          >
+            <button
+              onClick={() => {
+                onNewEquipo();
+                setIsOpen(false);
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                border: 'none',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+              onMouseEnter={e => (e.target.style.backgroundColor = '#F3F4F6')}
+              onMouseLeave={e => (e.target.style.backgroundColor = 'white')}
+            >
+              <span style={{ color: '#3B82F6' }}>Equipos</span>
+              Nuevo Equipo
+            </button>
+            <button
+              onClick={() => {
+                onNewSensor();
+                setIsOpen(false);
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                border: 'none',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderTop: '1px solid #E5E7EB',
+              }}
+              onMouseEnter={e => (e.target.style.backgroundColor = '#F3F4F6')}
+              onMouseLeave={e => (e.target.style.backgroundColor = 'white')}
+            >
+              <span style={{ color: '#8B5CF6' }}>Sensores</span>
+              Nuevo Sensor
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // ============================================
 // DATOS MOCK PARA MODO BYPASS
@@ -548,6 +1233,8 @@ function EquipoRow({
   isExpanded,
   onToggle,
   onSensorClick,
+  onEdit,
+  onDelete,
 }) {
   const estadoInfo = getEstadoInfo(equipo.estado);
   const diasCalib = getDiasParaVencimiento(equipo.proxima_calibracion);
@@ -643,11 +1330,53 @@ function EquipoRow({
             <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>-</span>
           )}
         </td>
+        <td style={{ padding: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onEdit(equipo);
+              }}
+              style={{
+                padding: '6px 10px',
+                backgroundColor: '#EFF6FF',
+                color: '#3B82F6',
+                border: '1px solid #BFDBFE',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+              }}
+              title="Editar"
+            >
+              Editar
+            </button>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onDelete(equipo);
+              }}
+              style={{
+                padding: '6px 10px',
+                backgroundColor: '#FEF2F2',
+                color: '#EF4444',
+                border: '1px solid #FECACA',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+              }}
+              title="Eliminar"
+            >
+              Eliminar
+            </button>
+          </div>
+        </td>
       </tr>
 
       {isExpanded && (
         <tr>
-          <td colSpan={11} style={{ padding: 0, backgroundColor: '#F9FAFB' }}>
+          <td colSpan={12} style={{ padding: 0, backgroundColor: '#F9FAFB' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB' }}>
               {/* Info general */}
               <div
@@ -956,6 +1685,135 @@ export default function Equipos() {
   const [filtroUbicacion, setFiltroUbicacion] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
 
+  // Estados para modales CRUD
+  const [showEquipoModal, setShowEquipoModal] = useState(false);
+  const [showSensorModal, setShowSensorModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingEquipo, setEditingEquipo] = useState(null);
+  const [editingSensor, setEditingSensor] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Función para recargar datos
+  const reloadData = async () => {
+    try {
+      const [equiposRes, sensoresRes] = await Promise.all([EquiposAPI.list(), SensoresAPI.list()]);
+
+      const todosEquipos = [
+        ...(equiposRes || []).map(e => ({ ...e, tipo: 'equipo' })),
+        ...(sensoresRes || []).map(s => ({ ...s, tipo: 'sensor' })),
+      ];
+
+      setEquipos(todosEquipos);
+    } catch (err) {
+      console.error('Error recargando equipos:', err);
+      setError('Error al recargar los datos');
+    }
+  };
+
+  // Handlers para Equipos
+  const handleNewEquipo = () => {
+    setEditingEquipo(null);
+    setShowEquipoModal(true);
+  };
+
+  const handleEditEquipo = equipo => {
+    setEditingEquipo(equipo);
+    setShowEquipoModal(true);
+  };
+
+  const handleSaveEquipo = async formData => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingEquipo) {
+        // Actualizar equipo existente
+        await EquiposAPI.update(editingEquipo.id, formData);
+      } else {
+        // Crear nuevo equipo
+        await EquiposAPI.create(formData);
+      }
+      setShowEquipoModal(false);
+      setEditingEquipo(null);
+      await reloadData();
+    } catch (err) {
+      console.error('Error guardando equipo:', err);
+      setError(err.message || 'Error al guardar el equipo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handlers para Sensores
+  const handleNewSensor = () => {
+    setEditingSensor(null);
+    setShowSensorModal(true);
+  };
+
+  const handleEditSensor = sensor => {
+    setEditingSensor(sensor);
+    setShowSensorModal(true);
+  };
+
+  const handleSaveSensor = async formData => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingSensor) {
+        // Actualizar sensor existente
+        await SensoresAPI.update(editingSensor.id, formData);
+      } else {
+        // Crear nuevo sensor
+        await SensoresAPI.create(formData);
+      }
+      setShowSensorModal(false);
+      setEditingSensor(null);
+      await reloadData();
+    } catch (err) {
+      console.error('Error guardando sensor:', err);
+      setError(err.message || 'Error al guardar el sensor');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handler para editar (determina si es equipo o sensor)
+  const handleEdit = item => {
+    if (item.tipo === 'sensor') {
+      handleEditSensor(item);
+    } else {
+      handleEditEquipo(item);
+    }
+  };
+
+  // Handler para eliminar
+  const handleDeleteClick = item => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      if (itemToDelete.tipo === 'sensor') {
+        await SensoresAPI.delete(itemToDelete.id);
+      } else {
+        await EquiposAPI.delete(itemToDelete.id);
+      }
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      await reloadData();
+    } catch (err) {
+      console.error('Error eliminando:', err);
+      setError(err.message || 'Error al eliminar');
+    } finally {
+      setSaving(false);
+    }
+  };
   // Cargar datos
   useEffect(() => {
     const loadData = async () => {
@@ -1250,7 +2108,41 @@ export default function Equipos() {
             </option>
           ))}
         </select>
+
+        {/* Dropdown para nuevo equipo/sensor */}
+        <NuevoDropdown onNewEquipo={handleNewEquipo} onNewSensor={handleNewSensor} />
       </div>
+
+      {/* Mensaje de error */}
+      {error && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            backgroundColor: '#FEE2E2',
+            color: '#991B1B',
+            borderRadius: '6px',
+            fontSize: '0.875rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#991B1B',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+            }}
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Tabla de equipos */}
       <div
@@ -1282,13 +2174,14 @@ export default function Equipos() {
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>
                   Próx. Comprob.
                 </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {equiposFiltrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     style={{ padding: '48px', textAlign: 'center', color: '#6B7280' }}
                   >
                     No se encontraron equipos con los filtros seleccionados
@@ -1305,6 +2198,8 @@ export default function Equipos() {
                     isExpanded={expandedRows[equipo.id]}
                     onToggle={() => toggleRow(equipo.id)}
                     onSensorClick={handleSensorClick}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
                   />
                 ))
               )}
@@ -1357,7 +2252,7 @@ export default function Equipos() {
             borderRadius: '4px',
           }}
         >
-          ≤30d
+          &le;30d
         </span>
         <span
           style={{
@@ -1371,6 +2266,43 @@ export default function Equipos() {
           Vencido
         </span>
       </div>
+
+      {/* Modales CRUD */}
+      <EquipoFormModal
+        key={editingEquipo?.id || 'new-equipo'}
+        isOpen={showEquipoModal}
+        onClose={() => {
+          setShowEquipoModal(false);
+          setEditingEquipo(null);
+        }}
+        onSave={handleSaveEquipo}
+        equipo={editingEquipo}
+        loading={saving}
+      />
+
+      <SensorFormModal
+        key={editingSensor?.id || 'new-sensor'}
+        isOpen={showSensorModal}
+        onClose={() => {
+          setShowSensorModal(false);
+          setEditingSensor(null);
+        }}
+        onSave={handleSaveSensor}
+        sensor={editingSensor}
+        loading={saving}
+        equiposDisponibles={equipos.filter(e => e.tipo === 'equipo')}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        item={itemToDelete}
+        loading={saving}
+      />
     </PageLayout>
   );
 }

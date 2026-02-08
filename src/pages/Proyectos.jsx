@@ -176,6 +176,8 @@ const canCreateProject = rol => ['admin', 'coordinador'].includes(rol);
 const canRelatePhysicalSample = rol => ['admin', 'coordinador', 'tecnico'].includes(rol);
 const canAddMuestras = rol => ['admin', 'coordinador', 'tecnico'].includes(rol);
 const canRequestTest = rol => ['cliente'].includes(rol);
+const canEditProject = rol => ['admin', 'coordinador'].includes(rol);
+const canDeleteProject = rol => ['admin', 'coordinador'].includes(rol);
 // Nota: canCreatePerforations se usará cuando se implemente la función de agregar perforaciones a proyectos existentes
 const _canCreatePerforations = rol => ['admin', 'coordinador'].includes(rol);
 
@@ -517,6 +519,368 @@ function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
           </div>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: EDITAR PROYECTO
+// ============================================
+
+function EditarProyectoModal({ isOpen, onClose, onEdit, proyecto, loading }) {
+  const [form, setForm] = useState({
+    nombre: '',
+    descripcion: '',
+    contacto: '',
+    fecha_fin_estimada: '',
+    estado: 'activo',
+  });
+
+  // Sincronizar form cuando cambia el proyecto
+  useEffect(() => {
+    if (proyecto) {
+      setForm({
+        nombre: proyecto.nombre || '',
+        descripcion: proyecto.descripcion || '',
+        contacto: proyecto.contacto || '',
+        fecha_fin_estimada: proyecto.fecha_fin_estimada || '',
+        estado: proyecto.estado || 'activo',
+      });
+    }
+  }, [proyecto]);
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    onEdit(form);
+  };
+
+  if (!proyecto) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Proyecto">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Nombre del Proyecto *
+            </label>
+            <input
+              type="text"
+              value={form.nombre}
+              onChange={e => setForm({ ...form, nombre: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Descripción
+            </label>
+            <textarea
+              value={form.descripcion}
+              onChange={e => setForm({ ...form, descripcion: e.target.value })}
+              rows={2}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                Estado
+              </label>
+              <select
+                value={form.estado}
+                onChange={e => setForm({ ...form, estado: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #D1D5DB',
+                }}
+              >
+                <option value="activo">Activo</option>
+                <option value="pausado">Pausado</option>
+                <option value="completado">Completado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+                Fecha Fin Estimada
+              </label>
+              <input
+                type="date"
+                value={form.fecha_fin_estimada}
+                onChange={e => setForm({ ...form, fecha_fin_estimada: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #D1D5DB',
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Contacto
+            </label>
+            <input
+              type="text"
+              value={form.contacto}
+              onChange={e => setForm({ ...form, contacto: e.target.value })}
+              placeholder="Nombre o email del contacto"
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+              }}
+            />
+          </div>
+
+          <div
+            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '8px' }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: '#3B82F6',
+                color: 'white',
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: EDITAR PERFORACIÓN
+// ============================================
+
+function EditarPerforacionModal({ isOpen, onClose, onEdit, perforacion, loading }) {
+  const [form, setForm] = useState({
+    nombre: '',
+    descripcion: '',
+    ubicacion: '',
+  });
+
+  useEffect(() => {
+    if (perforacion) {
+      setForm({
+        nombre: perforacion.nombre || perforacion.codigo || '',
+        descripcion: perforacion.descripcion || '',
+        ubicacion: perforacion.ubicacion || '',
+      });
+    }
+  }, [perforacion]);
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    onEdit(form);
+  };
+
+  if (!perforacion) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Perforación">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Nombre/Código *
+            </label>
+            <input
+              type="text"
+              value={form.nombre}
+              onChange={e => setForm({ ...form, nombre: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Descripción
+            </label>
+            <textarea
+              value={form.descripcion}
+              onChange={e => setForm({ ...form, descripcion: e.target.value })}
+              rows={2}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+              Ubicación
+            </label>
+            <input
+              type="text"
+              value={form.ubicacion}
+              onChange={e => setForm({ ...form, ubicacion: e.target.value })}
+              placeholder="Ej: Sector Norte, Km 5+200"
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+              }}
+            />
+          </div>
+
+          <div
+            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '8px' }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: '#3B82F6',
+                color: 'white',
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL: CONFIRMAR ELIMINACIÓN
+// ============================================
+
+function ConfirmDeleteModal({ isOpen, onClose, onConfirm, itemToDelete, loading }) {
+  if (!itemToDelete) return null;
+
+  const { type, item } = itemToDelete;
+  const titulo = type === 'proyecto' ? 'Eliminar Proyecto' : 'Eliminar Perforación';
+  const mensaje =
+    type === 'proyecto'
+      ? `¿Está seguro que desea eliminar el proyecto "${item.nombre || item.codigo}"? Esta acción no se puede deshacer y también eliminará todas las perforaciones asociadas.`
+      : `¿Está seguro que desea eliminar la perforación "${item.codigo || item.nombre}"? Esta acción no se puede deshacer.`;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={titulo}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div
+          style={{
+            padding: '16px',
+            backgroundColor: '#FEE2E2',
+            borderRadius: '8px',
+            border: '1px solid #EF4444',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: '600', color: '#991B1B', marginBottom: '4px' }}>
+                Advertencia
+              </div>
+              <div style={{ color: '#7F1D1D', fontSize: '0.875rem' }}>{mensaje}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '4px',
+              border: '1px solid #D1D5DB',
+              backgroundColor: 'white',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '4px',
+              border: 'none',
+              backgroundColor: '#EF4444',
+              color: 'white',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {loading ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 }
@@ -1417,6 +1781,16 @@ export default function Proyectos() {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroCliente, setFiltroCliente] = useState('todos');
 
+  // Estados para operaciones CRUD
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [showEditarProyecto, setShowEditarProyecto] = useState(false);
+  const [showEditarPerforacion, setShowEditarPerforacion] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null); // { type: 'proyecto' | 'perforacion', item: {...} }
+  const [editingProyecto, setEditingProyecto] = useState(null);
+  const [editingPerforacion, setEditingPerforacion] = useState(null);
+
   // Cargar datos
   useEffect(() => {
     const fetchData = async () => {
@@ -1460,81 +1834,200 @@ export default function Proyectos() {
     fetchData();
   }, [isBypassMode]);
 
+  // Función para recargar datos desde la API
+  const reloadData = async () => {
+    if (isBypassMode) return; // En modo bypass no recargamos
+
+    try {
+      const [proyectosRes, perforacionesRes] = await Promise.all([
+        ProyectosAPI.list(),
+        PerforacionesAPI.list(),
+      ]);
+      setProyectos(proyectosRes || []);
+      setPerforaciones(perforacionesRes || []);
+    } catch (err) {
+      console.error('Error recargando datos:', err);
+      setError('Error al recargar los datos');
+    }
+  };
+
   // Handlers
   const handleCrearProyecto = async data => {
-    // Generar ID y código
-    const nuevoId = `pry-${Date.now()}`;
-    const nuevoCodigo = `PRY-2025-${String(proyectos.length + 1).padStart(3, '0')}`;
+    // En modo bypass, mantener lógica local
+    if (isBypassMode) {
+      const nuevoId = `pry-${Date.now()}`;
+      const nuevoCodigo = `PRY-2025-${String(proyectos.length + 1).padStart(3, '0')}`;
+      const nuevoProyecto = {
+        id: nuevoId,
+        codigo: nuevoCodigo,
+        nombre: data.nombre,
+        descripcion: data.descripcion,
+        clienteId: data.clienteId,
+        contacto: data.contacto,
+        fecha_inicio: new Date().toISOString().split('T')[0],
+        fecha_fin_estimada: data.fecha_fin_estimada,
+        estado: 'activo',
+        ensayosCotizados: data.ensayosCotizados,
+      };
+      const nuevasPerforaciones = data.perforaciones.map((perf, index) => ({
+        id: `perf-${Date.now()}-${index}`,
+        codigo: perf.codigo || `${nuevoCodigo}-P${String(index + 1).padStart(2, '0')}`,
+        proyectoId: nuevoId,
+        descripcion: perf.descripcion,
+        ubicacion: perf.ubicacion,
+        estado: 'sin_relacionar',
+        fecha_recepcion: null,
+        muestraFisica: null,
+      }));
+      setProyectos([...proyectos, nuevoProyecto]);
+      setPerforaciones([...perforaciones, ...nuevasPerforaciones]);
+      setShowNuevoProyecto(false);
+      setSelectedProyecto(nuevoProyecto);
+      return;
+    }
 
-    // Crear el proyecto
-    const nuevoProyecto = {
-      id: nuevoId,
-      codigo: nuevoCodigo,
-      nombre: data.nombre,
-      descripcion: data.descripcion,
-      clienteId: data.clienteId,
-      contacto: data.contacto,
-      fecha_inicio: new Date().toISOString().split('T')[0],
-      fecha_fin_estimada: data.fecha_fin_estimada,
-      estado: 'activo',
-      ensayosCotizados: data.ensayosCotizados,
-    };
+    // Conectar con API del backend
+    setSaving(true);
+    setError(null);
 
-    // Crear las perforaciones
-    const nuevasPerforaciones = data.perforaciones.map((perf, index) => ({
-      id: `perf-${Date.now()}-${index}`,
-      codigo: perf.codigo || `${nuevoCodigo}-P${String(index + 1).padStart(2, '0')}`,
-      proyectoId: nuevoId,
-      descripcion: perf.descripcion,
-      ubicacion: perf.ubicacion,
-      estado: 'sin_relacionar',
-      fecha_recepcion: null,
-      muestraFisica: null,
-    }));
+    try {
+      // Obtener nombre del cliente
+      const clienteSeleccionado = clientes.find(c => c.id === data.clienteId);
+      const clienteNombre = clienteSeleccionado?.nombre || 'Cliente Desconocido';
 
-    setProyectos([...proyectos, nuevoProyecto]);
-    setPerforaciones([...perforaciones, ...nuevasPerforaciones]);
-    setShowNuevoProyecto(false);
-    setSelectedProyecto(nuevoProyecto);
+      // Crear proyecto en backend
+      const proyectoPayload = {
+        nombre: data.nombre,
+        descripcion: data.descripcion || '',
+        fecha_inicio: new Date().toISOString().split('T')[0],
+        fecha_fin_estimada: data.fecha_fin_estimada || null,
+        cliente_id: data.clienteId,
+        cliente_nombre: clienteNombre,
+        contacto: data.contacto || null,
+      };
+
+      const nuevoProyecto = await ProyectosAPI.create(proyectoPayload);
+
+      // Crear perforaciones en backend
+      const perforacionesCreadas = [];
+      for (const perf of data.perforaciones) {
+        if (!perf.codigo?.trim()) continue; // Ignorar perforaciones sin código
+
+        const perfPayload = {
+          proyecto_id: nuevoProyecto.id,
+          nombre: perf.codigo,
+          descripcion: perf.descripcion || null,
+          ubicacion: perf.ubicacion || null,
+          profundidad: null,
+          fecha_inicio: null,
+        };
+
+        const nuevaPerf = await PerforacionesAPI.create(perfPayload);
+        perforacionesCreadas.push(nuevaPerf);
+      }
+
+      // Recargar datos desde la API para sincronizar
+      await reloadData();
+
+      setShowNuevoProyecto(false);
+      // Seleccionar el proyecto recién creado
+      setSelectedProyecto(nuevoProyecto);
+    } catch (err) {
+      console.error('Error creando proyecto:', err);
+      setError(`Error al crear el proyecto: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleRelacionarMuestra = async data => {
-    // Actualizar la perforación con la muestra física
-    const updatedPerforaciones = perforaciones.map(perf => {
-      if (perf.id === data.perforacionId) {
-        return {
-          ...perf,
-          estado: 'relacionado',
-          muestraFisica: data.codigoMuestra,
-          fecha_recepcion: data.fechaRecepcion,
-          condicionMuestra: data.condicionMuestra,
-          observacionesRecepcion: data.observaciones,
-        };
-      }
-      return perf;
-    });
+    // En modo bypass, mantener lógica local
+    if (isBypassMode) {
+      const updatedPerforaciones = perforaciones.map(perf => {
+        if (perf.id === data.perforacionId) {
+          return {
+            ...perf,
+            estado: 'relacionado',
+            muestraFisica: data.codigoMuestra,
+            fecha_recepcion: data.fechaRecepcion,
+            condicionMuestra: data.condicionMuestra,
+            observacionesRecepcion: data.observaciones,
+          };
+        }
+        return perf;
+      });
 
-    // Crear las muestras asociadas a la perforación
-    const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
-      id: `mue-${Date.now()}-${index}`,
-      codigo: `M-${String(index + 1).padStart(3, '0')}`,
-      perforacionId: data.perforacionId,
-      profundidadInicio: parseFloat(muestra.profundidadInicio),
-      profundidadFin: parseFloat(muestra.profundidadFin),
-      tipoMuestra: muestra.tipoMuestra,
-      descripcion: muestra.descripcion,
-    }));
+      const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
+        id: `mue-${Date.now()}-${index}`,
+        codigo: `M-${String(index + 1).padStart(3, '0')}`,
+        perforacionId: data.perforacionId,
+        profundidadInicio: parseFloat(muestra.profundidadInicio),
+        profundidadFin: parseFloat(muestra.profundidadFin),
+        tipoMuestra: muestra.tipoMuestra,
+        descripcion: muestra.descripcion,
+      }));
 
-    setPerforaciones(updatedPerforaciones);
-    setMuestras([...muestras, ...nuevasMuestras]);
-    setShowRelacionarMuestra(false);
+      setPerforaciones(updatedPerforaciones);
+      setMuestras([...muestras, ...nuevasMuestras]);
+      setShowRelacionarMuestra(false);
+      const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
+      setSelectedPerforacion(updatedPerf);
+      return;
+    }
 
-    // Actualizar la perforación seleccionada
-    const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
-    setSelectedPerforacion(updatedPerf);
+    // Conectar con API del backend
+    setSaving(true);
+    setError(null);
 
-    // Simular notificación al cliente (en producción esto sería una llamada a API)
-    // TODO: Implementar notificación real cuando se conecte el backend
+    try {
+      // Actualizar perforación en el backend con el nuevo estado
+      const updatePayload = {
+        estado: 'relacionado',
+        // Nota: El backend de perforaciones puede no tener estos campos,
+        // pero los guardamos localmente por ahora
+      };
+
+      await PerforacionesAPI.update(data.perforacionId, updatePayload);
+
+      // Actualizar estado local (los campos adicionales se manejan localmente por ahora)
+      const updatedPerforaciones = perforaciones.map(perf => {
+        if (perf.id === data.perforacionId) {
+          return {
+            ...perf,
+            estado: 'relacionado',
+            muestraFisica: data.codigoMuestra,
+            fecha_recepcion: data.fechaRecepcion,
+            condicionMuestra: data.condicionMuestra,
+            observacionesRecepcion: data.observaciones,
+          };
+        }
+        return perf;
+      });
+
+      // Crear las muestras asociadas a la perforación (localmente por ahora)
+      // TODO: Cuando exista MuestrasAPI, crear en el backend
+      const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
+        id: `mue-${Date.now()}-${index}`,
+        codigo: `M-${String(index + 1).padStart(3, '0')}`,
+        perforacionId: data.perforacionId,
+        profundidadInicio: parseFloat(muestra.profundidadInicio),
+        profundidadFin: parseFloat(muestra.profundidadFin),
+        tipoMuestra: muestra.tipoMuestra,
+        descripcion: muestra.descripcion,
+      }));
+
+      setPerforaciones(updatedPerforaciones);
+      setMuestras([...muestras, ...nuevasMuestras]);
+      setShowRelacionarMuestra(false);
+
+      const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
+      setSelectedPerforacion(updatedPerf);
+    } catch (err) {
+      console.error('Error relacionando muestra:', err);
+      setError(`Error al relacionar la muestra: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSolicitarEnsayo = async data => {
@@ -1569,6 +2062,156 @@ export default function Proyectos() {
 
     setMuestras([...muestras, nuevaMuestra]);
     setShowAgregarMuestra(false);
+  };
+
+  // Handler para editar proyecto
+  const handleEditarProyecto = async data => {
+    if (isBypassMode) {
+      // En modo bypass, actualizar localmente
+      setProyectos(proyectos.map(p => (p.id === editingProyecto.id ? { ...p, ...data } : p)));
+      setShowEditarProyecto(false);
+      setEditingProyecto(null);
+      if (selectedProyecto?.id === editingProyecto.id) {
+        setSelectedProyecto({ ...selectedProyecto, ...data });
+      }
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const updatePayload = {
+        nombre: data.nombre || null,
+        descripcion: data.descripcion || null,
+        fecha_fin_estimada: data.fecha_fin_estimada || null,
+        contacto: data.contacto || null,
+        estado: data.estado || null,
+      };
+
+      await ProyectosAPI.update(editingProyecto.id, updatePayload);
+      await reloadData();
+
+      setShowEditarProyecto(false);
+      setEditingProyecto(null);
+
+      // Actualizar selección si es el mismo proyecto
+      if (selectedProyecto?.id === editingProyecto.id) {
+        const updated = proyectos.find(p => p.id === editingProyecto.id);
+        if (updated) setSelectedProyecto({ ...updated, ...data });
+      }
+    } catch (err) {
+      console.error('Error actualizando proyecto:', err);
+      setError(`Error al actualizar el proyecto: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handler para editar perforación
+  const handleEditarPerforacion = async data => {
+    if (isBypassMode) {
+      setPerforaciones(
+        perforaciones.map(p => (p.id === editingPerforacion.id ? { ...p, ...data } : p))
+      );
+      setShowEditarPerforacion(false);
+      setEditingPerforacion(null);
+      if (selectedPerforacion?.id === editingPerforacion.id) {
+        setSelectedPerforacion({ ...selectedPerforacion, ...data });
+      }
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const updatePayload = {
+        nombre: data.nombre || null,
+        descripcion: data.descripcion || null,
+        ubicacion: data.ubicacion || null,
+        profundidad: data.profundidad || null,
+        estado: data.estado || null,
+      };
+
+      await PerforacionesAPI.update(editingPerforacion.id, updatePayload);
+      await reloadData();
+
+      setShowEditarPerforacion(false);
+      setEditingPerforacion(null);
+
+      if (selectedPerforacion?.id === editingPerforacion.id) {
+        const updated = perforaciones.find(p => p.id === editingPerforacion.id);
+        if (updated) setSelectedPerforacion({ ...updated, ...data });
+      }
+    } catch (err) {
+      console.error('Error actualizando perforación:', err);
+      setError(`Error al actualizar la perforación: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handler para iniciar eliminación (abre modal de confirmación)
+  const handleDeleteClick = (type, item) => {
+    setItemToDelete({ type, item });
+    setShowConfirmDelete(true);
+  };
+
+  // Handler para confirmar eliminación
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    const { type, item } = itemToDelete;
+
+    if (isBypassMode) {
+      if (type === 'proyecto') {
+        setProyectos(proyectos.filter(p => p.id !== item.id));
+        // También eliminar perforaciones asociadas
+        setPerforaciones(perforaciones.filter(p => p.proyectoId !== item.id));
+        if (selectedProyecto?.id === item.id) {
+          setSelectedProyecto(null);
+          setSelectedPerforacion(null);
+        }
+      } else if (type === 'perforacion') {
+        setPerforaciones(perforaciones.filter(p => p.id !== item.id));
+        // También eliminar muestras asociadas
+        setMuestras(muestras.filter(m => m.perforacionId !== item.id));
+        if (selectedPerforacion?.id === item.id) {
+          setSelectedPerforacion(null);
+        }
+      }
+      setShowConfirmDelete(false);
+      setItemToDelete(null);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      if (type === 'proyecto') {
+        await ProyectosAPI.delete(item.id);
+        if (selectedProyecto?.id === item.id) {
+          setSelectedProyecto(null);
+          setSelectedPerforacion(null);
+        }
+      } else if (type === 'perforacion') {
+        await PerforacionesAPI.delete(item.id);
+        if (selectedPerforacion?.id === item.id) {
+          setSelectedPerforacion(null);
+        }
+      }
+
+      await reloadData();
+      setShowConfirmDelete(false);
+      setItemToDelete(null);
+    } catch (err) {
+      console.error(`Error eliminando ${type}:`, err);
+      setError(`Error al eliminar: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Datos filtrados y relacionados
@@ -1661,6 +2304,41 @@ export default function Proyectos() {
             {canAddMuestras(userRole) && <span>✓ Agregar muestras</span>}
             {canRequestTest(userRole) && <span>✓ Solicitar ensayos</span>}
           </div>
+        </div>
+      )}
+
+      {/* Banner de error */}
+      {error && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            backgroundColor: '#FEE2E2',
+            borderRadius: '6px',
+            border: '1px solid #EF4444',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ color: '#991B1B', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: 'none',
+              backgroundColor: '#EF4444',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+            }}
+          >
+            Cerrar
+          </button>
         </div>
       )}
 
@@ -1787,7 +2465,57 @@ export default function Proyectos() {
                           {getClienteNombre(proyecto.clienteId)}
                         </div>
                       </div>
-                      <Badge color={estado.color}>{estado.label}</Badge>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        <Badge color={estado.color}>{estado.label}</Badge>
+                        {canEditProject(userRole) && (
+                          <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                setEditingProyecto(proyecto);
+                                setShowEditarProyecto(true);
+                              }}
+                              style={{
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                border: '1px solid #3B82F6',
+                                backgroundColor: 'white',
+                                color: '#3B82F6',
+                                cursor: 'pointer',
+                                fontSize: '0.65rem',
+                              }}
+                            >
+                              Editar
+                            </button>
+                            {canDeleteProject(userRole) && (
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleDeleteClick('proyecto', proyecto);
+                                }}
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #EF4444',
+                                  backgroundColor: 'white',
+                                  color: '#EF4444',
+                                  cursor: 'pointer',
+                                  fontSize: '0.65rem',
+                                }}
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div
                       style={{
@@ -1972,6 +2700,47 @@ export default function Proyectos() {
                               >
                                 + Muestra
                               </button>
+                            )}
+                            {canEditProject(userRole) && (
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setEditingPerforacion(perf);
+                                    setShowEditarPerforacion(true);
+                                  }}
+                                  style={{
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #3B82F6',
+                                    backgroundColor: 'white',
+                                    color: '#3B82F6',
+                                    cursor: 'pointer',
+                                    fontSize: '0.6rem',
+                                  }}
+                                >
+                                  Editar
+                                </button>
+                                {canDeleteProject(userRole) && (
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      handleDeleteClick('perforacion', perf);
+                                    }}
+                                    style={{
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #EF4444',
+                                      backgroundColor: 'white',
+                                      color: '#EF4444',
+                                      cursor: 'pointer',
+                                      fontSize: '0.6rem',
+                                    }}
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -2343,7 +3112,7 @@ export default function Proyectos() {
         onClose={() => setShowNuevoProyecto(false)}
         onCreate={handleCrearProyecto}
         clientes={clientes}
-        loading={false}
+        loading={saving}
       />
 
       <RelacionarMuestraModal
@@ -2351,7 +3120,7 @@ export default function Proyectos() {
         onClose={() => setShowRelacionarMuestra(false)}
         onRelate={handleRelacionarMuestra}
         perforacion={selectedPerforacion}
-        loading={false}
+        loading={saving}
       />
 
       {perforacionParaMuestra && (
@@ -2364,7 +3133,7 @@ export default function Proyectos() {
           onAdd={handleAgregarMuestra}
           perforacion={perforacionParaMuestra}
           muestrasExistentes={muestras.filter(m => m.perforacionId === perforacionParaMuestra.id)}
-          loading={false}
+          loading={saving}
         />
       )}
 
@@ -2379,9 +3148,43 @@ export default function Proyectos() {
           perforacion={selectedPerforacion}
           muestra={selectedMuestra}
           proyecto={selectedProyecto}
-          loading={false}
+          loading={saving}
         />
       )}
+
+      {/* Modales de edición y eliminación */}
+      <EditarProyectoModal
+        isOpen={showEditarProyecto}
+        onClose={() => {
+          setShowEditarProyecto(false);
+          setEditingProyecto(null);
+        }}
+        onEdit={handleEditarProyecto}
+        proyecto={editingProyecto}
+        loading={saving}
+      />
+
+      <EditarPerforacionModal
+        isOpen={showEditarPerforacion}
+        onClose={() => {
+          setShowEditarPerforacion(false);
+          setEditingPerforacion(null);
+        }}
+        onEdit={handleEditarPerforacion}
+        perforacion={editingPerforacion}
+        loading={saving}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={showConfirmDelete}
+        onClose={() => {
+          setShowConfirmDelete(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        itemToDelete={itemToDelete}
+        loading={saving}
+      />
     </PageLayout>
   );
 }

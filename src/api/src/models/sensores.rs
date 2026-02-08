@@ -21,17 +21,22 @@ pub struct Sensor {
     pub activo: bool,
     pub created_at: String,
     pub updated_at: String,
+    /// ID del equipo al que pertenece este sensor (opcional)
+    pub equipo_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSensor {
-    pub tipo: String,
+    pub codigo: String,
+    pub tipo: String, 
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub numero_serie: String,
     pub rango_medicion: Option<String>,
     pub precision: Option<String>,
     pub ubicacion: Option<String>,
+    /// ID del equipo al que pertenece este sensor (opcional)
+    pub equipo_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +55,8 @@ pub struct UpdateSensor {
     pub responsable: Option<String>,
     pub observaciones: Option<String>,
     pub activo: Option<bool>,
+    /// ID del equipo al que pertenece este sensor (opcional)
+    pub equipo_id: Option<String>,
 }
 
 impl Sensor {
@@ -77,6 +84,8 @@ impl Sensor {
             activo: row.get(16).map(|s| s == "true" || s == "1").unwrap_or(true),
             created_at: row.get(17)?.clone(),
             updated_at: row.get(18).cloned().unwrap_or_default(),
+            // equipo_id no viene de Sheets, siempre None al sincronizar
+            equipo_id: None,
         })
     }
 

@@ -46,8 +46,9 @@ async fn create_equipo(
 ) -> Result<(StatusCode, Json<Equipo>), AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
     let id = Uuid::new_v4().to_string();
+    let activo = true;
+    let estado = "operativo".to_string();
     let codigo = format!("EQP-{:04}", rand_suffix());
-
     let equipo = repo.create(&id, &codigo, payload).await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
