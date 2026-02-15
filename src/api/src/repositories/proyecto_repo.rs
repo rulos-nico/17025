@@ -1,8 +1,9 @@
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::FromRow;
-use chrono::{DateTime, Utc, NaiveDate};
 
 use crate::db::DbPool;
-use crate::models::{Proyecto, CreateProyecto, UpdateProyecto};
+use crate::models::{CreateProyecto, Proyecto, UpdateProyecto};
+use crate::utils::sql::{PROYECTO_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Proyecto
 #[derive(Debug, Clone, FromRow)]
@@ -13,10 +14,12 @@ pub struct ProyectoRow {
     pub descripcion: Option<String>,
     pub fecha_inicio: NaiveDate,
     pub fecha_fin_estimada: Option<NaiveDate>,
+    pub duracion_estimada: Option<String>,
     pub cliente_id: String,
     pub cliente_nombre: String,
     pub contacto: Option<String>,
     pub estado: String,
+    pub ensayos_cotizados: Option<serde_json::Value>,
     pub fecha_fin_real: Option<NaiveDate>,
     pub drive_folder_id: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -35,10 +38,12 @@ impl From<ProyectoRow> for Proyecto {
             descripcion: row.descripcion.unwrap_or_default(),
             fecha_inicio: row.fecha_inicio.to_string(),
             fecha_fin_estimada: row.fecha_fin_estimada.map(|d| d.to_string()),
+            duracion_estimada: row.duracion_estimada,
             cliente_id: row.cliente_id,
             cliente_nombre: row.cliente_nombre,
             contacto: row.contacto,
             estado: row.estado,
+            ensayos_cotizados: row.ensayos_cotizados,
             fecha_fin_real: row.fecha_fin_real.map(|d| d.to_string()),
             drive_folder_id: row.drive_folder_id,
             created_at: row.created_at.to_rfc3339(),
@@ -61,13 +66,7 @@ impl ProyectoRepository {
     /// Obtiene todos los proyectos
     pub async fn find_all(&self) -> Result<Vec<Proyecto>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            ORDER BY fecha_inicio DESC
-            "#,
+            &select_from_with("proyectos", PROYECTO_COLUMNS, "ORDER BY fecha_inicio DESC"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -78,14 +77,7 @@ impl ProyectoRepository {
     /// Obtiene proyectos por estado
     pub async fn find_by_estado(&self, estado: &str) -> Result<Vec<Proyecto>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            WHERE estado = $1
-            ORDER BY fecha_inicio DESC
-            "#,
+            &select_where_with("proyectos", PROYECTO_COLUMNS, "estado = $1", "ORDER BY fecha_inicio DESC"),
         )
         .bind(estado)
         .fetch_all(&self.pool)
@@ -97,14 +89,7 @@ impl ProyectoRepository {
     /// Obtiene proyectos de un cliente
     pub async fn find_by_cliente(&self, cliente_id: &str) -> Result<Vec<Proyecto>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            WHERE cliente_id = $1
-            ORDER BY fecha_inicio DESC
-            "#,
+            &select_where_with("proyectos", PROYECTO_COLUMNS, "cliente_id = $1", "ORDER BY fecha_inicio DESC"),
         )
         .bind(cliente_id)
         .fetch_all(&self.pool)
@@ -116,13 +101,7 @@ impl ProyectoRepository {
     /// Busca un proyecto por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Proyecto>, sqlx::Error> {
         let row = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            WHERE id = $1
-            "#,
+            &select_where("proyectos", PROYECTO_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -134,13 +113,7 @@ impl ProyectoRepository {
     /// Busca un proyecto por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Proyecto>, sqlx::Error> {
         let row = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            WHERE codigo = $1
-            "#,
+            &select_where("proyectos", PROYECTO_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -158,25 +131,26 @@ impl ProyectoRepository {
             .as_ref()
             .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
 
-        let row = sqlx::query_as::<_, ProyectoRow>(
+        let row = sqlx::query_as::<_, ProyectoRow>(&format!(
             r#"
-            INSERT INTO proyectos (id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                                   cliente_id, cliente_nombre, contacto, estado, sync_source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'activo', 'db')
-            RETURNING id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                      cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                      drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
+            INSERT INTO proyectos (id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada, duracion_estimada,
+                                   cliente_id, cliente_nombre, contacto, ensayos_cotizados, estado, sync_source)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'activo', 'db')
+            RETURNING {}
             "#,
-        )
+            PROYECTO_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.nombre)
         .bind(&dto.descripcion)
         .bind(fecha_inicio)
         .bind(fecha_fin_estimada)
+        .bind(&dto.duracion_estimada)
         .bind(&dto.cliente_id)
         .bind(&dto.cliente_nombre)
         .bind(&dto.contacto)
+        .bind(&dto.ensayos_cotizados)
         .fetch_one(&self.pool)
         .await?;
 
@@ -193,29 +167,32 @@ impl ProyectoRepository {
             .as_ref()
             .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
 
-        let row = sqlx::query_as::<_, ProyectoRow>(
+        let row = sqlx::query_as::<_, ProyectoRow>(&format!(
             r#"
             UPDATE proyectos
             SET nombre = COALESCE($2, nombre),
                 descripcion = COALESCE($3, descripcion),
                 fecha_fin_estimada = COALESCE($4, fecha_fin_estimada),
-                contacto = COALESCE($5, contacto),
-                estado = COALESCE($6, estado),
-                fecha_fin_real = COALESCE($7, fecha_fin_real),
+                duracion_estimada = COALESCE($5, duracion_estimada),
+                contacto = COALESCE($6, contacto),
+                estado = COALESCE($7, estado),
+                fecha_fin_real = COALESCE($8, fecha_fin_real),
+                ensayos_cotizados = COALESCE($9, ensayos_cotizados),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                      cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                      drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            PROYECTO_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.nombre)
         .bind(&dto.descripcion)
         .bind(fecha_fin_estimada)
+        .bind(&dto.duracion_estimada)
         .bind(&dto.contacto)
         .bind(&dto.estado)
         .bind(fecha_fin_real)
+        .bind(&dto.ensayos_cotizados)
         .fetch_optional(&self.pool)
         .await?;
 
@@ -237,16 +214,17 @@ impl ProyectoRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO proyectos (id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
+            INSERT INTO proyectos (id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada, duracion_estimada,
                                    cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
                                    drive_folder_id, created_by, synced_at, sync_source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), 'sheets')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), 'sheets')
             ON CONFLICT (id) DO UPDATE SET
                 codigo = EXCLUDED.codigo,
                 nombre = EXCLUDED.nombre,
                 descripcion = EXCLUDED.descripcion,
                 fecha_inicio = EXCLUDED.fecha_inicio,
                 fecha_fin_estimada = EXCLUDED.fecha_fin_estimada,
+                duracion_estimada = EXCLUDED.duracion_estimada,
                 cliente_id = EXCLUDED.cliente_id,
                 cliente_nombre = EXCLUDED.cliente_nombre,
                 contacto = EXCLUDED.contacto,
@@ -263,6 +241,7 @@ impl ProyectoRepository {
         .bind(&proyecto.descripcion)
         .bind(fecha_inicio)
         .bind(fecha_fin_estimada)
+        .bind(&proyecto.duracion_estimada)
         .bind(&proyecto.cliente_id)
         .bind(&proyecto.cliente_nombre)
         .bind(&proyecto.contacto)
@@ -279,14 +258,7 @@ impl ProyectoRepository {
     /// Obtiene proyectos modificados desde la última sincronización
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Proyecto>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ProyectoRow>(
-            r#"
-            SELECT id, codigo, nombre, descripcion, fecha_inicio, fecha_fin_estimada,
-                   cliente_id, cliente_nombre, contacto, estado, fecha_fin_real,
-                   drive_folder_id, created_at, updated_at, created_by, synced_at, sync_source
-            FROM proyectos
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("proyectos", PROYECTO_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)

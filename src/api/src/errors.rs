@@ -30,6 +30,13 @@ pub enum AppError {
     DriveError(String),
 }
 
+// Implementar From<sqlx::Error> para eliminar .map_err() repetidos
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        AppError::DatabaseError(err.to_string())
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match &self {

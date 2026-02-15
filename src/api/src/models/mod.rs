@@ -1,17 +1,23 @@
+pub mod calibracion;
 pub mod cliente;
+pub mod comprobacion;
 pub mod ensayo;
 pub mod equipos;
 pub mod muestra;
 pub mod perforacion;
+pub mod personal_interno;
 pub mod proyecto;
 pub mod sensores;
 pub mod workflow;
 
+pub use calibracion::*;
 pub use cliente::*;
+pub use comprobacion::*;
 pub use ensayo::*;
 pub use equipos::*;
 pub use muestra::*;
 pub use perforacion::*;
+pub use personal_interno::*;
 pub use proyecto::*;
 pub use sensores::*;
 pub use workflow::*;

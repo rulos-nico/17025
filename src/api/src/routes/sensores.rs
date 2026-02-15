@@ -4,11 +4,11 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{CreateSensor, Sensor, UpdateSensor};
 use crate::repositories::SensorRepository;
+use crate::utils::id::{generate_simple_code, generate_uuid};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,8 +22,7 @@ async fn list_sensores(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Sensor>>, AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
-    let sensores = repo.find_all().await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let sensores = repo.find_all().await?;
     Ok(Json(sensores))
 }
 
@@ -33,9 +32,7 @@ async fn get_sensor(
     State(state): State<AppState>,
 ) -> Result<Json<Sensor>, AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
-    let sensor = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let sensor = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(sensor))
 }
 
@@ -45,10 +42,9 @@ async fn create_sensor(
     Json(payload): Json<CreateSensor>,
 ) -> Result<(StatusCode, Json<Sensor>), AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
-    let id = Uuid::new_v4().to_string();
-    let codigo = format!("SNS-{:04}", rand_suffix());
-    let sensor = repo.create(&id, &codigo, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let id = generate_uuid();
+    let codigo = generate_simple_code("SNS");
+    let sensor = repo.create(&id, &codigo, payload).await?;
 
     Ok((StatusCode::CREATED, Json(sensor)))
 }
@@ -60,9 +56,7 @@ async fn update_sensor(
     Json(payload): Json<UpdateSensor>,
 ) -> Result<Json<Sensor>, AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
-    let sensor = repo.update(&id, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let sensor = repo.update(&id, payload).await?.ok_or(AppError::NotFound)?;
     Ok(Json(sensor))
 }
 
@@ -72,21 +66,11 @@ async fn delete_sensor(
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
-    let deleted = repo.delete(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    
+    let deleted = repo.delete(&id).await?;
+
     if deleted {
         Ok(StatusCode::NO_CONTENT)
     } else {
         Err(AppError::NotFound)
     }
-}
-
-fn rand_suffix() -> u16 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos();
-    (nanos % 10000) as u16
 }

@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::db::DbPool;
 use crate::models::{Muestra, CreateMuestra, UpdateMuestra};
+use crate::utils::sql::{MUESTRA_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Muestra
 #[derive(Debug, Clone, FromRow)]
@@ -51,12 +52,7 @@ impl MuestraRepository {
     /// Obtiene todas las muestras
     pub async fn find_all(&self) -> Result<Vec<Muestra>, sqlx::Error> {
         let rows = sqlx::query_as::<_, MuestraRow>(
-            r#"
-            SELECT id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                   tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
-            FROM muestras
-            ORDER BY perforacion_id, profundidad_inicio
-            "#,
+            &select_from_with("muestras", MUESTRA_COLUMNS, "ORDER BY perforacion_id, profundidad_inicio"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -67,12 +63,7 @@ impl MuestraRepository {
     /// Busca una muestra por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Muestra>, sqlx::Error> {
         let row = sqlx::query_as::<_, MuestraRow>(
-            r#"
-            SELECT id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                   tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
-            FROM muestras
-            WHERE id = $1
-            "#,
+            &select_where("muestras", MUESTRA_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -84,12 +75,7 @@ impl MuestraRepository {
     /// Busca una muestra por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Muestra>, sqlx::Error> {
         let row = sqlx::query_as::<_, MuestraRow>(
-            r#"
-            SELECT id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                   tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
-            FROM muestras
-            WHERE codigo = $1
-            "#,
+            &select_where("muestras", MUESTRA_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -101,13 +87,7 @@ impl MuestraRepository {
     /// Obtiene muestras por perforación
     pub async fn find_by_perforacion(&self, perforacion_id: &str) -> Result<Vec<Muestra>, sqlx::Error> {
         let rows = sqlx::query_as::<_, MuestraRow>(
-            r#"
-            SELECT id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                   tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
-            FROM muestras
-            WHERE perforacion_id = $1
-            ORDER BY profundidad_inicio
-            "#,
+            &select_where_with("muestras", MUESTRA_COLUMNS, "perforacion_id = $1", "ORDER BY profundidad_inicio"),
         )
         .bind(perforacion_id)
         .fetch_all(&self.pool)
@@ -143,15 +123,15 @@ impl MuestraRepository {
         let profundidad_fin = Decimal::try_from(dto.profundidad_fin)
             .map_err(|_| sqlx::Error::Protocol("Invalid profundidad_fin".into()))?;
 
-        let row = sqlx::query_as::<_, MuestraRow>(
+        let row = sqlx::query_as::<_, MuestraRow>(&format!(
             r#"
             INSERT INTO muestras (id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
                                   tipo_muestra, descripcion, sync_source)
             VALUES ($1, $2, $3, $4, $5, $6, $7, 'db')
-            RETURNING id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                      tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            MUESTRA_COLUMNS
+        ))
         .bind(&id)
         .bind(&codigo)
         .bind(&dto.perforacion_id)
@@ -172,7 +152,7 @@ impl MuestraRepository {
         let profundidad_fin = dto.profundidad_fin
             .and_then(|p| Decimal::try_from(p).ok());
 
-        let row = sqlx::query_as::<_, MuestraRow>(
+        let row = sqlx::query_as::<_, MuestraRow>(&format!(
             r#"
             UPDATE muestras
             SET profundidad_inicio = COALESCE($2, profundidad_inicio),
@@ -181,10 +161,10 @@ impl MuestraRepository {
                 descripcion = COALESCE($5, descripcion),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                      tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            MUESTRA_COLUMNS
+        ))
         .bind(id)
         .bind(profundidad_inicio)
         .bind(profundidad_fin)
@@ -259,13 +239,7 @@ impl MuestraRepository {
     /// Obtiene muestras modificadas desde una fecha
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Muestra>, sqlx::Error> {
         let rows = sqlx::query_as::<_, MuestraRow>(
-            r#"
-            SELECT id, codigo, perforacion_id, profundidad_inicio, profundidad_fin,
-                   tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source
-            FROM muestras
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("muestras", MUESTRA_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)

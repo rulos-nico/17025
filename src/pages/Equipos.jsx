@@ -1,9 +1,22 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge, Modal } from '../components/ui';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
-import { EquiposAPI, SensoresAPI } from '../services/apiService';
+import { ConfirmDeleteModal } from '../components/modals';
+import { useAuth } from '../hooks/useAuth';
+import { useMultipleApiData, useMutation } from '../hooks';
+import {
+  EquiposAPI,
+  SensoresAPI,
+  ComprobacionesAPI,
+  CalibracionesAPI,
+} from '../services/apiService';
 import { ESTADO_EQUIPO } from '../config';
+import {
+  formatDate,
+  getEstadoEquipo,
+  getDiasParaVencimiento,
+  getAlertaVencimiento,
+} from '../utils';
 
 // ============================================
 // OPCIONES PARA FORMULARIOS
@@ -514,71 +527,7 @@ function SensorFormModal({ isOpen, onClose, onSave, sensor, loading, equiposDisp
   );
 }
 
-// ============================================
-// COMPONENTE: MODAL CONFIRMACION ELIMINAR
-// ============================================
-
-function ConfirmDeleteModal({ isOpen, onClose, onConfirm, item, loading }) {
-  if (!item) return null;
-
-  const itemType = item.tipo === 'sensor' ? 'sensor' : 'equipo';
-  const itemName = item.nombre || item.codigo || 'este elemento';
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Confirmar Eliminaci\u00f3n" width="450px">
-      <div style={{ textAlign: 'center', padding: '16px 0' }}>
-        <div
-          style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            backgroundColor: '#FEE2E2',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            fontSize: '28px',
-          }}
-        >
-          &#9888;
-        </div>
-        <p style={{ margin: '0 0 8px', fontSize: '1rem', color: '#374151' }}>
-          \u00bfEst\u00e1s seguro de que deseas eliminar{' '}
-          {itemType === 'sensor' ? 'el sensor' : 'el equipo'}:
-        </p>
-        <p style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: '600', color: '#111827' }}>
-          {itemName}
-        </p>
-        <p style={{ margin: '0', fontSize: '0.875rem', color: '#6B7280' }}>
-          Esta acci\u00f3n no se puede deshacer.
-        </p>
-      </div>
-
-      <div style={formStyles.buttons}>
-        <button
-          type="button"
-          onClick={onClose}
-          style={formStyles.buttonSecondary}
-          disabled={loading}
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          style={{
-            ...formStyles.buttonDanger,
-            opacity: loading ? 0.6 : 1,
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-          disabled={loading}
-        >
-          {loading ? 'Eliminando...' : 'Eliminar'}
-        </button>
-      </div>
-    </Modal>
-  );
-}
+// ConfirmDeleteModal moved to ../components/modals/ConfirmDeleteModal.jsx
 
 // ============================================
 // COMPONENTE: DROPDOWN NUEVO ITEM
@@ -691,407 +640,11 @@ function NuevoDropdown({ onNewEquipo, onNewSensor }) {
 }
 
 // ============================================
-// DATOS MOCK PARA MODO BYPASS
+// HELPERS (usando utilidades centralizadas)
 // ============================================
 
-const MOCK_EQUIPOS = [
-  {
-    id: 'eq-001',
-    codigo: 'MUT-001',
-    placa: 'INV-2019-0045', // Código único de la organización
-    nombre: 'Máquina Universal de Tracción',
-    tipo: 'equipo',
-    marca: 'Instron',
-    modelo: '5985',
-    serie: 'SN-2019-45678',
-    rango: '0 - 250 kN',
-    resolucion: '0.001 kN',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'operativo',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2019-03-15',
-    proxima_calibracion: '2025-03-15',
-    proxima_comprobacion: '2025-02-01',
-    observaciones: 'Equipo principal para ensayos de tracción',
-    sensoresAsociados: ['eq-005', 'eq-006', 'eq-007'], // IDs de sensores asociados
-  },
-  {
-    id: 'eq-002',
-    codigo: 'DUR-001',
-    placa: 'INV-2020-0078',
-    nombre: 'Durómetro Rockwell',
-    tipo: 'equipo',
-    marca: 'Wilson',
-    modelo: 'RH2150',
-    serie: 'WH-2020-12345',
-    rango: 'HRA, HRB, HRC',
-    resolucion: '0.5 HR',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'operativo',
-    responsable: 'María González',
-    fecha_adquisicion: '2020-06-20',
-    proxima_calibracion: '2025-06-20',
-    proxima_comprobacion: '2025-02-10',
-    observaciones: '',
-    sensoresAsociados: [],
-  },
-  {
-    id: 'eq-003',
-    codigo: 'IMP-001',
-    placa: 'INV-2018-0032',
-    nombre: 'Máquina de Impacto Charpy',
-    tipo: 'equipo',
-    marca: 'Tinius Olsen',
-    modelo: 'IT503',
-    serie: 'TO-2018-98765',
-    rango: '0 - 300 J',
-    resolucion: '0.1 J',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'en_calibracion',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2018-11-10',
-    proxima_calibracion: '2025-01-30',
-    proxima_comprobacion: '2025-01-28',
-    observaciones: 'En proceso de calibración anual',
-    sensoresAsociados: ['eq-008'],
-  },
-  {
-    id: 'eq-004',
-    codigo: 'OES-001',
-    placa: 'INV-2021-0112',
-    nombre: 'Espectrómetro de Emisión Óptica',
-    tipo: 'equipo',
-    marca: 'Bruker',
-    modelo: 'Q4 Tasman',
-    serie: 'BR-2021-55555',
-    rango: 'Multi-elemento',
-    resolucion: '0.001%',
-    ubicacion: 'Laboratorio Químico',
-    estado: 'operativo',
-    responsable: 'Juan Pérez',
-    fecha_adquisicion: '2021-02-28',
-    proxima_calibracion: '2025-02-28',
-    proxima_comprobacion: '2025-02-05',
-    observaciones: '',
-    sensoresAsociados: [],
-  },
-  {
-    id: 'eq-005',
-    codigo: 'CEL-001',
-    placa: 'INV-2022-0156',
-    nombre: 'Celda de Carga 50kN',
-    tipo: 'sensor',
-    marca: 'HBM',
-    modelo: 'U10M',
-    serie: 'HBM-2022-11111',
-    rango: '0 - 50 kN',
-    resolucion: '0.01 kN',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'operativo',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2022-01-15',
-    proxima_calibracion: '2025-01-15',
-    proxima_comprobacion: '2025-01-20',
-    factor_calibracion: '1.0023',
-    observaciones: 'Sensor asociado a máquina de tracción',
-    equipoPadre: 'eq-001', // Equipo al que pertenece
-  },
-  {
-    id: 'eq-006',
-    codigo: 'CEL-002',
-    placa: 'INV-2022-0157',
-    nombre: 'Celda de Carga 250kN',
-    tipo: 'sensor',
-    marca: 'HBM',
-    modelo: 'U10M',
-    serie: 'HBM-2022-22222',
-    rango: '0 - 250 kN',
-    resolucion: '0.1 kN',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'operativo',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2022-01-15',
-    proxima_calibracion: '2025-01-15',
-    proxima_comprobacion: '2025-01-20',
-    factor_calibracion: '0.9987',
-    observaciones: 'Sensor asociado a máquina de tracción',
-    equipoPadre: 'eq-001',
-  },
-  {
-    id: 'eq-007',
-    codigo: 'EXT-001',
-    placa: 'INV-2020-0089',
-    nombre: 'Extensómetro Axial',
-    tipo: 'sensor',
-    marca: 'Epsilon',
-    modelo: '3542',
-    serie: 'EPS-2020-33333',
-    rango: '0 - 50 mm',
-    resolucion: '0.001 mm',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'fuera_servicio',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2020-05-10',
-    proxima_calibracion: '2025-05-10',
-    proxima_comprobacion: null,
-    factor_calibracion: '1.0000',
-    observaciones: 'Fuera de servicio por daño en cuchillas',
-    equipoPadre: 'eq-001',
-  },
-  {
-    id: 'eq-008',
-    codigo: 'PEN-001',
-    placa: 'INV-2018-0033',
-    nombre: 'Péndulo de Impacto',
-    tipo: 'sensor',
-    marca: 'Tinius Olsen',
-    modelo: 'PND-300',
-    serie: 'TO-2018-98766',
-    rango: '0 - 300 J',
-    resolucion: '0.5 J',
-    ubicacion: 'Laboratorio Mecánico',
-    estado: 'en_calibracion',
-    responsable: 'Carlos Rodríguez',
-    fecha_adquisicion: '2018-11-10',
-    proxima_calibracion: '2025-01-30',
-    proxima_comprobacion: '2025-01-28',
-    factor_calibracion: '1.0012',
-    observaciones: '',
-    equipoPadre: 'eq-003',
-  },
-];
-
-const MOCK_COMPROBACIONES = [
-  // MUT-001
-  {
-    id: 'comp-001',
-    equipoId: 'eq-001',
-    fecha: '2025-01-15',
-    tipo: 'Verificación diaria',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: 'Sin novedad',
-  },
-  {
-    id: 'comp-002',
-    equipoId: 'eq-001',
-    fecha: '2025-01-08',
-    tipo: 'Verificación diaria',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: '',
-  },
-  {
-    id: 'comp-003',
-    equipoId: 'eq-001',
-    fecha: '2025-01-02',
-    tipo: 'Verificación diaria',
-    resultado: 'Conforme',
-    responsable: 'María González',
-    observaciones: '',
-  },
-  {
-    id: 'comp-004',
-    equipoId: 'eq-001',
-    fecha: '2024-12-20',
-    tipo: 'Verificación mensual',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: 'Verificación con patrón de 100kN',
-  },
-  // DUR-001
-  {
-    id: 'comp-005',
-    equipoId: 'eq-002',
-    fecha: '2025-01-20',
-    tipo: 'Verificación con patrón',
-    resultado: 'Conforme',
-    responsable: 'María González',
-    observaciones: 'Bloque patrón HRC 62.5',
-  },
-  {
-    id: 'comp-006',
-    equipoId: 'eq-002',
-    fecha: '2025-01-10',
-    tipo: 'Verificación con patrón',
-    resultado: 'Conforme',
-    responsable: 'María González',
-    observaciones: '',
-  },
-  // CEL-001
-  {
-    id: 'comp-007',
-    equipoId: 'eq-005',
-    fecha: '2025-01-15',
-    tipo: 'Verificación con patrón',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: 'Verificación 10kN, 25kN, 50kN',
-  },
-  {
-    id: 'comp-008',
-    equipoId: 'eq-005',
-    fecha: '2024-12-15',
-    tipo: 'Verificación con patrón',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: '',
-  },
-  // CEL-002
-  {
-    id: 'comp-009',
-    equipoId: 'eq-006',
-    fecha: '2025-01-15',
-    tipo: 'Verificación con patrón',
-    resultado: 'Conforme',
-    responsable: 'Carlos Rodríguez',
-    observaciones: '',
-  },
-];
-
-const MOCK_CALIBRACIONES = [
-  // MUT-001
-  {
-    id: 'cal-001',
-    equipoId: 'eq-001',
-    fecha: '2024-03-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2024-1234',
-    vigencia: '2025-03-15',
-    factor: null,
-    incertidumbre: '±0.5%',
-    resultado: 'Apto',
-    observaciones: 'Calibración anual',
-  },
-  {
-    id: 'cal-002',
-    equipoId: 'eq-001',
-    fecha: '2023-03-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2023-0987',
-    vigencia: '2024-03-15',
-    factor: null,
-    incertidumbre: '±0.5%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  {
-    id: 'cal-003',
-    equipoId: 'eq-001',
-    fecha: '2022-03-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2022-0456',
-    vigencia: '2023-03-15',
-    factor: null,
-    incertidumbre: '±0.5%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  // DUR-001
-  {
-    id: 'cal-004',
-    equipoId: 'eq-002',
-    fecha: '2024-06-20',
-    laboratorio: 'MetroCal S.A.',
-    certificado: 'MC-2024-5678',
-    vigencia: '2025-06-20',
-    factor: null,
-    incertidumbre: '±0.3 HRC',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  // CEL-001
-  {
-    id: 'cal-005',
-    equipoId: 'eq-005',
-    fecha: '2024-01-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2024-2222',
-    vigencia: '2025-01-15',
-    factor: '1.0023',
-    incertidumbre: '±0.1%',
-    resultado: 'Apto',
-    observaciones: 'Factor aplicado en software',
-  },
-  {
-    id: 'cal-006',
-    equipoId: 'eq-005',
-    fecha: '2023-01-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2023-1111',
-    vigencia: '2024-01-15',
-    factor: '1.0019',
-    incertidumbre: '±0.1%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  // CEL-002
-  {
-    id: 'cal-007',
-    equipoId: 'eq-006',
-    fecha: '2024-01-15',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2024-3333',
-    vigencia: '2025-01-15',
-    factor: '0.9987',
-    incertidumbre: '±0.1%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  // EXT-001
-  {
-    id: 'cal-008',
-    equipoId: 'eq-007',
-    fecha: '2024-05-10',
-    laboratorio: 'MetroCal S.A.',
-    certificado: 'MC-2024-7777',
-    vigencia: '2025-05-10',
-    factor: '1.0000',
-    incertidumbre: '±0.5%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-  // PEN-001
-  {
-    id: 'cal-009',
-    equipoId: 'eq-008',
-    fecha: '2024-01-30',
-    laboratorio: 'LSQA Metrología',
-    certificado: 'CERT-2024-4444',
-    vigencia: '2025-01-30',
-    factor: '1.0012',
-    incertidumbre: '±0.2%',
-    resultado: 'Apto',
-    observaciones: '',
-  },
-];
-
-// ============================================
-// HELPERS
-// ============================================
-
-const getEstadoInfo = estado => ESTADO_EQUIPO[estado] || { label: estado, color: '#6B7280' };
-
-const getDiasParaVencimiento = fecha => {
-  if (!fecha) return null;
-  const hoy = new Date();
-  const vencimiento = new Date(fecha);
-  const diff = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
-  return diff;
-};
-
-const getAlertaVencimiento = dias => {
-  if (dias === null) return null;
-  if (dias < 0) return { color: '#EF4444', texto: 'Vencido', bg: '#FEE2E2' };
-  if (dias <= 30) return { color: '#F59E0B', texto: `${dias}d`, bg: '#FEF3C7' };
-  if (dias <= 90) return { color: '#3B82F6', texto: `${dias}d`, bg: '#DBEAFE' };
-  return { color: '#10B981', texto: `${dias}d`, bg: '#D1FAE5' };
-};
-
-const formatDate = fecha => {
-  if (!fecha) return '-';
-  return new Date(fecha).toLocaleDateString('es-CL');
-};
+// getEstadoEquipo, getDiasParaVencimiento, getAlertaVencimiento y formatDate
+// ahora se importan desde '../utils'
 
 // ============================================
 // COMPONENTE: LISTA DE SENSORES ASOCIADOS
@@ -1128,7 +681,7 @@ function SensoresAsociados({ sensoresIds, todosEquipos, onSensorClick }) {
         }}
       >
         {sensores.map(sensor => {
-          const estadoInfo = getEstadoInfo(sensor.estado);
+          const estadoInfo = getEstadoEquipo(sensor.estado);
           const diasCal = getDiasParaVencimiento(sensor.proxima_calibracion);
           const alertaCal = getAlertaVencimiento(diasCal);
 
@@ -1236,7 +789,7 @@ function EquipoRow({
   onEdit,
   onDelete,
 }) {
-  const estadoInfo = getEstadoInfo(equipo.estado);
+  const estadoInfo = getEstadoEquipo(equipo.estado);
   const diasCalib = getDiasParaVencimiento(equipo.proxima_calibracion);
   const alertaCalib = getAlertaVencimiento(diasCalib);
   const diasComprob = getDiasParaVencimiento(equipo.proxima_comprobacion);
@@ -1672,12 +1225,53 @@ function EquipoRow({
 // ============================================
 
 export default function Equipos() {
-  const { isBypassMode } = useGoogleAuth();
+  // Usar hook centralizado para fetching de datos
+  const {
+    data: { equiposRaw, sensoresRaw, comprobacionesRaw, calibracionesRaw },
+    loading,
+    reload: reloadAllData,
+  } = useMultipleApiData(
+    {
+      equiposRaw: { api: EquiposAPI.list },
+      sensoresRaw: { api: SensoresAPI.list },
+      comprobacionesRaw: { api: ComprobacionesAPI.list },
+      calibracionesRaw: { api: CalibracionesAPI.list },
+    },
+    { fetchOnMount: true }
+  );
 
-  const [equipos, setEquipos] = useState([]);
-  const [comprobaciones, setComprobaciones] = useState([]);
-  const [calibraciones, setCalibraciones] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Combinar y transformar datos
+  const equipos = useMemo(() => {
+    return [
+      ...(equiposRaw || []).map(e => ({ ...e, tipo: 'equipo' })),
+      ...(sensoresRaw || []).map(s => ({ ...s, tipo: 'sensor' })),
+    ];
+  }, [equiposRaw, sensoresRaw]);
+
+  const comprobaciones = useMemo(() => {
+    return (comprobacionesRaw || []).map(c => ({
+      id: c.id,
+      equipoId: c.equipo_id,
+      fecha: c.fecha,
+      tipo: c.tipo,
+      resultado: c.resultado,
+      responsable: c.responsable,
+      observaciones: c.observaciones,
+    }));
+  }, [comprobacionesRaw]);
+
+  const calibraciones = useMemo(() => {
+    return (calibracionesRaw || []).map(c => ({
+      id: c.id,
+      equipoId: c.equipo_id,
+      fecha: c.fecha,
+      laboratorio: c.laboratorio,
+      certificado: c.certificado,
+      factor: c.factor,
+      incertidumbre: c.incertidumbre,
+      proxima_calibracion: c.proxima_calibracion,
+    }));
+  }, [calibracionesRaw]);
 
   const [expandedRows, setExpandedRows] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
@@ -1692,25 +1286,34 @@ export default function Equipos() {
   const [editingEquipo, setEditingEquipo] = useState(null);
   const [editingSensor, setEditingSensor] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Función para recargar datos
-  const reloadData = async () => {
-    try {
-      const [equiposRes, sensoresRes] = await Promise.all([EquiposAPI.list(), SensoresAPI.list()]);
-
-      const todosEquipos = [
-        ...(equiposRes || []).map(e => ({ ...e, tipo: 'equipo' })),
-        ...(sensoresRes || []).map(s => ({ ...s, tipo: 'sensor' })),
-      ];
-
-      setEquipos(todosEquipos);
-    } catch (err) {
-      console.error('Error recargando equipos:', err);
-      setError('Error al recargar los datos');
+  // Mutations para operaciones CRUD
+  const equipoMutation = useMutation(
+    async ({ action, id, data }) => {
+      if (action === 'create') return EquiposAPI.create(data);
+      if (action === 'update') return EquiposAPI.update(id, data);
+      if (action === 'delete') return EquiposAPI.delete(id);
+    },
+    {
+      onSuccess: () => reloadAllData(),
+      onError: err => setError(err.message || 'Error en operación de equipo'),
     }
-  };
+  );
+
+  const sensorMutation = useMutation(
+    async ({ action, id, data }) => {
+      if (action === 'create') return SensoresAPI.create(data);
+      if (action === 'update') return SensoresAPI.update(id, data);
+      if (action === 'delete') return SensoresAPI.delete(id);
+    },
+    {
+      onSuccess: () => reloadAllData(),
+      onError: err => setError(err.message || 'Error en operación de sensor'),
+    }
+  );
+
+  const saving = equipoMutation.loading || sensorMutation.loading;
 
   // Handlers para Equipos
   const handleNewEquipo = () => {
@@ -1724,24 +1327,21 @@ export default function Equipos() {
   };
 
   const handleSaveEquipo = async formData => {
-    setSaving(true);
     setError(null);
     try {
       if (editingEquipo) {
-        // Actualizar equipo existente
-        await EquiposAPI.update(editingEquipo.id, formData);
+        await equipoMutation.mutateAsync({
+          action: 'update',
+          id: editingEquipo.id,
+          data: formData,
+        });
       } else {
-        // Crear nuevo equipo
-        await EquiposAPI.create(formData);
+        await equipoMutation.mutateAsync({ action: 'create', data: formData });
       }
       setShowEquipoModal(false);
       setEditingEquipo(null);
-      await reloadData();
     } catch (err) {
-      console.error('Error guardando equipo:', err);
-      setError(err.message || 'Error al guardar el equipo');
-    } finally {
-      setSaving(false);
+      // Error ya manejado por onError del mutation
     }
   };
 
@@ -1757,24 +1357,21 @@ export default function Equipos() {
   };
 
   const handleSaveSensor = async formData => {
-    setSaving(true);
     setError(null);
     try {
       if (editingSensor) {
-        // Actualizar sensor existente
-        await SensoresAPI.update(editingSensor.id, formData);
+        await sensorMutation.mutateAsync({
+          action: 'update',
+          id: editingSensor.id,
+          data: formData,
+        });
       } else {
-        // Crear nuevo sensor
-        await SensoresAPI.create(formData);
+        await sensorMutation.mutateAsync({ action: 'create', data: formData });
       }
       setShowSensorModal(false);
       setEditingSensor(null);
-      await reloadData();
     } catch (err) {
-      console.error('Error guardando sensor:', err);
-      setError(err.message || 'Error al guardar el sensor');
-    } finally {
-      setSaving(false);
+      // Error ya manejado por onError del mutation
     }
   };
 
@@ -1796,64 +1393,19 @@ export default function Equipos() {
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
 
-    setSaving(true);
     setError(null);
     try {
       if (itemToDelete.tipo === 'sensor') {
-        await SensoresAPI.delete(itemToDelete.id);
+        await sensorMutation.mutateAsync({ action: 'delete', id: itemToDelete.id });
       } else {
-        await EquiposAPI.delete(itemToDelete.id);
+        await equipoMutation.mutateAsync({ action: 'delete', id: itemToDelete.id });
       }
       setShowDeleteModal(false);
       setItemToDelete(null);
-      await reloadData();
     } catch (err) {
-      console.error('Error eliminando:', err);
-      setError(err.message || 'Error al eliminar');
-    } finally {
-      setSaving(false);
+      // Error ya manejado por onError del mutation
     }
   };
-  // Cargar datos
-  useEffect(() => {
-    const loadData = async () => {
-      if (isBypassMode) {
-        await Promise.resolve();
-        setEquipos(MOCK_EQUIPOS);
-        setComprobaciones(MOCK_COMPROBACIONES);
-        setCalibraciones(MOCK_CALIBRACIONES);
-        setLoading(false);
-      } else {
-        try {
-          // Cargar equipos desde API
-          const [equiposRes, sensoresRes] = await Promise.all([
-            EquiposAPI.list(),
-            SensoresAPI.list(),
-          ]);
-
-          // Combinar equipos y sensores
-          const todosEquipos = [
-            ...(equiposRes || []).map(e => ({ ...e, tipo: 'equipo' })),
-            ...(sensoresRes || []).map(s => ({ ...s, tipo: 'sensor' })),
-          ];
-
-          setEquipos(todosEquipos);
-          // TODO: Cargar comprobaciones y calibraciones cuando se implementen en el backend
-          setComprobaciones([]);
-          setCalibraciones([]);
-        } catch (err) {
-          console.error('Error cargando equipos:', err);
-          setEquipos([]);
-          setComprobaciones([]);
-          setCalibraciones([]);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    loadData();
-  }, [isBypassMode]);
-
   // Toggle fila expandida
   const toggleRow = id => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1931,21 +1483,6 @@ export default function Equipos() {
 
   return (
     <PageLayout title="Equipos y Sensores">
-      {/* Indicador modo bypass */}
-      {isBypassMode && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '8px 12px',
-            backgroundColor: '#FEF3C7',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-          }}
-        >
-          Modo Demo - Datos de ejemplo
-        </div>
-      )}
-
       {/* Tarjetas de estadísticas */}
       <div
         style={{
@@ -2300,7 +1837,8 @@ export default function Equipos() {
           setItemToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        item={itemToDelete}
+        itemType={itemToDelete?.tipo === 'sensor' ? 'sensor' : 'equipo'}
+        itemName={itemToDelete?.nombre || itemToDelete?.codigo}
         loading={saving}
       />
     </PageLayout>

@@ -4,11 +4,11 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{Cliente, CreateCliente, UpdateCliente};
 use crate::repositories::ClienteRepository;
+use crate::utils::id::{generate_simple_code, generate_uuid};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,8 +22,7 @@ async fn list_clientes(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Cliente>>, AppError> {
     let repo = ClienteRepository::new(state.db_pool.clone());
-    let clientes = repo.find_all().await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let clientes = repo.find_all().await?;
     Ok(Json(clientes))
 }
 
@@ -33,9 +32,7 @@ async fn get_cliente(
     State(state): State<AppState>,
 ) -> Result<Json<Cliente>, AppError> {
     let repo = ClienteRepository::new(state.db_pool.clone());
-    let cliente = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let cliente = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(cliente))
 }
 
@@ -45,11 +42,10 @@ async fn create_cliente(
     Json(payload): Json<CreateCliente>,
 ) -> Result<(StatusCode, Json<Cliente>), AppError> {
     let repo = ClienteRepository::new(state.db_pool.clone());
-    let id = Uuid::new_v4().to_string();
-    let codigo = format!("CLI-{:04}", rand_suffix());
+    let id = generate_uuid();
+    let codigo = generate_simple_code("CLI");
 
-    let cliente = repo.create(&id, &codigo, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let cliente = repo.create(&id, &codigo, payload).await?;
 
     Ok((StatusCode::CREATED, Json(cliente)))
 }
@@ -61,9 +57,7 @@ async fn update_cliente(
     Json(payload): Json<UpdateCliente>,
 ) -> Result<Json<Cliente>, AppError> {
     let repo = ClienteRepository::new(state.db_pool.clone());
-    let cliente = repo.update(&id, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let cliente = repo.update(&id, payload).await?.ok_or(AppError::NotFound)?;
     Ok(Json(cliente))
 }
 
@@ -73,21 +67,11 @@ async fn delete_cliente(
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let repo = ClienteRepository::new(state.db_pool.clone());
-    let deleted = repo.delete(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    
+    let deleted = repo.delete(&id).await?;
+
     if deleted {
         Ok(StatusCode::NO_CONTENT)
     } else {
         Err(AppError::NotFound)
     }
-}
-
-fn rand_suffix() -> u16 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos();
-    (nanos % 10000) as u16
 }

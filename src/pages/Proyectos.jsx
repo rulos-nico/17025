@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge, Card, Modal } from '../components/ui';
-import { useEnsayoCompleto } from '../hooks/useEnsayoSheet';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
-import { ProyectosAPI, ClientesAPI, PerforacionesAPI, EnsayosAPI } from '../services/apiService';
+import { SolicitarEnsayoModal } from '../components/modals';
+import { useAuth } from '../hooks/useAuth';
+import { useMultipleApiData, useMutation } from '../hooks';
+import {
+  ProyectosAPI,
+  ClientesAPI,
+  PerforacionesAPI,
+  EnsayosAPI,
+  MuestrasAPI,
+} from '../services/apiService';
 import {
   TIPOS_ENSAYO,
   TIPOS_MUESTRA,
@@ -19,154 +26,6 @@ const ESTADO_PERFORACION = {
   sin_relacionar: { label: 'Sin relacionar', color: '#9CA3AF' },
   relacionado: { label: 'Relacionado', color: '#10B981' },
 };
-
-// ============================================
-// DATOS MOCK PARA MODO BYPASS
-// ============================================
-
-const MOCK_CLIENTES = [
-  { id: 'cli-001', nombre: 'Constructora ABC', email: 'contacto@abc.com' },
-  { id: 'cli-002', nombre: 'Minera del Norte', email: 'lab@minera.com' },
-  { id: 'cli-003', nombre: 'Ingeniería Total', email: 'proyectos@ingtotal.com' },
-];
-
-const MOCK_PROYECTOS = [
-  {
-    id: 'pry-001',
-    codigo: 'PRY-2025-001',
-    nombre: 'Edificio Central',
-    clienteId: 'cli-001',
-    estado: 'activo',
-    fecha_inicio: '2025-01-15',
-    ensayosCotizados: { traccion: 10, dureza: 15, impacto: 5 },
-  },
-  {
-    id: 'pry-002',
-    codigo: 'PRY-2025-002',
-    nombre: 'Puente Río Grande',
-    clienteId: 'cli-002',
-    estado: 'activo',
-    fecha_inicio: '2025-01-20',
-    ensayosCotizados: { traccion: 20, quimico_oes: 10 },
-  },
-];
-
-const MOCK_PERFORACIONES = [
-  {
-    id: 'perf-001',
-    codigo: 'PER-001-A',
-    proyectoId: 'pry-001',
-    descripcion: 'Perforación Sector A',
-    estado: 'relacionado',
-    ubicacion: 'Sector Norte',
-    fecha_recepcion: '2025-01-18',
-    muestraFisica: 'MF-2025-0001',
-  },
-  {
-    id: 'perf-002',
-    codigo: 'PER-001-B',
-    proyectoId: 'pry-001',
-    descripcion: 'Perforación Sector B',
-    estado: 'sin_relacionar',
-    ubicacion: 'Sector Sur',
-    fecha_recepcion: null,
-    muestraFisica: null,
-  },
-  {
-    id: 'perf-003',
-    codigo: 'PER-001-C',
-    proyectoId: 'pry-001',
-    descripcion: 'Perforación Sector C',
-    estado: 'sin_relacionar',
-    ubicacion: 'Sector Este',
-    fecha_recepcion: null,
-    muestraFisica: null,
-  },
-  {
-    id: 'perf-004',
-    codigo: 'PER-002-A',
-    proyectoId: 'pry-002',
-    descripcion: 'Perforación Estribo 1',
-    estado: 'relacionado',
-    ubicacion: 'Estribo Izquierdo',
-    fecha_recepcion: '2025-01-22',
-    muestraFisica: 'MF-2025-0002',
-  },
-];
-
-const MOCK_MUESTRAS = [
-  // Muestras de perf-001 (Perforación Sector A - Proyecto 1)
-  {
-    id: 'mue-001',
-    codigo: 'M-001',
-    perforacionId: 'perf-001',
-    profundidadInicio: 0.5,
-    profundidadFin: 1.0,
-    tipoMuestra: 'alterado',
-    descripcion: 'Arcilla café oscura con gravas',
-  },
-  {
-    id: 'mue-002',
-    codigo: 'M-002',
-    perforacionId: 'perf-001',
-    profundidadInicio: 3.0,
-    profundidadFin: 3.5,
-    tipoMuestra: 'spt',
-    descripcion: 'Arena limosa, N=15',
-  },
-  // Muestras de perf-004 (Perforación Estribo 1 - Proyecto 2)
-  {
-    id: 'mue-003',
-    codigo: 'M-001',
-    perforacionId: 'perf-004',
-    profundidadInicio: 2.0,
-    profundidadFin: 2.5,
-    tipoMuestra: 'shelby',
-    descripcion: 'Limo arcilloso gris',
-  },
-  {
-    id: 'mue-004',
-    codigo: 'M-002',
-    perforacionId: 'perf-004',
-    profundidadInicio: 8.0,
-    profundidadFin: 10.0,
-    tipoMuestra: 'roca',
-    descripcion: 'Basalto fracturado RQD=70%',
-  },
-];
-
-const MOCK_ENSAYOS = [
-  {
-    id: 'ens-001',
-    codigo: 'ENS-2025-001',
-    tipo: 'traccion',
-    perforacionId: 'perf-001',
-    muestraId: 'mue-001',
-    proyectoId: 'pry-001',
-    workflow_state: 'E6',
-    norma: 'ASTM E8',
-  },
-  {
-    id: 'ens-002',
-    codigo: 'ENS-2025-002',
-    tipo: 'dureza',
-    perforacionId: 'perf-001',
-    muestraId: 'mue-001',
-    proyectoId: 'pry-001',
-    workflow_state: 'E1',
-    norma: 'ASTM E18',
-  },
-  {
-    id: 'ens-003',
-    codigo: 'ENS-2025-003',
-    tipo: 'traccion',
-    perforacionId: 'perf-004',
-    muestraId: 'mue-003',
-    proyectoId: 'pry-002',
-    workflow_state: 'E9',
-    norma: 'ASTM E8',
-  },
-];
 
 // ============================================
 // HELPERS DE PERMISOS
@@ -305,7 +164,7 @@ function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
                     <option value="">Seleccionar...</option>
                     {clientes.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.nombre}
+                        {c.contacto_nombre}
                       </option>
                     ))}
                   </select>
@@ -1498,245 +1357,7 @@ function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExis
   );
 }
 
-// ============================================
-// MODAL: SOLICITAR ENSAYO (PARA CLIENTES)
-// ============================================
-
-function SolicitarEnsayoModal({
-  isOpen,
-  onClose,
-  onCreate,
-  perforacion,
-  muestra,
-  proyecto,
-  loading,
-}) {
-  const [form, setForm] = useState({
-    tipo: '',
-    norma: '',
-    observaciones: '',
-    cantidad: 1,
-  });
-
-  const { crearEnsayoCompleto, inicializarGoogle } = useEnsayoCompleto(null);
-  const [creando, setCreando] = useState(false);
-
-  // Ensayos disponibles según lo cotizado en el proyecto
-  const ensayosDisponibles = proyecto?.ensayosCotizados || {};
-  const tiposDisponibles = TIPOS_ENSAYO.filter(t => ensayosDisponibles[t.id] > 0);
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setCreando(true);
-
-    try {
-      await inicializarGoogle();
-
-      const datosEnsayo = {
-        ...form,
-        perforacionId: perforacion.id,
-        muestraId: muestra?.id || null,
-        proyectoId: proyecto.id,
-        muestra: muestra
-          ? `${muestra.codigo} (${muestra.profundidadInicio}m-${muestra.profundidadFin}m)`
-          : perforacion.descripcion,
-      };
-
-      const ensayoCompleto = await crearEnsayoCompleto(datosEnsayo);
-      onCreate(ensayoCompleto);
-      setForm({ tipo: '', norma: '', observaciones: '', cantidad: 1 });
-
-      if (ensayoCompleto.spreadsheet_url) {
-        window.open(ensayoCompleto.spreadsheet_url, '_blank');
-      }
-    } catch (err) {
-      console.error('Error creando ensayo:', err);
-      onCreate({
-        ...form,
-        perforacionId: perforacion.id,
-        muestraId: muestra?.id || null,
-        proyectoId: proyecto.id,
-        muestra: muestra
-          ? `${muestra.codigo} (${muestra.profundidadInicio}m-${muestra.profundidadFin}m)`
-          : perforacion.descripcion,
-      });
-      setForm({ tipo: '', norma: '', observaciones: '', cantidad: 1 });
-    } finally {
-      setCreando(false);
-    }
-  };
-
-  const tipoSeleccionado = TIPOS_ENSAYO.find(t => t.id === form.tipo);
-  const cotizadosRestantes = tipoSeleccionado ? ensayosDisponibles[form.tipo] || 0 : 0;
-
-  // Obtener información del tipo de muestra
-  const tipoMuestraInfo = muestra ? getTipoMuestra(muestra.tipoMuestra) : null;
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Solicitar Ensayo${muestra ? ` - ${muestra.codigo}` : ''}`}
-    >
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Información de la muestra */}
-          <div style={{ padding: '12px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
-            {muestra ? (
-              <>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}
-                >
-                  <div>
-                    <strong>Muestra:</strong> {muestra.codigo}
-                    <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '2px' }}>
-                      Profundidad: {muestra.profundidadInicio}m - {muestra.profundidadFin}m
-                    </div>
-                  </div>
-                  {tipoMuestraInfo && (
-                    <Badge color={tipoMuestraInfo.color}>{tipoMuestraInfo.nombre}</Badge>
-                  )}
-                </div>
-                {muestra.descripcion && (
-                  <div style={{ fontSize: '0.875rem', color: '#374151', marginTop: '8px' }}>
-                    {muestra.descripcion}
-                  </div>
-                )}
-                <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '8px' }}>
-                  Perforación: {perforacion?.codigo} • Muestra física: {perforacion?.muestraFisica}
-                </div>
-              </>
-            ) : (
-              <>
-                <strong>Perforación:</strong> {perforacion?.descripcion}
-                {perforacion?.muestraFisica && (
-                  <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
-                    <strong>Código físico:</strong> {perforacion.muestraFisica}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {tiposDisponibles.length === 0 ? (
-            <div
-              style={{
-                padding: '16px',
-                backgroundColor: '#FEE2E2',
-                borderRadius: '8px',
-                color: '#991B1B',
-              }}
-            >
-              No hay ensayos cotizados disponibles para este proyecto.
-            </div>
-          ) : (
-            <>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Tipo de Ensayo *
-                </label>
-                <select
-                  value={form.tipo}
-                  onChange={e => {
-                    const tipo = TIPOS_ENSAYO.find(t => t.id === e.target.value);
-                    setForm({ ...form, tipo: e.target.value, norma: tipo?.norma || '' });
-                  }}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
-                >
-                  <option value="">Seleccionar tipo...</option>
-                  {tiposDisponibles.map(tipo => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.nombre} (Cotizados: {ensayosDisponibles[tipo.id]})
-                    </option>
-                  ))}
-                </select>
-                {tipoSeleccionado && (
-                  <div style={{ marginTop: '4px', fontSize: '0.875rem', color: '#6B7280' }}>
-                    Disponibles: {cotizadosRestantes} | Norma: {tipoSeleccionado.norma}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Norma de Referencia
-                </label>
-                <input
-                  type="text"
-                  value={form.norma}
-                  onChange={e => setForm({ ...form, norma: e.target.value })}
-                  placeholder="Ej: ASTM E8"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Observaciones
-                </label>
-                <textarea
-                  value={form.observaciones}
-                  onChange={e => setForm({ ...form, observaciones: e.target.value })}
-                  rows={2}
-                  placeholder="Condiciones especiales, requerimientos..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                    resize: 'vertical',
-                  }}
-                />
-              </div>
-            </>
-          )}
-
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || creando || tiposDisponibles.length === 0}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: tiposDisponibles.length === 0 ? '#9CA3AF' : '#10B981',
-                color: 'white',
-                cursor:
-                  loading || creando || tiposDisponibles.length === 0 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {creando ? 'Creando...' : 'Solicitar Ensayo'}
-            </button>
-          </div>
-        </div>
-      </form>
-    </Modal>
-  );
-}
+// SolicitarEnsayoModal moved to ../components/modals/SolicitarEnsayoModal.jsx
 
 // ============================================
 // COMPONENTE PRINCIPAL
@@ -1750,18 +1371,65 @@ const ROLES_DISPONIBLES = [
 ];
 
 export default function Proyectos() {
-  const { user, isBypassMode } = useGoogleAuth();
+  const { user } = useAuth();
 
-  // En modo bypass, permitir cambiar rol para pruebas
+  // Permitir cambiar rol para pruebas en modo demo
   const [devRole, setDevRole] = useState('tecnico');
-  const userRole = isBypassMode ? devRole : user?.rol || 'tecnico';
+  const userRole = devRole; // Siempre usar devRole en modo demo
 
-  const [proyectos, setProyectos] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [perforaciones, setPerforaciones] = useState([]);
-  const [muestras, setMuestras] = useState([]);
-  const [ensayos, setEnsayos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Usar hook centralizado para fetching de datos
+  const {
+    data: { proyectosRaw, clientesRaw, perforacionesRaw, muestrasRaw, ensayosRaw },
+    loading,
+    reload: reloadAllData,
+  } = useMultipleApiData(
+    {
+      proyectosRaw: { api: ProyectosAPI.list },
+      clientesRaw: { api: ClientesAPI.list },
+      perforacionesRaw: { api: PerforacionesAPI.list },
+      muestrasRaw: { api: MuestrasAPI.list },
+      ensayosRaw: { api: EnsayosAPI.list },
+    },
+    { fetchOnMount: true }
+  );
+
+  // Transformar datos con useMemo
+  const clientes = clientesRaw || [];
+
+  const proyectos = useMemo(() => {
+    return (proyectosRaw || []).map(p => ({
+      ...p,
+      clienteId: p.cliente_id || p.clienteId,
+      ensayosCotizados: p.ensayos_cotizados || p.ensayosCotizados || {},
+    }));
+  }, [proyectosRaw]);
+
+  const perforaciones = useMemo(() => {
+    return (perforacionesRaw || []).map(p => ({
+      ...p,
+      proyectoId: p.proyecto_id || p.proyectoId,
+      codigo: p.codigo || p.nombre,
+    }));
+  }, [perforacionesRaw]);
+
+  const muestras = useMemo(() => {
+    return (muestrasRaw || []).map(m => ({
+      ...m,
+      perforacionId: m.perforacion_id || m.perforacionId,
+      profundidadInicio: m.profundidad_inicio ?? m.profundidadInicio,
+      profundidadFin: m.profundidad_fin ?? m.profundidadFin,
+      tipoMuestra: m.tipo_muestra || m.tipoMuestra,
+    }));
+  }, [muestrasRaw]);
+
+  const ensayos = useMemo(() => {
+    return (ensayosRaw || []).map(e => ({
+      ...e,
+      perforacionId: e.perforacion_id || e.perforacionId,
+      muestraId: e.muestra_id || e.muestraId,
+      proyectoId: e.proyecto_id || e.proyectoId,
+    }));
+  }, [ensayosRaw]);
 
   // Selección actual
   const [selectedProyecto, setSelectedProyecto] = useState(null);
@@ -1782,114 +1450,32 @@ export default function Proyectos() {
   const [filtroCliente, setFiltroCliente] = useState('todos');
 
   // Estados para operaciones CRUD
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showEditarProyecto, setShowEditarProyecto] = useState(false);
   const [showEditarPerforacion, setShowEditarPerforacion] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null); // { type: 'proyecto' | 'perforacion', item: {...} }
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [editingProyecto, setEditingProyecto] = useState(null);
   const [editingPerforacion, setEditingPerforacion] = useState(null);
 
-  // Cargar datos
-  useEffect(() => {
-    const fetchData = async () => {
-      // En modo bypass, usar datos mock
-      if (isBypassMode) {
-        setProyectos(MOCK_PROYECTOS);
-        setClientes(MOCK_CLIENTES);
-        setPerforaciones(MOCK_PERFORACIONES);
-        setMuestras(MOCK_MUESTRAS);
-        setEnsayos(MOCK_ENSAYOS);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Usar el servicio de API para cargar datos del backend
-        const [proyectosRes, clientesRes, perforacionesRes, ensayosRes] = await Promise.all([
-          ProyectosAPI.list(),
-          ClientesAPI.list(),
-          PerforacionesAPI.list(),
-          EnsayosAPI.list(),
-        ]);
-
-        setProyectos(proyectosRes || []);
-        setClientes(clientesRes || []);
-        setPerforaciones(perforacionesRes || []);
-        setMuestras([]); // TODO: Cargar muestras desde API cuando esté disponible
-        setEnsayos(ensayosRes || []);
-      } catch (err) {
-        console.error('Error cargando datos:', err);
-        // En caso de error, usar datos vacíos
-        setProyectos([]);
-        setClientes([]);
-        setPerforaciones([]);
-        setMuestras([]);
-        setEnsayos([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [isBypassMode]);
-
-  // Función para recargar datos desde la API
-  const reloadData = async () => {
-    if (isBypassMode) return; // En modo bypass no recargamos
-
-    try {
-      const [proyectosRes, perforacionesRes] = await Promise.all([
-        ProyectosAPI.list(),
-        PerforacionesAPI.list(),
-      ]);
-      setProyectos(proyectosRes || []);
-      setPerforaciones(perforacionesRes || []);
-    } catch (err) {
-      console.error('Error recargando datos:', err);
-      setError('Error al recargar los datos');
+  // Mutation genérica para todas las operaciones
+  const crudMutation = useMutation(
+    async ({ api, method, id, data }) => {
+      if (method === 'create') return api.create(data);
+      if (method === 'update') return api.update(id, data);
+      if (method === 'delete') return api.delete(id);
+    },
+    {
+      onSuccess: () => reloadAllData(),
+      onError: err => setError(err.message || 'Error en la operación'),
     }
-  };
+  );
+
+  const saving = crudMutation.loading;
 
   // Handlers
   const handleCrearProyecto = async data => {
-    // En modo bypass, mantener lógica local
-    if (isBypassMode) {
-      const nuevoId = `pry-${Date.now()}`;
-      const nuevoCodigo = `PRY-2025-${String(proyectos.length + 1).padStart(3, '0')}`;
-      const nuevoProyecto = {
-        id: nuevoId,
-        codigo: nuevoCodigo,
-        nombre: data.nombre,
-        descripcion: data.descripcion,
-        clienteId: data.clienteId,
-        contacto: data.contacto,
-        fecha_inicio: new Date().toISOString().split('T')[0],
-        fecha_fin_estimada: data.fecha_fin_estimada,
-        estado: 'activo',
-        ensayosCotizados: data.ensayosCotizados,
-      };
-      const nuevasPerforaciones = data.perforaciones.map((perf, index) => ({
-        id: `perf-${Date.now()}-${index}`,
-        codigo: perf.codigo || `${nuevoCodigo}-P${String(index + 1).padStart(2, '0')}`,
-        proyectoId: nuevoId,
-        descripcion: perf.descripcion,
-        ubicacion: perf.ubicacion,
-        estado: 'sin_relacionar',
-        fecha_recepcion: null,
-        muestraFisica: null,
-      }));
-      setProyectos([...proyectos, nuevoProyecto]);
-      setPerforaciones([...perforaciones, ...nuevasPerforaciones]);
-      setShowNuevoProyecto(false);
-      setSelectedProyecto(nuevoProyecto);
-      return;
-    }
-
-    // Conectar con API del backend
-    setSaving(true);
     setError(null);
-
     try {
       // Obtener nombre del cliente
       const clienteSeleccionado = clientes.find(c => c.id === data.clienteId);
@@ -1904,14 +1490,18 @@ export default function Proyectos() {
         cliente_id: data.clienteId,
         cliente_nombre: clienteNombre,
         contacto: data.contacto || null,
+        ensayos_cotizados: data.ensayosCotizados || {},
       };
 
-      const nuevoProyecto = await ProyectosAPI.create(proyectoPayload);
+      const nuevoProyecto = await crudMutation.mutateAsync({
+        api: ProyectosAPI,
+        method: 'create',
+        data: proyectoPayload,
+      });
 
       // Crear perforaciones en backend
-      const perforacionesCreadas = [];
       for (const perf of data.perforaciones) {
-        if (!perf.codigo?.trim()) continue; // Ignorar perforaciones sin código
+        if (!perf.codigo?.trim()) continue;
 
         const perfPayload = {
           proyecto_id: nuevoProyecto.id,
@@ -1922,164 +1512,98 @@ export default function Proyectos() {
           fecha_inicio: null,
         };
 
-        const nuevaPerf = await PerforacionesAPI.create(perfPayload);
-        perforacionesCreadas.push(nuevaPerf);
+        await PerforacionesAPI.create(perfPayload);
       }
 
-      // Recargar datos desde la API para sincronizar
-      await reloadData();
+      // Recargar datos
+      await reloadAllData();
 
       setShowNuevoProyecto(false);
-      // Seleccionar el proyecto recién creado
-      setSelectedProyecto(nuevoProyecto);
+      setSelectedProyecto({
+        ...nuevoProyecto,
+        clienteId: nuevoProyecto.cliente_id || nuevoProyecto.clienteId,
+      });
     } catch (err) {
-      console.error('Error creando proyecto:', err);
-      setError(`Error al crear el proyecto: ${err.message || 'Error desconocido'}`);
-    } finally {
-      setSaving(false);
+      // Error ya manejado por onError del mutation
     }
   };
 
   const handleRelacionarMuestra = async data => {
-    // En modo bypass, mantener lógica local
-    if (isBypassMode) {
-      const updatedPerforaciones = perforaciones.map(perf => {
-        if (perf.id === data.perforacionId) {
-          return {
-            ...perf,
-            estado: 'relacionado',
-            muestraFisica: data.codigoMuestra,
-            fecha_recepcion: data.fechaRecepcion,
-            condicionMuestra: data.condicionMuestra,
-            observacionesRecepcion: data.observaciones,
-          };
-        }
-        return perf;
-      });
-
-      const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
-        id: `mue-${Date.now()}-${index}`,
-        codigo: `M-${String(index + 1).padStart(3, '0')}`,
-        perforacionId: data.perforacionId,
-        profundidadInicio: parseFloat(muestra.profundidadInicio),
-        profundidadFin: parseFloat(muestra.profundidadFin),
-        tipoMuestra: muestra.tipoMuestra,
-        descripcion: muestra.descripcion,
-      }));
-
-      setPerforaciones(updatedPerforaciones);
-      setMuestras([...muestras, ...nuevasMuestras]);
-      setShowRelacionarMuestra(false);
-      const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
-      setSelectedPerforacion(updatedPerf);
-      return;
-    }
-
-    // Conectar con API del backend
-    setSaving(true);
     setError(null);
-
     try {
-      // Actualizar perforación en el backend con el nuevo estado
-      const updatePayload = {
-        estado: 'relacionado',
-        // Nota: El backend de perforaciones puede no tener estos campos,
-        // pero los guardamos localmente por ahora
-      };
-
-      await PerforacionesAPI.update(data.perforacionId, updatePayload);
-
-      // Actualizar estado local (los campos adicionales se manejan localmente por ahora)
-      const updatedPerforaciones = perforaciones.map(perf => {
-        if (perf.id === data.perforacionId) {
-          return {
-            ...perf,
-            estado: 'relacionado',
-            muestraFisica: data.codigoMuestra,
-            fecha_recepcion: data.fechaRecepcion,
-            condicionMuestra: data.condicionMuestra,
-            observacionesRecepcion: data.observaciones,
-          };
-        }
-        return perf;
+      // Actualizar perforación en el backend
+      await crudMutation.mutateAsync({
+        api: PerforacionesAPI,
+        method: 'update',
+        id: data.perforacionId,
+        data: { estado: 'relacionado' },
       });
 
-      // Crear las muestras asociadas a la perforación (localmente por ahora)
-      // TODO: Cuando exista MuestrasAPI, crear en el backend
-      const nuevasMuestras = (data.muestras || []).map((muestra, index) => ({
-        id: `mue-${Date.now()}-${index}`,
-        codigo: `M-${String(index + 1).padStart(3, '0')}`,
-        perforacionId: data.perforacionId,
-        profundidadInicio: parseFloat(muestra.profundidadInicio),
-        profundidadFin: parseFloat(muestra.profundidadFin),
-        tipoMuestra: muestra.tipoMuestra,
-        descripcion: muestra.descripcion,
-      }));
+      // Crear las muestras asociadas
+      for (const muestra of data.muestras || []) {
+        const muestraPayload = {
+          perforacion_id: data.perforacionId,
+          profundidad_inicio: parseFloat(muestra.profundidadInicio),
+          profundidad_fin: parseFloat(muestra.profundidadFin),
+          tipo_muestra: muestra.tipoMuestra,
+          descripcion: muestra.descripcion || null,
+        };
+        await MuestrasAPI.create(muestraPayload);
+      }
 
-      setPerforaciones(updatedPerforaciones);
-      setMuestras([...muestras, ...nuevasMuestras]);
+      await reloadAllData();
       setShowRelacionarMuestra(false);
-
-      const updatedPerf = updatedPerforaciones.find(p => p.id === data.perforacionId);
+      const updatedPerf = perforaciones.find(p => p.id === data.perforacionId);
       setSelectedPerforacion(updatedPerf);
     } catch (err) {
-      console.error('Error relacionando muestra:', err);
-      setError(`Error al relacionar la muestra: ${err.message || 'Error desconocido'}`);
-    } finally {
-      setSaving(false);
+      // Error ya manejado
     }
   };
 
   const handleSolicitarEnsayo = async data => {
-    const nuevoEnsayo = {
-      id: `ens-${Date.now()}`,
-      codigo: `ENS-2025-${String(ensayos.length + 1).padStart(3, '0')}`,
-      tipo: data.tipo,
-      norma: data.norma,
-      perforacionId: data.perforacionId,
-      muestraId: data.muestraId || null,
-      proyectoId: selectedProyecto.id,
-      workflow_state: 'E1',
-      observaciones: data.observaciones,
-      spreadsheet_url: data.spreadsheet_url,
-    };
+    setError(null);
+    try {
+      const ensayoPayload = {
+        tipo: data.tipo,
+        perforacion_id: data.perforacionId,
+        proyecto_id: data.proyectoId,
+        muestra: data.muestra || data.muestraDescripcion || '',
+        norma: data.norma || '',
+        fecha_solicitud: new Date().toISOString().split('T')[0],
+        muestra_id: data.muestraId || null,
+        urgente: data.urgente || false,
+        observaciones: data.observaciones || null,
+      };
 
-    setEnsayos([...ensayos, nuevoEnsayo]);
-    setShowSolicitarEnsayo(false);
-    setSelectedMuestra(null);
+      await crudMutation.mutateAsync({ api: EnsayosAPI, method: 'create', data: ensayoPayload });
+      setShowSolicitarEnsayo(false);
+      setSelectedMuestra(null);
+    } catch (err) {
+      // Error ya manejado
+    }
   };
 
   const handleAgregarMuestra = async data => {
-    const nuevaMuestra = {
-      id: `mue-${Date.now()}`,
-      codigo: data.codigo,
-      perforacionId: data.perforacionId,
-      profundidadInicio: data.profundidadInicio,
-      profundidadFin: data.profundidadFin,
-      tipoMuestra: data.tipoMuestra,
-      descripcion: data.descripcion,
-    };
+    setError(null);
+    try {
+      const muestraPayload = {
+        perforacion_id: data.perforacionId,
+        profundidad_inicio: parseFloat(data.profundidadInicio),
+        profundidad_fin: parseFloat(data.profundidadFin),
+        tipo_muestra: data.tipoMuestra,
+        descripcion: data.descripcion || null,
+      };
 
-    setMuestras([...muestras, nuevaMuestra]);
-    setShowAgregarMuestra(false);
+      await crudMutation.mutateAsync({ api: MuestrasAPI, method: 'create', data: muestraPayload });
+      setShowAgregarMuestra(false);
+    } catch (err) {
+      // Error ya manejado
+    }
   };
 
   // Handler para editar proyecto
   const handleEditarProyecto = async data => {
-    if (isBypassMode) {
-      // En modo bypass, actualizar localmente
-      setProyectos(proyectos.map(p => (p.id === editingProyecto.id ? { ...p, ...data } : p)));
-      setShowEditarProyecto(false);
-      setEditingProyecto(null);
-      if (selectedProyecto?.id === editingProyecto.id) {
-        setSelectedProyecto({ ...selectedProyecto, ...data });
-      }
-      return;
-    }
-
-    setSaving(true);
     setError(null);
-
     try {
       const updatePayload = {
         nombre: data.nombre || null,
@@ -2087,44 +1611,31 @@ export default function Proyectos() {
         fecha_fin_estimada: data.fecha_fin_estimada || null,
         contacto: data.contacto || null,
         estado: data.estado || null,
+        ensayos_cotizados: data.ensayosCotizados || null,
       };
 
-      await ProyectosAPI.update(editingProyecto.id, updatePayload);
-      await reloadData();
+      await crudMutation.mutateAsync({
+        api: ProyectosAPI,
+        method: 'update',
+        id: editingProyecto.id,
+        data: updatePayload,
+      });
 
       setShowEditarProyecto(false);
       setEditingProyecto(null);
 
-      // Actualizar selección si es el mismo proyecto
       if (selectedProyecto?.id === editingProyecto.id) {
         const updated = proyectos.find(p => p.id === editingProyecto.id);
         if (updated) setSelectedProyecto({ ...updated, ...data });
       }
     } catch (err) {
-      console.error('Error actualizando proyecto:', err);
-      setError(`Error al actualizar el proyecto: ${err.message || 'Error desconocido'}`);
-    } finally {
-      setSaving(false);
+      // Error ya manejado
     }
   };
 
   // Handler para editar perforación
   const handleEditarPerforacion = async data => {
-    if (isBypassMode) {
-      setPerforaciones(
-        perforaciones.map(p => (p.id === editingPerforacion.id ? { ...p, ...data } : p))
-      );
-      setShowEditarPerforacion(false);
-      setEditingPerforacion(null);
-      if (selectedPerforacion?.id === editingPerforacion.id) {
-        setSelectedPerforacion({ ...selectedPerforacion, ...data });
-      }
-      return;
-    }
-
-    setSaving(true);
     setError(null);
-
     try {
       const updatePayload = {
         nombre: data.nombre || null,
@@ -2134,8 +1645,12 @@ export default function Proyectos() {
         estado: data.estado || null,
       };
 
-      await PerforacionesAPI.update(editingPerforacion.id, updatePayload);
-      await reloadData();
+      await crudMutation.mutateAsync({
+        api: PerforacionesAPI,
+        method: 'update',
+        id: editingPerforacion.id,
+        data: updatePayload,
+      });
 
       setShowEditarPerforacion(false);
       setEditingPerforacion(null);
@@ -2145,14 +1660,11 @@ export default function Proyectos() {
         if (updated) setSelectedPerforacion({ ...updated, ...data });
       }
     } catch (err) {
-      console.error('Error actualizando perforación:', err);
-      setError(`Error al actualizar la perforación: ${err.message || 'Error desconocido'}`);
-    } finally {
-      setSaving(false);
+      // Error ya manejado
     }
   };
 
-  // Handler para iniciar eliminación (abre modal de confirmación)
+  // Handler para iniciar eliminación
   const handleDeleteClick = (type, item) => {
     setItemToDelete({ type, item });
     setShowConfirmDelete(true);
@@ -2163,54 +1675,26 @@ export default function Proyectos() {
     if (!itemToDelete) return;
 
     const { type, item } = itemToDelete;
-
-    if (isBypassMode) {
-      if (type === 'proyecto') {
-        setProyectos(proyectos.filter(p => p.id !== item.id));
-        // También eliminar perforaciones asociadas
-        setPerforaciones(perforaciones.filter(p => p.proyectoId !== item.id));
-        if (selectedProyecto?.id === item.id) {
-          setSelectedProyecto(null);
-          setSelectedPerforacion(null);
-        }
-      } else if (type === 'perforacion') {
-        setPerforaciones(perforaciones.filter(p => p.id !== item.id));
-        // También eliminar muestras asociadas
-        setMuestras(muestras.filter(m => m.perforacionId !== item.id));
-        if (selectedPerforacion?.id === item.id) {
-          setSelectedPerforacion(null);
-        }
-      }
-      setShowConfirmDelete(false);
-      setItemToDelete(null);
-      return;
-    }
-
-    setSaving(true);
     setError(null);
 
     try {
       if (type === 'proyecto') {
-        await ProyectosAPI.delete(item.id);
+        await crudMutation.mutateAsync({ api: ProyectosAPI, method: 'delete', id: item.id });
         if (selectedProyecto?.id === item.id) {
           setSelectedProyecto(null);
           setSelectedPerforacion(null);
         }
       } else if (type === 'perforacion') {
-        await PerforacionesAPI.delete(item.id);
+        await crudMutation.mutateAsync({ api: PerforacionesAPI, method: 'delete', id: item.id });
         if (selectedPerforacion?.id === item.id) {
           setSelectedPerforacion(null);
         }
       }
 
-      await reloadData();
       setShowConfirmDelete(false);
       setItemToDelete(null);
     } catch (err) {
-      console.error(`Error eliminando ${type}:`, err);
-      setError(`Error al eliminar: ${err.message || 'Error desconocido'}`);
-    } finally {
-      setSaving(false);
+      // Error ya manejado
     }
   };
 
@@ -2260,13 +1744,13 @@ export default function Proyectos() {
 
   return (
     <PageLayout title="Proyectos">
-      {/* Indicador de modo y selector de rol */}
-      {isBypassMode && (
+      {/* Selector de rol para desarrollo */}
+      {import.meta.env.DEV && (
         <div
           style={{
             marginBottom: '16px',
             padding: '12px 16px',
-            backgroundColor: '#FEF3C7',
+            backgroundColor: '#DBEAFE',
             borderRadius: '6px',
             fontSize: '0.875rem',
             display: 'flex',
@@ -2277,14 +1761,14 @@ export default function Proyectos() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontWeight: '500' }}>Modo Demo</span>
+            <span style={{ fontWeight: '500' }}>Rol actual:</span>
             <select
               value={devRole}
               onChange={e => setDevRole(e.target.value)}
               style={{
                 padding: '4px 8px',
                 borderRadius: '4px',
-                border: '1px solid #F59E0B',
+                border: '1px solid #3B82F6',
                 backgroundColor: 'white',
                 fontSize: '0.875rem',
                 fontWeight: '500',
@@ -2298,7 +1782,7 @@ export default function Proyectos() {
               ))}
             </select>
           </div>
-          <div style={{ color: '#92400E', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ color: '#1E40AF', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {canCreateProject(userRole) && <span>✓ Crear proyectos</span>}
             {canRelatePhysicalSample(userRole) && <span>✓ Relacionar muestras</span>}
             {canAddMuestras(userRole) && <span>✓ Agregar muestras</span>}

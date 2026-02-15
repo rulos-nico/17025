@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc, NaiveDate};
 
 use crate::db::DbPool;
 use crate::models::{Equipo, CreateEquipo, UpdateEquipo};
+use crate::utils::sql::{EQUIPO_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Equipo
 #[derive(Debug, Clone, FromRow)]
@@ -71,14 +72,7 @@ impl EquipoRepository {
     /// Obtiene todos los equipos
     pub async fn find_all(&self) -> Result<Vec<Equipo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            ORDER BY nombre
-            "#,
+            &select_from_with("equipos", EQUIPO_COLUMNS, "ORDER BY nombre"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -89,15 +83,7 @@ impl EquipoRepository {
     /// Obtiene equipos activos
     pub async fn find_active(&self) -> Result<Vec<Equipo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE activo = true
-            ORDER BY nombre
-            "#,
+            &select_where_with("equipos", EQUIPO_COLUMNS, "activo = true", "ORDER BY nombre"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -108,15 +94,7 @@ impl EquipoRepository {
     /// Obtiene equipos disponibles para uso
     pub async fn find_available(&self) -> Result<Vec<Equipo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE activo = true AND estado = 'disponible'
-            ORDER BY nombre
-            "#,
+            &select_where_with("equipos", EQUIPO_COLUMNS, "activo = true AND estado = 'disponible'", "ORDER BY nombre"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -127,17 +105,9 @@ impl EquipoRepository {
     /// Obtiene equipos con calibración próxima a vencer (en los próximos N días)
     pub async fn find_calibration_due(&self, days: i32) -> Result<Vec<Equipo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE activo = true 
-              AND proxima_calibracion IS NOT NULL
-              AND proxima_calibracion <= CURRENT_DATE + $1::integer
-            ORDER BY proxima_calibracion ASC
-            "#,
+            &select_where_with("equipos", EQUIPO_COLUMNS, 
+                "activo = true AND proxima_calibracion IS NOT NULL AND proxima_calibracion <= CURRENT_DATE + $1::integer", 
+                "ORDER BY proxima_calibracion ASC"),
         )
         .bind(days)
         .fetch_all(&self.pool)
@@ -149,14 +119,7 @@ impl EquipoRepository {
     /// Busca un equipo por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Equipo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE id = $1
-            "#,
+            &select_where("equipos", EQUIPO_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -168,14 +131,7 @@ impl EquipoRepository {
     /// Busca un equipo por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Equipo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE codigo = $1
-            "#,
+            &select_where("equipos", EQUIPO_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -186,16 +142,14 @@ impl EquipoRepository {
 
     /// Crea un nuevo equipo
     pub async fn create(&self, id: &str, codigo: &str, dto: CreateEquipo) -> Result<Equipo, sqlx::Error> {
-        let row = sqlx::query_as::<_, EquipoRow>(
+        let row = sqlx::query_as::<_, EquipoRow>(&format!(
             r#"
             INSERT INTO equipos (id, codigo, nombre, serie, placa, descripcion, marca, modelo, ubicacion, estado, sync_source)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'disponible', 'db')
-            RETURNING id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                      ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                      incertidumbre, error_maximo, certificado_id, responsable,
-                      observaciones, activo, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            EQUIPO_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.nombre)
@@ -221,7 +175,7 @@ impl EquipoRepository {
             .as_ref()
             .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
 
-        let row = sqlx::query_as::<_, EquipoRow>(
+        let row = sqlx::query_as::<_, EquipoRow>(&format!(
             r#"
             UPDATE equipos
             SET nombre = COALESCE($2, nombre),
@@ -238,12 +192,10 @@ impl EquipoRepository {
                 activo = COALESCE($13, activo),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                      ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                      incertidumbre, error_maximo, certificado_id, responsable,
-                      observaciones, activo, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            EQUIPO_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.nombre)
         .bind(&dto.descripcion)
@@ -329,15 +281,7 @@ impl EquipoRepository {
     /// Obtiene equipos modificados desde la última sincronización
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Equipo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EquipoRow>(
-            r#"
-            SELECT id, codigo, nombre, serie, placa, descripcion, marca, modelo,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion,
-                   incertidumbre, error_maximo, certificado_id, responsable,
-                   observaciones, activo, created_at, updated_at, synced_at, sync_source
-            FROM equipos
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("equipos", EQUIPO_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)

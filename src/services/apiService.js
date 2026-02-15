@@ -1,9 +1,8 @@
 /**
- * Servicio de API para el backend Rust
+ * Servicio de API para el backend
  * Centraliza todas las llamadas HTTP al servidor
  *
  * Funcionalidades:
- * - Autenticación con Google OAuth tokens
  * - CRUD para todas las entidades
  * - Manejo de errores centralizado
  */
@@ -19,23 +18,22 @@ const TIMEOUT = API_CONFIG.timeout;
 
 /**
  * Obtiene el token de autenticación actual
- * Se usa el token de Google OAuth del frontend
+ * Placeholder para futura implementación de autenticación
  */
 const getAuthToken = () => {
-  // Buscar el token en el estado de la app
-  // Esto se integra con useGoogleAuth
-  if (typeof window !== 'undefined' && window.__GOOGLE_ACCESS_TOKEN__) {
-    return window.__GOOGLE_ACCESS_TOKEN__;
+  if (typeof window !== 'undefined' && window.__AUTH_TOKEN__) {
+    return window.__AUTH_TOKEN__;
   }
   return null;
 };
 
 /**
- * Guarda el token de autenticación (llamado desde useGoogleAuth)
+ * Guarda el token de autenticación
+ * Placeholder para futura implementación de autenticación
  */
 export const setAuthToken = token => {
   if (typeof window !== 'undefined') {
-    window.__GOOGLE_ACCESS_TOKEN__ = token;
+    window.__AUTH_TOKEN__ = token;
   }
 };
 
@@ -252,6 +250,36 @@ export const PerforacionesAPI = {
    * Obtener ensayos de una perforación
    */
   ensayos: id => request(`/api/perforaciones/${id}/ensayos`),
+
+  /**
+   * Obtener muestras de una perforación
+   */
+  muestras: id => request(`/api/perforaciones/${id}/muestras`),
+};
+
+// ============================================
+// MUESTRAS
+// ============================================
+
+export const MuestrasAPI = {
+  list: () => request('/api/muestras'),
+  get: id => request(`/api/muestras/${id}`),
+  create: data =>
+    request('/api/muestras', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/api/muestras/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: id => request(`/api/muestras/${id}`, { method: 'DELETE' }),
+
+  /**
+   * Obtener ensayos de una muestra
+   */
+  ensayos: id => request(`/api/muestras/${id}/ensayos`),
 };
 
 // ============================================
@@ -295,29 +323,65 @@ export const SensoresAPI = {
 };
 
 // ============================================
-// SINCRONIZACIÓN
+// PERSONAL INTERNO
 // ============================================
 
-export const SyncAPI = {
-  /**
-   * Sincronizar todo (BD <-> Sheets)
-   */
-  syncAll: () => request('/api/sync/all', { method: 'POST' }),
+export const PersonalInternoAPI = {
+  list: () => request('/api/personal-interno'),
+  get: id => request(`/api/personal-interno/${id}`),
+  create: data =>
+    request('/api/personal-interno', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/api/personal-interno/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: id => request(`/api/personal-interno/${id}`, { method: 'DELETE' }),
+};
 
-  /**
-   * Sincronizar desde Sheets a BD
-   */
-  fromSheets: () => request('/api/sync/from-sheets', { method: 'POST' }),
+// ============================================
+// COMPROBACIONES (Verificaciones de equipos)
+// ============================================
 
-  /**
-   * Sincronizar desde BD a Sheets
-   */
-  toSheets: () => request('/api/sync/to-sheets', { method: 'POST' }),
+export const ComprobacionesAPI = {
+  list: () => request('/api/comprobaciones'),
+  get: id => request(`/api/comprobaciones/${id}`),
+  listByEquipo: equipoId => request(`/api/comprobaciones/equipo/${equipoId}`),
+  create: data =>
+    request('/api/comprobaciones', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/api/comprobaciones/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: id => request(`/api/comprobaciones/${id}`, { method: 'DELETE' }),
+};
 
-  /**
-   * Estado de última sincronización
-   */
-  status: () => request('/api/sync/status'),
+// ============================================
+// CALIBRACIONES (Certificaciones de equipos)
+// ============================================
+
+export const CalibracionesAPI = {
+  list: () => request('/api/calibraciones'),
+  get: id => request(`/api/calibraciones/${id}`),
+  listByEquipo: equipoId => request(`/api/calibraciones/equipo/${equipoId}`),
+  create: data =>
+    request('/api/calibraciones', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/api/calibraciones/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: id => request(`/api/calibraciones/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
@@ -395,9 +459,12 @@ export default {
   Clientes: ClientesAPI,
   Ensayos: EnsayosAPI,
   Perforaciones: PerforacionesAPI,
+  Muestras: MuestrasAPI,
   Equipos: EquiposAPI,
   Sensores: SensoresAPI,
-  Sync: SyncAPI,
+  PersonalInterno: PersonalInternoAPI,
+  Comprobaciones: ComprobacionesAPI,
+  Calibraciones: CalibracionesAPI,
   Dashboard: DashboardAPI,
   setAuthToken,
 };

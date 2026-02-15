@@ -1,9 +1,12 @@
 pub mod auth;
+pub mod calibraciones;
 pub mod cliente;
+pub mod comprobaciones;
 pub mod ensayo;
 pub mod equipos;
 pub mod muestra;
 pub mod perforacion;
+pub mod personal_interno;
 pub mod proyecto;
 pub mod sensores;
 pub mod sync;
@@ -16,11 +19,14 @@ use crate::services::google_sheets::GoogleSheetsClient;
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .nest("/auth", auth::routes())
+        .nest("/calibraciones", calibraciones::routes())
         .nest("/clientes", cliente::routes())
+        .nest("/comprobaciones", comprobaciones::routes())
         .nest("/ensayos", ensayo::routes())
         .nest("/equipos", equipos::routes())
         .nest("/muestras", muestra::routes())
         .nest("/perforaciones", perforacion::routes())
+        .nest("/personal-interno", personal_interno::routes())
         .nest("/proyectos", proyecto::routes())
         .nest("/sensores", sensores::routes())
         .nest("/sync", sync::routes())

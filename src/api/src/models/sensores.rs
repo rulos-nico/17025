@@ -28,7 +28,7 @@ pub struct Sensor {
 #[derive(Debug, Deserialize)]
 pub struct CreateSensor {
     pub codigo: String,
-    pub tipo: String, 
+    pub tipo: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub numero_serie: String,

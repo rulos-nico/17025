@@ -4,12 +4,11 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use chrono::Utc;
-use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{CreateProyecto, Proyecto, UpdateProyecto, Perforacion};
 use crate::repositories::{ProyectoRepository, PerforacionRepository};
+use crate::utils::id::{generate_uuid, generate_dated_code};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -24,8 +23,7 @@ async fn list_proyectos(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Proyecto>>, AppError> {
     let repo = ProyectoRepository::new(state.db_pool.clone());
-    let proyectos = repo.find_all().await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let proyectos = repo.find_all().await?;
     Ok(Json(proyectos))
 }
 
@@ -35,8 +33,7 @@ async fn get_proyecto(
     State(state): State<AppState>,
 ) -> Result<Json<Proyecto>, AppError> {
     let repo = ProyectoRepository::new(state.db_pool.clone());
-    let proyecto = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+    let proyecto = repo.find_by_id(&id).await?
         .ok_or(AppError::NotFound)?;
     Ok(Json(proyecto))
 }
@@ -47,15 +44,10 @@ async fn create_proyecto(
     Json(payload): Json<CreateProyecto>,
 ) -> Result<(StatusCode, Json<Proyecto>), AppError> {
     let repo = ProyectoRepository::new(state.db_pool.clone());
-    let id = Uuid::new_v4().to_string();
-    let codigo = format!(
-        "PRY-{}-{:04}",
-        Utc::now().format("%Y%m%d"),
-        rand_suffix()
-    );
+    let id = generate_uuid();
+    let codigo = generate_dated_code("PRY");
 
-    let proyecto = repo.create(&id, &codigo, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let proyecto = repo.create(&id, &codigo, payload).await?;
 
     Ok((StatusCode::CREATED, Json(proyecto)))
 }
@@ -67,8 +59,7 @@ async fn update_proyecto(
     Json(payload): Json<UpdateProyecto>,
 ) -> Result<Json<Proyecto>, AppError> {
     let repo = ProyectoRepository::new(state.db_pool.clone());
-    let proyecto = repo.update(&id, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+    let proyecto = repo.update(&id, payload).await?
         .ok_or(AppError::NotFound)?;
     Ok(Json(proyecto))
 }
@@ -79,8 +70,7 @@ async fn delete_proyecto(
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let repo = ProyectoRepository::new(state.db_pool.clone());
-    let deleted = repo.delete(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let deleted = repo.delete(&id).await?;
     
     if deleted {
         Ok(StatusCode::NO_CONTENT)
@@ -95,16 +85,6 @@ async fn get_perforaciones_by_proyecto(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Perforacion>>, AppError> {
     let repo = PerforacionRepository::new(state.db_pool.clone());
-    let perforaciones = repo.find_by_proyecto(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let perforaciones = repo.find_by_proyecto(&id).await?;
     Ok(Json(perforaciones))
-}
-
-fn rand_suffix() -> u16 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos();
-    (nanos % 10000) as u16
 }

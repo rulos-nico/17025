@@ -8,10 +8,12 @@ pub struct Proyecto {
     pub descripcion: String,
     pub fecha_inicio: String,
     pub fecha_fin_estimada: Option<String>,
+    pub duracion_estimada: Option<String>,
     pub cliente_id: String,
     pub cliente_nombre: String,
     pub contacto: Option<String>,
     pub estado: String,
+    pub ensayos_cotizados: Option<serde_json::Value>,
     pub fecha_fin_real: Option<String>,
     pub drive_folder_id: Option<String>,
     pub created_at: String,
@@ -25,6 +27,8 @@ pub struct CreateProyecto {
     pub descripcion: String,
     pub fecha_inicio: String,
     pub fecha_fin_estimada: Option<String>,
+    pub duracion_estimada: Option<String>,
+    pub ensayos_cotizados: Option<serde_json::Value>,
     pub cliente_id: String,
     pub cliente_nombre: String,
     pub contacto: Option<String>,
@@ -35,6 +39,8 @@ pub struct UpdateProyecto {
     pub nombre: Option<String>,
     pub descripcion: Option<String>,
     pub fecha_fin_estimada: Option<String>,
+    pub duracion_estimada: Option<String>,
+    pub ensayos_cotizados: Option<serde_json::Value>,
     pub contacto: Option<String>,
     pub estado: Option<String>,
     pub fecha_fin_real: Option<String>,
@@ -42,7 +48,7 @@ pub struct UpdateProyecto {
 
 impl Proyecto {
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 15 {
+        if row.len() < 16 {
             return None;
         }
         Some(Proyecto {
@@ -52,15 +58,17 @@ impl Proyecto {
             descripcion: row.get(3)?.clone(),
             fecha_inicio: row.get(4)?.clone(),
             fecha_fin_estimada: row.get(5).cloned().filter(|s| !s.is_empty()),
-            cliente_id: row.get(6)?.clone(),
-            cliente_nombre: row.get(7)?.clone(),
-            contacto: row.get(8).cloned().filter(|s| !s.is_empty()),
-            estado: row.get(9)?.clone(),
-            fecha_fin_real: row.get(10).cloned().filter(|s| !s.is_empty()),
-            drive_folder_id: row.get(11).cloned().filter(|s| !s.is_empty()),
-            created_at: row.get(12)?.clone(),
-            updated_at: row.get(13)?.clone(),
-            created_by: row.get(14).cloned().filter(|s| !s.is_empty()),
+            duracion_estimada: row.get(6).cloned().filter(|s| !s.is_empty()),
+            cliente_id: row.get(7)?.clone(),
+            cliente_nombre: row.get(8)?.clone(),
+            contacto: row.get(9).cloned().filter(|s| !s.is_empty()),
+            estado: row.get(10)?.clone(),
+            ensayos_cotizados: None, // No se sincroniza desde Sheets
+            fecha_fin_real: row.get(11).cloned().filter(|s| !s.is_empty()),
+            drive_folder_id: row.get(12).cloned().filter(|s| !s.is_empty()),
+            created_at: row.get(13)?.clone(),
+            updated_at: row.get(14)?.clone(),
+            created_by: row.get(15).cloned().filter(|s| !s.is_empty()),
         })
     }
 
@@ -72,6 +80,7 @@ impl Proyecto {
             self.descripcion.clone(),
             self.fecha_inicio.clone(),
             self.fecha_fin_estimada.clone().unwrap_or_default(),
+            self.duracion_estimada.clone().unwrap_or_default(),
             self.cliente_id.clone(),
             self.cliente_nombre.clone(),
             self.contacto.clone().unwrap_or_default(),

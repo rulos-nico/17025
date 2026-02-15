@@ -1,7 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge, Modal } from '../components/ui';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { useAuth } from '../hooks/useAuth';
+import {
+  EnsayosAPI,
+  PersonalInternoAPI,
+  ClientesAPI,
+  ProyectosAPI,
+  PerforacionesAPI,
+  MuestrasAPI,
+} from '../services/apiService';
 import {
   TIPOS_ENSAYO,
   TIPOS_MUESTRA,
@@ -10,329 +18,6 @@ import {
   WORKFLOW_TRANSITIONS,
   getWorkflowInfo,
 } from '../config';
-
-// ============================================
-// DATOS MOCK PARA MODO BYPASS
-// ============================================
-
-const MOCK_TECNICOS = [
-  { id: 'tec-001', nombre: 'Carlos', apellido: 'Rodríguez', email: 'carlos@lab.com' },
-  { id: 'tec-002', nombre: 'María', apellido: 'González', email: 'maria@lab.com' },
-  { id: 'tec-003', nombre: 'Juan', apellido: 'Pérez', email: 'juan@lab.com' },
-];
-
-const MOCK_ENSAYOS = [
-  // Sin programar - Proyecto 1, Perforación 1, Muestra 1
-  {
-    id: 'ens-001',
-    codigo: 'ENS-2025-001',
-    tipo: 'traccion',
-    workflow_state: 'E1',
-    muestra: 'Acero A36 - Viga V1',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-001',
-    muestraId: 'mue-001',
-    clienteId: 'cli-001',
-    tecnicoId: null,
-    norma: 'ASTM E8',
-    fecha_solicitud: '2025-01-20',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1abc123/edit',
-  },
-  {
-    id: 'ens-002',
-    codigo: 'ENS-2025-002',
-    tipo: 'dureza',
-    workflow_state: 'E1',
-    muestra: 'Acero A36 - Viga V2',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-001',
-    muestraId: 'mue-001',
-    clienteId: 'cli-001',
-    tecnicoId: null,
-    norma: 'ASTM E18',
-    fecha_solicitud: '2025-01-21',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1def456/edit',
-  },
-
-  // Programados - Proyecto 2, Perforación 3, Muestra 6
-  {
-    id: 'ens-003',
-    codigo: 'ENS-2025-003',
-    tipo: 'traccion',
-    workflow_state: 'E2',
-    muestra: 'Acero 1045 - Eje',
-    proyectoId: 'pry-002',
-    perforacionId: 'per-003',
-    muestraId: 'mue-006',
-    clienteId: 'cli-002',
-    tecnicoId: 'tec-001',
-    norma: 'ASTM E8',
-    fecha_solicitud: '2025-01-18',
-    fecha_programada: '2025-01-25',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1ghi789/edit',
-  },
-
-  // En ejecución - Proyecto 1, Perforación 2, Muestra 4
-  {
-    id: 'ens-004',
-    codigo: 'ENS-2025-004',
-    tipo: 'impacto',
-    workflow_state: 'E6',
-    muestra: 'Acero A572 - Placa',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-002',
-    muestraId: 'mue-004',
-    clienteId: 'cli-001',
-    tecnicoId: 'tec-001',
-    norma: 'ASTM E23',
-    fecha_solicitud: '2025-01-15',
-    fecha_programada: '2025-01-22',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1jkl012/edit',
-  },
-  // En ejecución - Proyecto 2, Perforación 4, Muestra 8
-  {
-    id: 'ens-005',
-    codigo: 'ENS-2025-005',
-    tipo: 'quimico_oes',
-    workflow_state: 'E6',
-    muestra: 'Fundición Gris',
-    proyectoId: 'pry-002',
-    perforacionId: 'per-004',
-    muestraId: 'mue-008',
-    clienteId: 'cli-002',
-    tecnicoId: 'tec-002',
-    norma: 'ASTM E415',
-    fecha_solicitud: '2025-01-16',
-    sheet_url: null,
-  },
-
-  // Procesamiento - Proyecto 1, Perforación 1, Muestra 2
-  {
-    id: 'ens-006',
-    codigo: 'ENS-2025-006',
-    tipo: 'metalografia',
-    workflow_state: 'E8',
-    muestra: 'Acero Inox 304',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-001',
-    muestraId: 'mue-002',
-    clienteId: 'cli-001',
-    tecnicoId: 'tec-001',
-    norma: 'ASTM E3',
-    fecha_solicitud: '2025-01-10',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1mno345/edit',
-  },
-
-  // Revisión técnica - Proyecto 2, Perforación 3, Muestra 7
-  {
-    id: 'ens-007',
-    codigo: 'ENS-2025-007',
-    tipo: 'traccion',
-    workflow_state: 'E9',
-    muestra: 'Aluminio 6061',
-    proyectoId: 'pry-002',
-    perforacionId: 'per-003',
-    muestraId: 'mue-007',
-    clienteId: 'cli-002',
-    tecnicoId: 'tec-002',
-    norma: 'ASTM E8',
-    fecha_solicitud: '2025-01-08',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1pqr678/edit',
-  },
-
-  // Revisión coordinación - Proyecto 1, Perforación 2, Muestra 5
-  {
-    id: 'ens-008',
-    codigo: 'ENS-2025-008',
-    tipo: 'dureza',
-    workflow_state: 'E10',
-    muestra: 'Acero 4140',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-002',
-    muestraId: 'mue-005',
-    clienteId: 'cli-001',
-    tecnicoId: 'tec-001',
-    norma: 'ASTM E18',
-    fecha_solicitud: '2025-01-05',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1stu901/edit',
-  },
-
-  // Por enviar - Proyecto 2, Perforación 4, Muestra 9
-  {
-    id: 'ens-009',
-    codigo: 'ENS-2025-009',
-    tipo: 'compresion',
-    workflow_state: 'E12',
-    muestra: 'Concreto 3000psi',
-    proyectoId: 'pry-002',
-    perforacionId: 'per-004',
-    muestraId: 'mue-009',
-    clienteId: 'cli-002',
-    tecnicoId: 'tec-003',
-    norma: 'ASTM C39',
-    fecha_solicitud: '2025-01-02',
-    sheet_url: 'https://docs.google.com/spreadsheets/d/1vwx234/edit',
-  },
-
-  // Novedad - Proyecto 1, Perforación 1, Muestra 3
-  {
-    id: 'ens-010',
-    codigo: 'ENS-2025-010',
-    tipo: 'ultrasonido',
-    workflow_state: 'E5',
-    muestra: 'Soldadura T1',
-    proyectoId: 'pry-001',
-    perforacionId: 'per-001',
-    muestraId: 'mue-003',
-    clienteId: 'cli-001',
-    tecnicoId: 'tec-001',
-    norma: 'ASTM E114',
-    fecha_solicitud: '2025-01-12',
-    novedad_razon: 'Muestra presenta defectos superficiales que impiden el ensayo',
-    sheet_url: null,
-  },
-];
-
-const MOCK_CLIENTES = [
-  { id: 'cli-001', nombre: 'Constructora ABC' },
-  { id: 'cli-002', nombre: 'Minera del Norte' },
-];
-
-const MOCK_PROYECTOS = [
-  {
-    id: 'pry-001',
-    codigo: 'PRY-2025-001',
-    nombre: 'Edificio Central',
-    clienteNombre: 'Constructora ABC',
-    clienteId: 'cli-001',
-  },
-  {
-    id: 'pry-002',
-    codigo: 'PRY-2025-002',
-    nombre: 'Puente Norte',
-    clienteNombre: 'Minera del Norte',
-    clienteId: 'cli-002',
-  },
-];
-
-const MOCK_PERFORACIONES = [
-  {
-    id: 'per-001',
-    codigo: 'PER-001',
-    proyectoId: 'pry-001',
-    nombre: 'Perforación Norte',
-    profundidad: 15.5,
-  },
-  {
-    id: 'per-002',
-    codigo: 'PER-002',
-    proyectoId: 'pry-001',
-    nombre: 'Perforación Sur',
-    profundidad: 12.0,
-  },
-  {
-    id: 'per-003',
-    codigo: 'PER-003',
-    proyectoId: 'pry-002',
-    nombre: 'Perforación A',
-    profundidad: 20.0,
-  },
-  {
-    id: 'per-004',
-    codigo: 'PER-004',
-    proyectoId: 'pry-002',
-    nombre: 'Perforación B',
-    profundidad: 18.5,
-  },
-];
-
-const MOCK_MUESTRAS = [
-  // Muestras de PER-001 (Perforación Norte - Proyecto 1)
-  {
-    id: 'mue-001',
-    codigo: 'M-001',
-    perforacionId: 'per-001',
-    profundidadInicio: 0.5,
-    profundidadFin: 1.0,
-    tipoMuestra: 'alterado',
-    descripcion: 'Arcilla café oscura con gravas',
-  },
-  {
-    id: 'mue-002',
-    codigo: 'M-002',
-    perforacionId: 'per-001',
-    profundidadInicio: 3.0,
-    profundidadFin: 3.5,
-    tipoMuestra: 'spt',
-    descripcion: 'Arena limosa, N=15',
-  },
-  {
-    id: 'mue-003',
-    codigo: 'M-003',
-    perforacionId: 'per-001',
-    profundidadInicio: 8.0,
-    profundidadFin: 10.0,
-    tipoMuestra: 'roca',
-    descripcion: 'Roca granítica fracturada RQD=65%',
-  },
-  // Muestras de PER-002 (Perforación Sur - Proyecto 1)
-  {
-    id: 'mue-004',
-    codigo: 'M-001',
-    perforacionId: 'per-002',
-    profundidadInicio: 1.0,
-    profundidadFin: 1.5,
-    tipoMuestra: 'shelby',
-    descripcion: 'Limo arcilloso gris',
-  },
-  {
-    id: 'mue-005',
-    codigo: 'M-002',
-    perforacionId: 'per-002',
-    profundidadInicio: 5.0,
-    profundidadFin: 5.5,
-    tipoMuestra: 'inalterado',
-    descripcion: 'Arcilla plástica café',
-  },
-  // Muestras de PER-003 (Perforación A - Proyecto 2)
-  {
-    id: 'mue-006',
-    codigo: 'M-001',
-    perforacionId: 'per-003',
-    profundidadInicio: 2.0,
-    profundidadFin: 2.5,
-    tipoMuestra: 'spt',
-    descripcion: 'Grava arenosa, N=35',
-  },
-  {
-    id: 'mue-007',
-    codigo: 'M-002',
-    perforacionId: 'per-003',
-    profundidadInicio: 12.0,
-    profundidadFin: 14.0,
-    tipoMuestra: 'roca',
-    descripcion: 'Basalto sano RQD=90%',
-  },
-  // Muestras de PER-004 (Perforación B - Proyecto 2)
-  {
-    id: 'mue-008',
-    codigo: 'M-001',
-    perforacionId: 'per-004',
-    profundidadInicio: 0.0,
-    profundidadFin: 0.5,
-    tipoMuestra: 'alterado',
-    descripcion: 'Material de relleno',
-  },
-  {
-    id: 'mue-009',
-    codigo: 'M-002',
-    perforacionId: 'per-004',
-    profundidadInicio: 4.0,
-    profundidadFin: 4.5,
-    tipoMuestra: 'shelby',
-    descripcion: 'Arcilla limosa verde',
-  },
-];
 
 // ============================================
 // CONFIGURACIÓN DE COLUMNAS KANBAN
@@ -1689,9 +1374,9 @@ function HierarchyView({ proyectos, perforaciones, muestras, ensayos, onEnsayoCl
 // ============================================
 
 export default function Ensayo() {
-  const { user, isBypassMode } = useGoogleAuth();
+  const { user } = useAuth();
   const userRole = user?.rol || 'tecnico';
-  const userId = user?.id || 'demo-user-001';
+  const userId = user?.id || null;
 
   const [ensayos, setEnsayos] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
@@ -1715,26 +1400,77 @@ export default function Ensayo() {
   const [showNovedad, setShowNovedad] = useState(false);
   const [showReasignar, setShowReasignar] = useState(false);
 
-  // Cargar datos
+  // Cargar datos desde APIs
   useEffect(() => {
     const loadData = async () => {
-      if (isBypassMode) {
-        // Pequeño delay para evitar warning de setState sincrónico
-        await Promise.resolve();
-        setEnsayos(MOCK_ENSAYOS);
-        setTecnicos(MOCK_TECNICOS);
-        setClientes(MOCK_CLIENTES);
-        setProyectos(MOCK_PROYECTOS);
-        setPerforaciones(MOCK_PERFORACIONES);
-        setMuestras(MOCK_MUESTRAS);
-        setLoading(false);
-      } else {
-        // TODO: Cargar desde API real
+      try {
+        const [ensayosRes, tecnicosRes, clientesRes, proyectosRes, perforacionesRes, muestrasRes] =
+          await Promise.all([
+            EnsayosAPI.list(),
+            PersonalInternoAPI.list(),
+            ClientesAPI.list(),
+            ProyectosAPI.list(),
+            PerforacionesAPI.list(),
+            MuestrasAPI.list(),
+          ]);
+
+        setEnsayos(
+          (ensayosRes || []).map(e => ({
+            ...e,
+            perforacionId: e.perforacion_id || e.perforacionId,
+            proyectoId: e.proyecto_id || e.proyectoId,
+            muestraId: e.muestra_id || e.muestraId,
+            tecnicoId: e.tecnico_id || e.tecnicoId,
+            tecnicoNombre: e.tecnico_nombre || e.tecnicoNombre,
+          }))
+        );
+        // Map personal interno to tecnicos format (filter by cargo if needed)
+        setTecnicos(
+          (tecnicosRes || []).map(p => ({
+            id: p.id,
+            nombre: p.nombre,
+            apellido: p.apellido,
+            email: p.email,
+            cargo: p.cargo,
+          }))
+        );
+        setClientes(clientesRes || []);
+        setProyectos(
+          (proyectosRes || []).map(p => ({
+            ...p,
+            clienteId: p.cliente_id || p.clienteId,
+            ensayosCotizados: p.ensayos_cotizados || p.ensayosCotizados || {},
+          }))
+        );
+        setPerforaciones(
+          (perforacionesRes || []).map(p => ({
+            ...p,
+            proyectoId: p.proyecto_id || p.proyectoId,
+          }))
+        );
+        setMuestras(
+          (muestrasRes || []).map(m => ({
+            ...m,
+            perforacionId: m.perforacion_id || m.perforacionId,
+            profundidadInicio: m.profundidad_inicio ?? m.profundidadInicio ?? 0,
+            profundidadFin: m.profundidad_fin ?? m.profundidadFin ?? 0,
+            tipoMuestra: m.tipo_muestra || m.tipoMuestra || '',
+          }))
+        );
+      } catch (err) {
+        console.error('Error cargando datos de ensayos:', err);
+        setEnsayos([]);
+        setTecnicos([]);
+        setClientes([]);
+        setProyectos([]);
+        setPerforaciones([]);
+        setMuestras([]);
+      } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, [isBypassMode]);
+  }, []);
 
   // Filtrar ensayos
   const ensayosFiltrados = useMemo(() => {
@@ -1768,50 +1504,77 @@ export default function Ensayo() {
     setShowReasignar(true);
   };
 
-  const handleCambiarEstadoSubmit = (ensayoId, nuevoEstado, comentario) => {
-    setEnsayos(
-      ensayos.map(e => {
-        if (e.id === ensayoId) {
-          return {
-            ...e,
-            workflow_state: nuevoEstado,
-            ultimo_comentario: comentario,
-            novedad_razon: nuevoEstado === 'E5' ? e.novedad_razon : null, // Limpiar novedad si cambia de estado
-          };
-        }
-        return e;
-      })
-    );
+  const handleCambiarEstadoSubmit = async (ensayoId, nuevoEstado, comentario) => {
+    try {
+      // Call API to update status
+      await EnsayosAPI.updateStatus(ensayoId, nuevoEstado);
+
+      // Update local state optimistically
+      setEnsayos(
+        ensayos.map(e => {
+          if (e.id === ensayoId) {
+            return {
+              ...e,
+              workflow_state: nuevoEstado,
+              ultimo_comentario: comentario,
+              novedad_razon: nuevoEstado === 'E5' ? e.novedad_razon : null,
+            };
+          }
+          return e;
+        })
+      );
+    } catch (err) {
+      console.error('Error actualizando estado del ensayo:', err);
+      alert('Error al cambiar el estado del ensayo');
+    }
     setShowCambiarEstado(false);
     setSelectedEnsayo(null);
   };
 
-  const handleNovedadSubmit = (ensayoId, razon) => {
-    setEnsayos(
-      ensayos.map(e => {
-        if (e.id === ensayoId) {
-          return {
-            ...e,
-            workflow_state: 'E5',
-            novedad_razon: razon,
-          };
-        }
-        return e;
-      })
-    );
+  const handleNovedadSubmit = async (ensayoId, razon) => {
+    try {
+      // Update to novedad state (E5) with reason
+      await EnsayosAPI.update(ensayoId, {
+        workflow_state: 'E5',
+        novedad_razon: razon,
+      });
+
+      setEnsayos(
+        ensayos.map(e => {
+          if (e.id === ensayoId) {
+            return {
+              ...e,
+              workflow_state: 'E5',
+              novedad_razon: razon,
+            };
+          }
+          return e;
+        })
+      );
+    } catch (err) {
+      console.error('Error registrando novedad:', err);
+      alert('Error al registrar la novedad');
+    }
     setShowNovedad(false);
     setSelectedEnsayo(null);
   };
 
-  const handleReasignarSubmit = (ensayoId, tecnicoId) => {
-    setEnsayos(
-      ensayos.map(e => {
-        if (e.id === ensayoId) {
-          return { ...e, tecnicoId };
-        }
-        return e;
-      })
-    );
+  const handleReasignarSubmit = async (ensayoId, tecnicoId) => {
+    try {
+      await EnsayosAPI.update(ensayoId, { tecnico_id: tecnicoId });
+
+      setEnsayos(
+        ensayos.map(e => {
+          if (e.id === ensayoId) {
+            return { ...e, tecnicoId };
+          }
+          return e;
+        })
+      );
+    } catch (err) {
+      console.error('Error reasignando ensayo:', err);
+      alert('Error al reasignar el ensayo');
+    }
     setShowReasignar(false);
     setSelectedEnsayo(null);
   };
@@ -1843,32 +1606,6 @@ export default function Ensayo() {
 
   return (
     <PageLayout title="Ensayos">
-      {/* Indicador de modo y rol */}
-      {isBypassMode && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '8px 12px',
-            backgroundColor: '#FEF3C7',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>
-            Modo Demo - Rol: <strong>{userRole}</strong>
-          </span>
-          <span style={{ color: '#92400E' }}>
-            {canChangeState(userRole) && '✓ Cambiar estado '}
-            {canReassign(userRole) && '✓ Reasignar '}
-            {canApproveReject(userRole) && '✓ Aprobar/Rechazar '}
-            {isClienteRole(userRole) && '✓ Solo lectura'}
-          </span>
-        </div>
-      )}
-
       {/* Tabs de vista */}
       <ViewTabs activeView={viewMode} onChangeView={setViewMode} />
 

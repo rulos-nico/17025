@@ -5,6 +5,7 @@ mod models;
 mod repositories;
 mod routes;
 mod services;
+mod utils;
 
 use axum::Router;
 use std::net::SocketAddr;

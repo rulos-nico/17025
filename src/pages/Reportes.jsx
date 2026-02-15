@@ -1,123 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge } from '../components/ui';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { ProyectosAPI, ClientesAPI, EnsayosAPI } from '../services/apiService';
 import { WORKFLOW_STATES_INFO, TIPOS_ENSAYO, getWorkflowInfo } from '../config';
-
-// ============================================
-// DATOS MOCK PARA MODO BYPASS
-// ============================================
-
-const MOCK_PROYECTOS = [
-  {
-    id: 'pry-001',
-    codigo: 'PRY-2025-001',
-    nombre: 'Edificio Central',
-    clienteId: 'cli-001',
-    cliente_nombre: 'Constructora ABC',
-    estado: 'activo',
-    fecha_inicio: '2025-01-15',
-    fecha_fin_estimada: '2025-06-30',
-  },
-  {
-    id: 'pry-002',
-    codigo: 'PRY-2025-002',
-    nombre: 'Puente Río Grande',
-    clienteId: 'cli-002',
-    cliente_nombre: 'Minera del Norte',
-    estado: 'activo',
-    fecha_inicio: '2025-01-20',
-    fecha_fin_estimada: '2025-08-15',
-  },
-  {
-    id: 'pry-003',
-    codigo: 'PRY-2024-015',
-    nombre: 'Torre Norte',
-    clienteId: 'cli-001',
-    cliente_nombre: 'Constructora ABC',
-    estado: 'completado',
-    fecha_inicio: '2024-06-01',
-    fecha_fin_real: '2024-12-20',
-  },
-];
-
-const MOCK_ENSAYOS = [
-  {
-    id: 'ens-001',
-    codigo: 'ENS-2025-001',
-    tipo: 'traccion',
-    proyectoId: 'pry-001',
-    workflow_state: 'E15',
-    fecha_solicitud: '2025-01-16',
-    fecha_ejecucion: '2025-01-20',
-  },
-  {
-    id: 'ens-002',
-    codigo: 'ENS-2025-002',
-    tipo: 'dureza',
-    proyectoId: 'pry-001',
-    workflow_state: 'E13',
-    fecha_solicitud: '2025-01-16',
-    fecha_ejecucion: '2025-01-21',
-  },
-  {
-    id: 'ens-003',
-    codigo: 'ENS-2025-003',
-    tipo: 'traccion',
-    proyectoId: 'pry-001',
-    workflow_state: 'E9',
-    fecha_solicitud: '2025-01-18',
-    fecha_ejecucion: '2025-01-25',
-  },
-  {
-    id: 'ens-004',
-    codigo: 'ENS-2025-004',
-    tipo: 'impacto',
-    proyectoId: 'pry-001',
-    workflow_state: 'E6',
-    fecha_solicitud: '2025-01-20',
-  },
-  {
-    id: 'ens-005',
-    codigo: 'ENS-2025-005',
-    tipo: 'traccion',
-    proyectoId: 'pry-002',
-    workflow_state: 'E2',
-    fecha_solicitud: '2025-01-22',
-  },
-  {
-    id: 'ens-006',
-    codigo: 'ENS-2025-006',
-    tipo: 'quimico_oes',
-    proyectoId: 'pry-002',
-    workflow_state: 'E1',
-    fecha_solicitud: '2025-01-23',
-  },
-  {
-    id: 'ens-007',
-    codigo: 'ENS-2024-120',
-    tipo: 'traccion',
-    proyectoId: 'pry-003',
-    workflow_state: 'E15',
-    fecha_solicitud: '2024-11-01',
-    fecha_ejecucion: '2024-11-05',
-  },
-  {
-    id: 'ens-008',
-    codigo: 'ENS-2024-121',
-    tipo: 'dureza',
-    proyectoId: 'pry-003',
-    workflow_state: 'E15',
-    fecha_solicitud: '2024-11-01',
-    fecha_ejecucion: '2024-11-06',
-  },
-];
-
-const MOCK_CLIENTES = [
-  { id: 'cli-001', nombre: 'Constructora ABC', email: 'contacto@abc.com' },
-  { id: 'cli-002', nombre: 'Minera del Norte', email: 'lab@minera.com' },
-];
 
 // ============================================
 // HELPERS
@@ -735,8 +620,6 @@ function TablaProyectos({ proyectos, ensayos, clientes }) {
 // ============================================
 
 export default function Reportes() {
-  const { isBypassMode } = useGoogleAuth();
-
   const [proyectos, setProyectos] = useState([]);
   const [ensayos, setEnsayos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -748,17 +631,9 @@ export default function Reportes() {
   const [filtroCliente, setFiltroCliente] = useState('todos');
   const [filtroEstado, setFiltroEstado] = useState('todos');
 
-  // Cargar datos
+  // Cargar datos desde API
   useEffect(() => {
     const loadData = async () => {
-      if (isBypassMode) {
-        setProyectos(MOCK_PROYECTOS);
-        setEnsayos(MOCK_ENSAYOS);
-        setClientes(MOCK_CLIENTES);
-        setLoading(false);
-        return;
-      }
-
       try {
         const [proyectosRes, ensayosRes, clientesRes] = await Promise.all([
           ProyectosAPI.list(),
@@ -779,7 +654,7 @@ export default function Reportes() {
       }
     };
     loadData();
-  }, [isBypassMode]);
+  }, []);
 
   // Datos filtrados
   const ensayosFiltrados = useMemo(() => {
@@ -852,21 +727,6 @@ export default function Reportes() {
 
   return (
     <PageLayout title="Reportes y Estadísticas">
-      {/* Indicador modo bypass */}
-      {isBypassMode && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '8px 12px',
-            backgroundColor: '#FEF3C7',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-          }}
-        >
-          Modo Demo - Datos de ejemplo
-        </div>
-      )}
-
       {/* Estadísticas generales */}
       <EstadisticasResumen ensayos={ensayosFiltrados} />
 

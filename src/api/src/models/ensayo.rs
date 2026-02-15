@@ -24,6 +24,7 @@ pub struct Ensayo {
     pub equipos_utilizados: Vec<String>,
     pub observaciones: Option<String>,
     pub urgente: bool,
+    pub duracion_estimada: Option<String>,
     // PDF-related fields
     pub pdf_drive_id: Option<String>,
     pub pdf_url: Option<String>,
@@ -65,7 +66,7 @@ pub struct UpdateEnsayoStatus {
 
 impl Ensayo {
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 27 {
+        if row.len() < 28 {
             return None;
         }
 
@@ -100,13 +101,14 @@ impl Ensayo {
                 .get(20)
                 .map(|s| s == "true" || s == "1")
                 .unwrap_or(false),
+            duracion_estimada: row.get(21).cloned().filter(|s| !s.is_empty()),
             // PDF-related fields
-            pdf_drive_id: row.get(21).cloned().filter(|s| !s.is_empty()),
-            pdf_url: row.get(22).cloned().filter(|s| !s.is_empty()),
-            pdf_generated_at: row.get(23).cloned().filter(|s| !s.is_empty()),
-            perforacion_folder_id: row.get(24).cloned().filter(|s| !s.is_empty()),
-            created_at: row.get(25)?.clone(),
-            updated_at: row.get(26)?.clone(),
+            pdf_drive_id: row.get(22).cloned().filter(|s| !s.is_empty()),
+            pdf_url: row.get(23).cloned().filter(|s| !s.is_empty()),
+            pdf_generated_at: row.get(24).cloned().filter(|s| !s.is_empty()),
+            perforacion_folder_id: row.get(25).cloned().filter(|s| !s.is_empty()),
+            created_at: row.get(26)?.clone(),
+            updated_at: row.get(27)?.clone(),
         })
     }
 
@@ -133,6 +135,7 @@ impl Ensayo {
             self.equipos_utilizados.join(","),
             self.observaciones.clone().unwrap_or_default(),
             self.urgente.to_string(),
+            self.duracion_estimada.clone().unwrap_or_default(),
             self.pdf_drive_id.clone().unwrap_or_default(),
             self.pdf_url.clone().unwrap_or_default(),
             self.pdf_generated_at.clone().unwrap_or_default(),

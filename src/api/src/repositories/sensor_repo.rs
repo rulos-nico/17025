@@ -4,6 +4,7 @@ use rust_decimal::Decimal;
 
 use crate::db::DbPool;
 use crate::models::{Sensor, CreateSensor, UpdateSensor};
+use crate::utils::sql::{SENSOR_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Sensor
 #[derive(Debug, Clone, FromRow)]
@@ -73,14 +74,7 @@ impl SensorRepository {
     /// Obtiene todos los sensores
     pub async fn find_all(&self) -> Result<Vec<Sensor>, sqlx::Error> {
         let rows = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            ORDER BY codigo
-            "#,
+            &select_from_with("sensores", SENSOR_COLUMNS, "ORDER BY codigo"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -91,15 +85,7 @@ impl SensorRepository {
     /// Obtiene sensores activos
     pub async fn find_active(&self) -> Result<Vec<Sensor>, sqlx::Error> {
         let rows = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE activo = true
-            ORDER BY codigo
-            "#,
+            &select_where_with("sensores", SENSOR_COLUMNS, "activo = true", "ORDER BY codigo"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -110,14 +96,7 @@ impl SensorRepository {
     /// Busca un sensor por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Sensor>, sqlx::Error> {
         let row = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE id = $1
-            "#,
+            &select_where("sensores", SENSOR_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -129,14 +108,7 @@ impl SensorRepository {
     /// Busca un sensor por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Sensor>, sqlx::Error> {
         let row = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE codigo = $1
-            "#,
+            &select_where("sensores", SENSOR_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -148,14 +120,7 @@ impl SensorRepository {
     /// Busca un sensor por número de serie
     pub async fn find_by_numero_serie(&self, numero_serie: &str) -> Result<Option<Sensor>, sqlx::Error> {
         let row = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE numero_serie = $1
-            "#,
+            &select_where("sensores", SENSOR_COLUMNS, "numero_serie = $1"),
         )
         .bind(numero_serie)
         .fetch_optional(&self.pool)
@@ -166,17 +131,15 @@ impl SensorRepository {
 
     /// Crea un nuevo sensor
     pub async fn create(&self, id: &str, codigo: &str, dto: CreateSensor) -> Result<Sensor, sqlx::Error> {
-        let row = sqlx::query_as::<_, SensorRow>(
+        let row = sqlx::query_as::<_, SensorRow>(&format!(
             r#"
             INSERT INTO sensores (id, codigo, tipo, marca, modelo, numero_serie, rango_medicion,
                                   precision, ubicacion, estado, activo, sync_source, equipo_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'operativo', true, 'db', $10)
-            RETURNING id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                      ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                      certificado_id, responsable, observaciones, activo,
-                      created_at, updated_at, synced_at, sync_source, equipo_id
+            RETURNING {}
             "#,
-        )
+            SENSOR_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.tipo)
@@ -204,7 +167,7 @@ impl SensorRepository {
         let error_maximo = dto.error_maximo
             .and_then(|e| Decimal::try_from(e).ok());
 
-        let row = sqlx::query_as::<_, SensorRow>(
+        let row = sqlx::query_as::<_, SensorRow>(&format!(
             r#"
             UPDATE sensores
             SET tipo = COALESCE($2, tipo),
@@ -224,12 +187,10 @@ impl SensorRepository {
                 equipo_id = COALESCE($16, equipo_id),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                      ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                      certificado_id, responsable, observaciones, activo,
-                      created_at, updated_at, synced_at, sync_source, equipo_id
+            RETURNING {}
             "#,
-        )
+            SENSOR_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.tipo)
         .bind(&dto.marca)
@@ -329,15 +290,7 @@ impl SensorRepository {
     /// Obtiene sensores modificados desde una fecha
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Sensor>, sqlx::Error> {
         let rows = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("sensores", SENSOR_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)
@@ -365,17 +318,9 @@ impl SensorRepository {
     /// Obtiene sensores que necesitan calibración pronto (en los próximos N días)
     pub async fn find_needs_calibration(&self, days: i32) -> Result<Vec<Sensor>, sqlx::Error> {
         let rows = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE activo = true 
-              AND proxima_calibracion IS NOT NULL
-              AND proxima_calibracion <= CURRENT_DATE + $1
-            ORDER BY proxima_calibracion
-            "#,
+            &select_where_with("sensores", SENSOR_COLUMNS, 
+                "activo = true AND proxima_calibracion IS NOT NULL AND proxima_calibracion <= CURRENT_DATE + $1",
+                "ORDER BY proxima_calibracion"),
         )
         .bind(days)
         .fetch_all(&self.pool)
@@ -387,15 +332,7 @@ impl SensorRepository {
     /// Busca sensores por ID de equipo
     pub async fn find_by_equipo_id(&self, equipo_id: &str) -> Result<Vec<Sensor>, sqlx::Error> {
         let rows = sqlx::query_as::<_, SensorRow>(
-            r#"
-            SELECT id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision,
-                   ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo,
-                   certificado_id, responsable, observaciones, activo,
-                   created_at, updated_at, synced_at, sync_source, equipo_id
-            FROM sensores
-            WHERE equipo_id = $1 AND activo = true
-            ORDER BY codigo
-            "#,
+            &select_where_with("sensores", SENSOR_COLUMNS, "equipo_id = $1 AND activo = true", "ORDER BY codigo"),
         )
         .bind(equipo_id)
         .fetch_all(&self.pool)

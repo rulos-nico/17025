@@ -1,9 +1,10 @@
-use sqlx::FromRow;
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
+use sqlx::FromRow;
 
 use crate::db::DbPool;
-use crate::models::{Perforacion, CreatePerforacion, UpdatePerforacion};
+use crate::models::{CreatePerforacion, Perforacion, UpdatePerforacion};
+use crate::utils::sql::{PERFORACION_COLUMNS, select_where, select_where_with};
 
 /// Modelo de base de datos para Perforacion
 #[derive(Debug, Clone, FromRow)]
@@ -58,14 +59,7 @@ impl PerforacionRepository {
     /// Obtiene todas las perforaciones
     pub async fn find_all(&self) -> Result<Vec<Perforacion>, sqlx::Error> {
         let rows = sqlx::query_as::<_, PerforacionRow>(
-            r#"
-            SELECT id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                   fecha_inicio, fecha_fin, estado, drive_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM perforaciones
-            WHERE estado != 'eliminado'
-            ORDER BY created_at DESC
-            "#,
+            &select_where_with("perforaciones", PERFORACION_COLUMNS, "estado != 'eliminado'", "ORDER BY created_at DESC"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -76,13 +70,7 @@ impl PerforacionRepository {
     /// Busca una perforacion por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Perforacion>, sqlx::Error> {
         let row = sqlx::query_as::<_, PerforacionRow>(
-            r#"
-            SELECT id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                   fecha_inicio, fecha_fin, estado, drive_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM perforaciones
-            WHERE id = $1
-            "#,
+            &select_where("perforaciones", PERFORACION_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -94,13 +82,7 @@ impl PerforacionRepository {
     /// Busca una perforacion por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Perforacion>, sqlx::Error> {
         let row = sqlx::query_as::<_, PerforacionRow>(
-            r#"
-            SELECT id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                   fecha_inicio, fecha_fin, estado, drive_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM perforaciones
-            WHERE codigo = $1
-            "#,
+            &select_where("perforaciones", PERFORACION_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -112,14 +94,7 @@ impl PerforacionRepository {
     /// Obtiene perforaciones por proyecto
     pub async fn find_by_proyecto(&self, proyecto_id: &str) -> Result<Vec<Perforacion>, sqlx::Error> {
         let rows = sqlx::query_as::<_, PerforacionRow>(
-            r#"
-            SELECT id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                   fecha_inicio, fecha_fin, estado, drive_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM perforaciones
-            WHERE proyecto_id = $1 AND estado != 'eliminado'
-            ORDER BY codigo
-            "#,
+            &select_where_with("perforaciones", PERFORACION_COLUMNS, "proyecto_id = $1 AND estado != 'eliminado'", "ORDER BY codigo"),
         )
         .bind(proyecto_id)
         .fetch_all(&self.pool)
@@ -137,16 +112,15 @@ impl PerforacionRepository {
         let profundidad = dto.profundidad
             .and_then(|p| Decimal::try_from(p).ok());
 
-        let row = sqlx::query_as::<_, PerforacionRow>(
+        let row = sqlx::query_as::<_, PerforacionRow>(&format!(
             r#"
             INSERT INTO perforaciones (id, codigo, proyecto_id, nombre, descripcion, ubicacion, 
                                        profundidad, fecha_inicio, estado, sync_source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'activo', 'db')
-            RETURNING id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                      fecha_inicio, fecha_fin, estado, drive_folder_id,
-                      created_at, updated_at, synced_at, sync_source
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'sin_relacionar', 'db')
+            RETURNING {}
             "#,
-        )
+            PERFORACION_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.proyecto_id)
@@ -172,7 +146,7 @@ impl PerforacionRepository {
         let profundidad = dto.profundidad
             .and_then(|p| Decimal::try_from(p).ok());
 
-        let row = sqlx::query_as::<_, PerforacionRow>(
+        let row = sqlx::query_as::<_, PerforacionRow>(&format!(
             r#"
             UPDATE perforaciones
             SET nombre = COALESCE($2, nombre),
@@ -184,11 +158,10 @@ impl PerforacionRepository {
                 estado = COALESCE($8, estado),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                      fecha_inicio, fecha_fin, estado, drive_folder_id,
-                      created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            PERFORACION_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.nombre)
         .bind(&dto.descripcion)
@@ -267,14 +240,7 @@ impl PerforacionRepository {
     /// Obtiene perforaciones modificadas desde una fecha
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Perforacion>, sqlx::Error> {
         let rows = sqlx::query_as::<_, PerforacionRow>(
-            r#"
-            SELECT id, codigo, proyecto_id, nombre, descripcion, ubicacion, profundidad,
-                   fecha_inicio, fecha_fin, estado, drive_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM perforaciones
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("perforaciones", PERFORACION_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)

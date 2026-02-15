@@ -1,8 +1,9 @@
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::FromRow;
-use chrono::{DateTime, Utc, NaiveDate};
 
 use crate::db::DbPool;
-use crate::models::{Ensayo, CreateEnsayo, UpdateEnsayo, WorkflowState};
+use crate::models::{CreateEnsayo, Ensayo, UpdateEnsayo, WorkflowState};
+use crate::utils::sql::{ENSAYO_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Ensayo
 #[derive(Debug, Clone, FromRow)]
@@ -28,6 +29,7 @@ pub struct EnsayoRow {
     pub equipos_utilizados: Option<Vec<String>>,
     pub observaciones: Option<String>,
     pub urgente: bool,
+    pub duracion_estimada: Option<String>,
     // PDF-related fields
     pub pdf_drive_id: Option<String>,
     pub pdf_url: Option<String>,
@@ -68,6 +70,7 @@ impl From<EnsayoRow> for Ensayo {
             equipos_utilizados: row.equipos_utilizados.unwrap_or_default(),
             observaciones: row.observaciones,
             urgente: row.urgente,
+            duracion_estimada: row.duracion_estimada,
             // PDF-related fields
             pdf_drive_id: row.pdf_drive_id,
             pdf_url: row.pdf_url,
@@ -92,16 +95,7 @@ impl EnsayoRepository {
     /// Obtiene todos los ensayos
     pub async fn find_all(&self) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            ORDER BY fecha_solicitud DESC
-            "#,
+            &select_from_with("ensayos", ENSAYO_COLUMNS, "ORDER BY fecha_solicitud DESC"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -112,17 +106,7 @@ impl EnsayoRepository {
     /// Obtiene ensayos por proyecto
     pub async fn find_by_proyecto(&self, proyecto_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE proyecto_id = $1
-            ORDER BY fecha_solicitud DESC
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "proyecto_id = $1", "ORDER BY fecha_solicitud DESC"),
         )
         .bind(proyecto_id)
         .fetch_all(&self.pool)
@@ -134,17 +118,7 @@ impl EnsayoRepository {
     /// Obtiene ensayos por estado de workflow
     pub async fn find_by_workflow_state(&self, state: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE workflow_state = $1
-            ORDER BY urgente DESC, fecha_solicitud ASC
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "workflow_state = $1", "ORDER BY urgente DESC, fecha_solicitud ASC"),
         )
         .bind(state)
         .fetch_all(&self.pool)
@@ -156,17 +130,7 @@ impl EnsayoRepository {
     /// Obtiene ensayos urgentes pendientes
     pub async fn find_urgent_pending(&self) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE urgente = true AND workflow_state NOT IN ('entregado', 'cancelado')
-            ORDER BY fecha_solicitud ASC
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "urgente = true AND workflow_state NOT IN ('entregado', 'cancelado')", "ORDER BY fecha_solicitud ASC"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -177,16 +141,7 @@ impl EnsayoRepository {
     /// Busca un ensayo por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Ensayo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE id = $1
-            "#,
+            &select_where("ensayos", ENSAYO_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -200,19 +155,15 @@ impl EnsayoRepository {
         let fecha_solicitud = NaiveDate::parse_from_str(&dto.fecha_solicitud, "%Y-%m-%d")
             .unwrap_or_else(|_| Utc::now().date_naive());
 
-        let row = sqlx::query_as::<_, EnsayoRow>(
+        let row = sqlx::query_as::<_, EnsayoRow>(&format!(
             r#"
             INSERT INTO ensayos (id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
                                  workflow_state, fecha_solicitud, observaciones, urgente, sync_source)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'solicitado', $9, $10, $11, 'db')
-            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                      workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                      fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                      sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                      pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                      created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            ENSAYO_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.tipo)
@@ -248,7 +199,7 @@ impl EnsayoRepository {
             .as_ref()
             .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
 
-        let row = sqlx::query_as::<_, EnsayoRow>(
+        let row = sqlx::query_as::<_, EnsayoRow>(&format!(
             r#"
             UPDATE ensayos
             SET workflow_state = COALESCE($2, workflow_state),
@@ -261,14 +212,10 @@ impl EnsayoRepository {
                 observaciones = COALESCE($9, observaciones),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                      workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                      fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                      sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                      pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                      created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            ENSAYO_COLUMNS
+        ))
         .bind(id)
         .bind(dto.workflow_state.as_ref().map(|ws| ws.to_string()))
         .bind(fecha_programacion)
@@ -383,17 +330,7 @@ impl EnsayoRepository {
     /// Obtiene ensayos modificados desde la última sincronización
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)
@@ -443,16 +380,7 @@ impl EnsayoRepository {
     /// Busca un ensayo por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Ensayo>, sqlx::Error> {
         let row = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE codigo = $1
-            "#,
+            &select_where("ensayos", ENSAYO_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -464,17 +392,7 @@ impl EnsayoRepository {
     /// Busca ensayos por perforación
     pub async fn find_by_perforacion(&self, perforacion_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE perforacion_id = $1
-            ORDER BY created_at DESC
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "perforacion_id = $1", "ORDER BY created_at DESC"),
         )
         .bind(perforacion_id)
         .fetch_all(&self.pool)
@@ -486,17 +404,7 @@ impl EnsayoRepository {
     /// Busca ensayos por muestra
     pub async fn find_by_muestra(&self, muestra_id: &str) -> Result<Vec<Ensayo>, sqlx::Error> {
         let rows = sqlx::query_as::<_, EnsayoRow>(
-            r#"
-            SELECT id, codigo, tipo, perforacion_id, proyecto_id, muestra, muestra_id, norma,
-                   workflow_state, fecha_solicitud, fecha_programacion, fecha_ejecucion,
-                   fecha_reporte, fecha_entrega, tecnico_id, tecnico_nombre,
-                   sheet_id, sheet_url, equipos_utilizados, observaciones, urgente,
-                   pdf_drive_id, pdf_url, pdf_generated_at, perforacion_folder_id,
-                   created_at, updated_at, synced_at, sync_source
-            FROM ensayos
-            WHERE muestra_id = $1
-            ORDER BY created_at DESC
-            "#,
+            &select_where_with("ensayos", ENSAYO_COLUMNS, "muestra_id = $1", "ORDER BY created_at DESC"),
         )
         .bind(muestra_id)
         .fetch_all(&self.pool)

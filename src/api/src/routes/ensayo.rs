@@ -4,13 +4,12 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
-use uuid::Uuid;
-use chrono::Utc;
 
 use crate::errors::AppError;
 use crate::models::{CreateEnsayo, Ensayo, UpdateEnsayo, UpdateEnsayoStatus, WorkflowState};
 use crate::repositories::{EnsayoRepository, PerforacionRepository};
 use crate::services::google_drive::GoogleDriveClient;
+use crate::utils::id::{generate_dated_code, generate_uuid};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -27,8 +26,7 @@ async fn list_ensayos(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Ensayo>>, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    let ensayos = repo.find_all().await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let ensayos = repo.find_all().await?;
     Ok(Json(ensayos))
 }
 
@@ -38,9 +36,7 @@ async fn get_ensayo(
     State(state): State<AppState>,
 ) -> Result<Json<Ensayo>, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    let ensayo = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(ensayo))
 }
 
@@ -54,33 +50,35 @@ async fn create_ensayo(
 ) -> Result<(StatusCode, Json<Ensayo>), AppError> {
     let ensayo_repo = EnsayoRepository::new(state.db_pool.clone());
     let perforacion_repo = PerforacionRepository::new(state.db_pool.clone());
-    
+
     // Verify the perforación exists
-    let perforacion = perforacion_repo.find_by_id(&payload.perforacion_id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or_else(|| AppError::BadRequest(format!(
-            "Perforación not found: {}", payload.perforacion_id
-        )))?;
-    
+    let perforacion = perforacion_repo
+        .find_by_id(&payload.perforacion_id)
+        .await?
+        .ok_or_else(|| {
+            AppError::BadRequest(format!("Perforación not found: {}", payload.perforacion_id))
+        })?;
+
     // Generate ID and code
-    let id = Uuid::new_v4().to_string();
-    let codigo = format!(
-        "ENS-{}-{:04}",
-        Utc::now().format("%Y%m%d"),
-        rand_suffix()
-    );
+    let id = generate_uuid();
+    let codigo = generate_dated_code("ENS");
 
     // Create the ensayo in database
-    let mut ensayo = ensayo_repo.create(&id, &codigo, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let mut ensayo = ensayo_repo.create(&id, &codigo, payload).await?;
 
     // Crear Sheet desde plantilla si existe y la perforación tiene folder
     if let Some(ref sheets_service) = state.ensayo_sheets_service {
         if sheets_service.has_template(&ensayo.tipo) {
             if let Some(ref folder_id) = perforacion.drive_folder_id {
-                match sheets_service.create_ensayo_sheet(&ensayo.tipo, &codigo, folder_id).await {
+                match sheets_service
+                    .create_ensayo_sheet(&ensayo.tipo, &codigo, folder_id)
+                    .await
+                {
                     Ok((sheet_id, sheet_url)) => {
-                        ensayo_repo.update_sheet_info(&id, &sheet_id, &sheet_url).await.ok();
+                        ensayo_repo
+                            .update_sheet_info(&id, &sheet_id, &sheet_url)
+                            .await
+                            .ok();
                         tracing::info!("Created Sheet for ensayo {}: {}", codigo, sheet_id);
                         ensayo.sheet_id = Some(sheet_id);
                         ensayo.sheet_url = Some(sheet_url);
@@ -95,7 +93,10 @@ async fn create_ensayo(
 
     // Cache the perforacion folder_id if available
     if let Some(ref folder_id) = perforacion.drive_folder_id {
-        ensayo_repo.update_perforacion_folder_id(&id, folder_id).await.ok();
+        ensayo_repo
+            .update_perforacion_folder_id(&id, folder_id)
+            .await
+            .ok();
         ensayo.perforacion_folder_id = Some(folder_id.clone());
     }
 
@@ -110,11 +111,9 @@ async fn update_ensayo(
     Json(payload): Json<UpdateEnsayo>,
 ) -> Result<Json<Ensayo>, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    
+
     // First, get the current ensayo to validate workflow transition
-    let current = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let current = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     // Validate workflow transition if state is being changed
     if let Some(ref new_state) = payload.workflow_state {
@@ -125,7 +124,9 @@ async fn update_ensayo(
                 current.workflow_state.display_name(),
                 new_state,
                 new_state.display_name(),
-                current.workflow_state.allowed_transitions()
+                current
+                    .workflow_state
+                    .allowed_transitions()
                     .iter()
                     .map(|s| format!("{}", s))
                     .collect::<Vec<_>>()
@@ -133,10 +134,8 @@ async fn update_ensayo(
         }
     }
 
-    let ensayo = repo.update(&id, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
-    
+    let ensayo = repo.update(&id, payload).await?.ok_or(AppError::NotFound)?;
+
     Ok(Json(ensayo))
 }
 
@@ -149,14 +148,12 @@ async fn update_status(
     Json(payload): Json<UpdateEnsayoStatus>,
 ) -> Result<Json<Ensayo>, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    
+
     // Get current ensayo
-    let current = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let current = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     let new_state = payload.workflow_state;
-    
+
     // Validate transition
     if !current.workflow_state.can_transition_to(new_state) {
         return Err(AppError::BadRequest(format!(
@@ -165,7 +162,9 @@ async fn update_status(
             current.workflow_state.display_name(),
             new_state,
             new_state.display_name(),
-            current.workflow_state.allowed_transitions()
+            current
+                .workflow_state
+                .allowed_transitions()
                 .iter()
                 .map(|s| format!("{}", s))
                 .collect::<Vec<_>>()
@@ -173,25 +172,41 @@ async fn update_status(
     }
 
     // Update the state
-    repo.update_workflow_state(&id, &new_state.to_string()).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    repo.update_workflow_state(&id, &new_state.to_string())
+        .await?;
 
     // Auto-generate PDF when reaching E12 (Informe Aprobado)
     if new_state == WorkflowState::E12 {
-        tracing::info!("Ensayo {} reached E12, triggering PDF generation", current.codigo);
-        
+        tracing::info!(
+            "Ensayo {} reached E12, triggering PDF generation",
+            current.codigo
+        );
+
         // Generar PDF automáticamente
-        if let (Some(ref sheet_id), Some(ref folder_id)) = (&current.sheet_id, &current.perforacion_folder_id) {
+        if let (Some(ref sheet_id), Some(ref folder_id)) =
+            (&current.sheet_id, &current.perforacion_folder_id)
+        {
             if let Some(ref sheets_service) = state.ensayo_sheets_service {
                 let pdf_name = format!("{}.pdf", current.codigo);
-                match sheets_service.generate_and_upload_pdf(sheet_id, &pdf_name, folder_id).await {
+                match sheets_service
+                    .generate_and_upload_pdf(sheet_id, &pdf_name, folder_id)
+                    .await
+                {
                     Ok(pdf_id) => {
                         let pdf_url = GoogleDriveClient::get_pdf_view_url(&pdf_id);
                         repo.update_pdf_info(&id, &pdf_id, &pdf_url).await.ok();
-                        tracing::info!("Generated PDF for ensayo {}: {}", current.codigo, pdf_id);
+                        tracing::info!(
+                            "Generated PDF for ensayo {}: {}",
+                            current.codigo,
+                            pdf_id
+                        );
                     }
                     Err(e) => {
-                        tracing::error!("Failed to generate PDF for ensayo {}: {}", current.codigo, e);
+                        tracing::error!(
+                            "Failed to generate PDF for ensayo {}: {}",
+                            current.codigo,
+                            e
+                        );
                     }
                 }
             }
@@ -204,9 +219,7 @@ async fn update_status(
     }
 
     // Return the updated ensayo
-    let ensayo = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     Ok(Json(ensayo))
 }
@@ -218,9 +231,8 @@ async fn delete_ensayo(
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    let deleted = repo.delete(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    
+    let deleted = repo.delete(&id).await?;
+
     if deleted {
         Ok(StatusCode::NO_CONTENT)
     } else {
@@ -236,32 +248,36 @@ async fn download_pdf(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, axum::response::Response), AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    
-    let ensayo = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+
+    let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     // Check if PDF exists
-    let pdf_drive_id = ensayo.pdf_drive_id.as_ref()
-        .ok_or_else(|| AppError::BadRequest(
-            "PDF not yet generated. Ensayo must reach E12 (Informe Aprobado) state first.".to_string()
-        ))?;
+    let pdf_drive_id = ensayo.pdf_drive_id.as_ref().ok_or_else(|| {
+        AppError::BadRequest(
+            "PDF not yet generated. Ensayo must reach E12 (Informe Aprobado) state first."
+                .to_string(),
+        )
+    })?;
 
     if let Some(ref sheets_service) = state.ensayo_sheets_service {
         let pdf_bytes = sheets_service.download_pdf(pdf_drive_id).await?;
-        
+
         let response = axum::response::Response::builder()
             .status(StatusCode::OK)
             .header("Content-Type", "application/pdf")
-            .header("Content-Disposition", format!("attachment; filename=\"{}.pdf\"", ensayo.codigo))
+            .header(
+                "Content-Disposition",
+                format!("attachment; filename=\"{}.pdf\"", ensayo.codigo),
+            )
             .body(axum::body::Body::from(pdf_bytes))
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        
+
         return Ok((StatusCode::OK, response));
     }
 
     Err(AppError::BadRequest(
-        "PDF download service not configured. Please configure Google Drive integration.".to_string()
+        "PDF download service not configured. Please configure Google Drive integration."
+            .to_string(),
     ))
 }
 
@@ -273,49 +289,36 @@ async fn generate_pdf(
     State(state): State<AppState>,
 ) -> Result<Json<Ensayo>, AppError> {
     let repo = EnsayoRepository::new(state.db_pool.clone());
-    
-    let ensayo = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+
+    let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     // Check if ensayo has a Sheet
-    let sheet_id = ensayo.sheet_id.as_ref()
-        .ok_or_else(|| AppError::BadRequest(
-            "Ensayo does not have an associated Sheet.".to_string()
-        ))?;
+    let sheet_id = ensayo.sheet_id.as_ref().ok_or_else(|| {
+        AppError::BadRequest("Ensayo does not have an associated Sheet.".to_string())
+    })?;
 
     // Check if we have a folder to save the PDF
-    let folder_id = ensayo.perforacion_folder_id.as_ref()
-        .ok_or_else(|| AppError::BadRequest(
-            "Perforación does not have a Drive folder configured.".to_string()
-        ))?;
+    let folder_id = ensayo.perforacion_folder_id.as_ref().ok_or_else(|| {
+        AppError::BadRequest("Perforación does not have a Drive folder configured.".to_string())
+    })?;
 
     if let Some(ref sheets_service) = state.ensayo_sheets_service {
         let pdf_name = format!("{}.pdf", ensayo.codigo);
-        let pdf_id = sheets_service.generate_and_upload_pdf(sheet_id, &pdf_name, folder_id).await?;
+        let pdf_id = sheets_service
+            .generate_and_upload_pdf(sheet_id, &pdf_name, folder_id)
+            .await?;
         let pdf_url = GoogleDriveClient::get_pdf_view_url(&pdf_id);
-        
-        repo.update_pdf_info(&id, &pdf_id, &pdf_url).await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        
-        let updated = repo.find_by_id(&id).await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?
-            .ok_or(AppError::NotFound)?;
-        
+
+        repo.update_pdf_info(&id, &pdf_id, &pdf_url).await?;
+
+        let updated = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
+
         tracing::info!("Regenerated PDF for ensayo {}: {}", ensayo.codigo, pdf_id);
         return Ok(Json(updated));
     }
 
     Err(AppError::BadRequest(
-        "PDF generation service not configured. Please configure Google Drive integration.".to_string()
+        "PDF generation service not configured. Please configure Google Drive integration."
+            .to_string(),
     ))
-}
-
-fn rand_suffix() -> u16 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos();
-    (nanos % 10000) as u16
 }

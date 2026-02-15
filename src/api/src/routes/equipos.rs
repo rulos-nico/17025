@@ -4,11 +4,11 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use uuid::Uuid;
 
 use crate::errors::AppError;
 use crate::models::{CreateEquipo, Equipo, UpdateEquipo};
 use crate::repositories::EquipoRepository;
+use crate::utils::id::{generate_simple_code, generate_uuid};
 use crate::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,8 +22,7 @@ async fn list_equipos(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Equipo>>, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let equipos = repo.find_all().await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let equipos = repo.find_all().await?;
     Ok(Json(equipos))
 }
 
@@ -33,9 +32,7 @@ async fn get_equipo(
     State(state): State<AppState>,
 ) -> Result<Json<Equipo>, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let equipo = repo.find_by_id(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let equipo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(equipo))
 }
 
@@ -45,12 +42,9 @@ async fn create_equipo(
     Json(payload): Json<CreateEquipo>,
 ) -> Result<(StatusCode, Json<Equipo>), AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let id = Uuid::new_v4().to_string();
-    let activo = true;
-    let estado = "operativo".to_string();
-    let codigo = format!("EQP-{:04}", rand_suffix());
-    let equipo = repo.create(&id, &codigo, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let id = generate_uuid();
+    let codigo = generate_simple_code("EQP");
+    let equipo = repo.create(&id, &codigo, payload).await?;
 
     Ok((StatusCode::CREATED, Json(equipo)))
 }
@@ -62,9 +56,7 @@ async fn update_equipo(
     Json(payload): Json<UpdateEquipo>,
 ) -> Result<Json<Equipo>, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let equipo = repo.update(&id, payload).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .ok_or(AppError::NotFound)?;
+    let equipo = repo.update(&id, payload).await?.ok_or(AppError::NotFound)?;
     Ok(Json(equipo))
 }
 
@@ -74,21 +66,11 @@ async fn delete_equipo(
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let deleted = repo.delete(&id).await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    
+    let deleted = repo.delete(&id).await?;
+
     if deleted {
         Ok(StatusCode::NO_CONTENT)
     } else {
         Err(AppError::NotFound)
     }
-}
-
-fn rand_suffix() -> u16 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos();
-    (nanos % 10000) as u16
 }

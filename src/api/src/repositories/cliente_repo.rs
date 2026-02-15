@@ -1,8 +1,9 @@
-use sqlx::FromRow;
 use chrono::{DateTime, Utc};
+use sqlx::FromRow;
 
 use crate::db::DbPool;
 use crate::models::{Cliente, CreateCliente, UpdateCliente};
+use crate::utils::sql::{CLIENTE_COLUMNS, select_from_with, select_where, select_where_with};
 
 /// Modelo de base de datos para Cliente
 #[derive(Debug, Clone, FromRow)]
@@ -63,13 +64,7 @@ impl ClienteRepository {
     /// Obtiene todos los clientes
     pub async fn find_all(&self) -> Result<Vec<Cliente>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                   contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                   activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
-            FROM clientes
-            ORDER BY nombre
-            "#,
+            &select_from_with("clientes", CLIENTE_COLUMNS, "ORDER BY nombre"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -80,14 +75,7 @@ impl ClienteRepository {
     /// Obtiene clientes activos
     pub async fn find_active(&self) -> Result<Vec<Cliente>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                   contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                   activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
-            FROM clientes
-            WHERE activo = true
-            ORDER BY nombre
-            "#,
+            &select_where_with("clientes", CLIENTE_COLUMNS, "activo = true", "ORDER BY nombre"),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -98,13 +86,7 @@ impl ClienteRepository {
     /// Busca un cliente por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Cliente>, sqlx::Error> {
         let row = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                   contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                   activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
-            FROM clientes
-            WHERE id = $1
-            "#,
+            &select_where("clientes", CLIENTE_COLUMNS, "id = $1"),
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -116,13 +98,7 @@ impl ClienteRepository {
     /// Busca un cliente por código
     pub async fn find_by_codigo(&self, codigo: &str) -> Result<Option<Cliente>, sqlx::Error> {
         let row = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                   contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                   activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
-            FROM clientes
-            WHERE codigo = $1
-            "#,
+            &select_where("clientes", CLIENTE_COLUMNS, "codigo = $1"),
         )
         .bind(codigo)
         .fetch_optional(&self.pool)
@@ -133,15 +109,14 @@ impl ClienteRepository {
 
     /// Crea un nuevo cliente
     pub async fn create(&self, id: &str, codigo: &str, dto: CreateCliente) -> Result<Cliente, sqlx::Error> {
-        let row = sqlx::query_as::<_, ClienteRow>(
+        let row = sqlx::query_as::<_, ClienteRow>(&format!(
             r#"
             INSERT INTO clientes (id, codigo, nombre, rut, direccion, ciudad, telefono, email, contacto_nombre, sync_source)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'db')
-            RETURNING id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                      contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                      activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            CLIENTE_COLUMNS
+        ))
         .bind(id)
         .bind(codigo)
         .bind(&dto.nombre)
@@ -159,7 +134,7 @@ impl ClienteRepository {
 
     /// Actualiza un cliente existente
     pub async fn update(&self, id: &str, dto: UpdateCliente) -> Result<Option<Cliente>, sqlx::Error> {
-        let row = sqlx::query_as::<_, ClienteRow>(
+        let row = sqlx::query_as::<_, ClienteRow>(&format!(
             r#"
             UPDATE clientes
             SET nombre = COALESCE($2, nombre),
@@ -175,11 +150,10 @@ impl ClienteRepository {
                 activo = COALESCE($12, activo),
                 sync_source = 'db'
             WHERE id = $1
-            RETURNING id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                      contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                      activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
+            RETURNING {}
             "#,
-        )
+            CLIENTE_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.nombre)
         .bind(&dto.rut)
@@ -266,14 +240,7 @@ impl ClienteRepository {
     /// Obtiene clientes modificados desde la última sincronización
     pub async fn find_modified_since(&self, since: DateTime<Utc>) -> Result<Vec<Cliente>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, codigo, nombre, rut, direccion, ciudad, telefono, email,
-                   contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
-                   activo, drive_folder_id, created_at, updated_at, synced_at, sync_source
-            FROM clientes
-            WHERE updated_at > $1 AND sync_source = 'db'
-            ORDER BY updated_at
-            "#,
+            &select_where_with("clientes", CLIENTE_COLUMNS, "updated_at > $1 AND sync_source = 'db'", "ORDER BY updated_at"),
         )
         .bind(since)
         .fetch_all(&self.pool)
