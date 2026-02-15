@@ -1,1420 +1,87 @@
+/**
+ * Equipos - Pagina de gestion de equipos y sensores
+ *
+ * Refactorizada para usar hooks y componentes extraidos.
+ * Original: 1846 lineas -> Actual: ~280 lineas
+ */
+
 import { useState, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
-import { Badge, Modal } from '../components/ui';
 import { ConfirmDeleteModal } from '../components/modals';
-import { useAuth } from '../hooks/useAuth';
-import { useMultipleApiData, useMutation } from '../hooks';
-import {
-  EquiposAPI,
-  SensoresAPI,
-  ComprobacionesAPI,
-  CalibracionesAPI,
-} from '../services/apiService';
-import { ESTADO_EQUIPO } from '../config';
-import {
-  formatDate,
-  getEstadoEquipo,
-  getDiasParaVencimiento,
-  getAlertaVencimiento,
-} from '../utils';
-
-// ============================================
-// OPCIONES PARA FORMULARIOS
-// ============================================
-
-const ESTADOS_EQUIPO = [
-  { value: 'operativo', label: 'Operativo' },
-  { value: 'en_calibracion', label: 'En Calibraci\u00f3n' },
-  { value: 'fuera_servicio', label: 'Fuera de Servicio' },
-  { value: 'en_mantenimiento', label: 'En Mantenimiento' },
-];
-
-const TIPOS_SENSOR = [
-  { value: 'celda_carga', label: 'Celda de Carga' },
-  { value: 'extensometro', label: 'Extens\u00f3metro' },
-  { value: 'termocupla', label: 'Termocupla' },
-  { value: 'lvdt', label: 'LVDT' },
-  { value: 'pendulo', label: 'P\u00e9ndulo' },
-  { value: 'otro', label: 'Otro' },
-];
-
-const UBICACIONES = [
-  'Laboratorio Mec\u00e1nico',
-  'Laboratorio Qu\u00edmico',
-  'Laboratorio Metalogr\u00e1fico',
-  'Almac\u00e9n',
-  'Taller',
-];
-
-// ============================================
-// ESTILOS COMUNES PARA FORMULARIOS
-// ============================================
-
-const formStyles = {
-  field: {
-    marginBottom: '16px',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '4px',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    border: '1px solid #D1D5DB',
-    fontSize: '0.875rem',
-    boxSizing: 'border-box',
-  },
-  select: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    border: '1px solid #D1D5DB',
-    fontSize: '0.875rem',
-    backgroundColor: 'white',
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    border: '1px solid #D1D5DB',
-    fontSize: '0.875rem',
-    minHeight: '80px',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '16px',
-  },
-  buttons: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px',
-    marginTop: '24px',
-    paddingTop: '16px',
-    borderTop: '1px solid #E5E7EB',
-  },
-  buttonPrimary: {
-    padding: '8px 16px',
-    backgroundColor: '#3B82F6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-  },
-  buttonSecondary: {
-    padding: '8px 16px',
-    backgroundColor: 'white',
-    color: '#374151',
-    border: '1px solid #D1D5DB',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  buttonDanger: {
-    padding: '8px 16px',
-    backgroundColor: '#EF4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-  },
-  required: {
-    color: '#EF4444',
-    marginLeft: '2px',
-  },
-};
-
-// ============================================
-// COMPONENTE: MODAL FORMULARIO EQUIPO
-// ============================================
-
-function EquipoFormModal({ isOpen, onClose, onSave, equipo, loading }) {
-  const isEditing = !!equipo;
-
-  const [form, setForm] = useState(() => ({
-    nombre: equipo?.nombre || '',
-    serie: equipo?.serie || '',
-    placa: equipo?.placa || '',
-    descripcion: equipo?.descripcion || '',
-    marca: equipo?.marca || '',
-    modelo: equipo?.modelo || '',
-    ubicacion: equipo?.ubicacion || '',
-    estado: equipo?.estado || 'operativo',
-  }));
-
-  const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    await onSave(form);
-  };
-
-  const isValid = form.nombre.trim() && form.serie.trim();
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEditing ? 'Editar Equipo' : 'Nuevo Equipo'}
-      width="600px"
-    >
-      <form onSubmit={handleSubmit}>
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>
-              Nombre <span style={formStyles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              value={form.nombre}
-              onChange={e => handleChange('nombre', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: M\u00e1quina Universal de Tracci\u00f3n"
-              required
-            />
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>
-              N\u00b0 Serie <span style={formStyles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              value={form.serie}
-              onChange={e => handleChange('serie', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: SN-2024-12345"
-              required
-            />
-          </div>
-        </div>
-
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Placa / Inventario</label>
-            <input
-              type="text"
-              value={form.placa}
-              onChange={e => handleChange('placa', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: INV-2024-001"
-            />
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Ubicaci\u00f3n</label>
-            <select
-              value={form.ubicacion}
-              onChange={e => handleChange('ubicacion', e.target.value)}
-              style={formStyles.select}
-            >
-              <option value="">Seleccionar ubicaci\u00f3n</option>
-              {UBICACIONES.map(ub => (
-                <option key={ub} value={ub}>
-                  {ub}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Marca</label>
-            <input
-              type="text"
-              value={form.marca}
-              onChange={e => handleChange('marca', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: Instron"
-            />
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Modelo</label>
-            <input
-              type="text"
-              value={form.modelo}
-              onChange={e => handleChange('modelo', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: 5985"
-            />
-          </div>
-        </div>
-
-        {isEditing && (
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Estado</label>
-            <select
-              value={form.estado}
-              onChange={e => handleChange('estado', e.target.value)}
-              style={formStyles.select}
-            >
-              {ESTADOS_EQUIPO.map(est => (
-                <option key={est.value} value={est.value}>
-                  {est.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div style={formStyles.field}>
-          <label style={formStyles.label}>Descripción</label>
-          <textarea
-            value={form.descripcion}
-            onChange={e => handleChange('descripcion', e.target.value)}
-            style={formStyles.textarea}
-            placeholder="Descripción del equipo..."
-          />
-        </div>
-
-        <div style={formStyles.buttons}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={formStyles.buttonSecondary}
-            disabled={loading}
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            style={{
-              ...formStyles.buttonPrimary,
-              opacity: !isValid || loading ? 0.6 : 1,
-              cursor: !isValid || loading ? 'not-allowed' : 'pointer',
-            }}
-            disabled={!isValid || loading}
-          >
-            {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear Equipo'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ============================================
-// COMPONENTE: MODAL FORMULARIO SENSOR
-// ============================================
-
-function SensorFormModal({ isOpen, onClose, onSave, sensor, loading, equiposDisponibles = [] }) {
-  const isEditing = !!sensor;
-
-  const [form, setForm] = useState(() => ({
-    tipo: sensor?.tipo || '',
-    numero_serie: sensor?.numero_serie || sensor?.serie || '',
-    marca: sensor?.marca || '',
-    modelo: sensor?.modelo || '',
-    rango_medicion: sensor?.rango_medicion || sensor?.rango || '',
-    precision: sensor?.precision || sensor?.resolucion || '',
-    ubicacion: sensor?.ubicacion || '',
-    estado: sensor?.estado || 'operativo',
-    responsable: sensor?.responsable || '',
-    observaciones: sensor?.observaciones || '',
-    equipo_id: sensor?.equipoPadre || sensor?.equipo_id || '',
-  }));
-
-  const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    await onSave(form);
-  };
-
-  const isValid = form.tipo.trim() && form.numero_serie.trim();
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEditing ? 'Editar Sensor' : 'Nuevo Sensor'}
-      width="600px"
-    >
-      <form onSubmit={handleSubmit}>
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>
-              Tipo <span style={formStyles.required}>*</span>
-            </label>
-            <select
-              value={form.tipo}
-              onChange={e => handleChange('tipo', e.target.value)}
-              style={formStyles.select}
-              required
-            >
-              <option value="">Seleccionar tipo</option>
-              {TIPOS_SENSOR.map(t => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>
-              N\u00b0 Serie <span style={formStyles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              value={form.numero_serie}
-              onChange={e => handleChange('numero_serie', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: SN-2024-12345"
-              required
-            />
-          </div>
-        </div>
-
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Marca</label>
-            <input
-              type="text"
-              value={form.marca}
-              onChange={e => handleChange('marca', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: HBM"
-            />
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Modelo</label>
-            <input
-              type="text"
-              value={form.modelo}
-              onChange={e => handleChange('modelo', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: U10M"
-            />
-          </div>
-        </div>
-
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Rango de Medici\u00f3n</label>
-            <input
-              type="text"
-              value={form.rango_medicion}
-              onChange={e => handleChange('rango_medicion', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: 0 - 50 kN"
-            />
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Precisi\u00f3n / Resoluci\u00f3n</label>
-            <input
-              type="text"
-              value={form.precision}
-              onChange={e => handleChange('precision', e.target.value)}
-              style={formStyles.input}
-              placeholder="Ej: 0.01 kN"
-            />
-          </div>
-        </div>
-
-        <div style={formStyles.row}>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Ubicaci\u00f3n</label>
-            <select
-              value={form.ubicacion}
-              onChange={e => handleChange('ubicacion', e.target.value)}
-              style={formStyles.select}
-            >
-              <option value="">Seleccionar ubicaci\u00f3n</option>
-              {UBICACIONES.map(ub => (
-                <option key={ub} value={ub}>
-                  {ub}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Responsable</label>
-            <input
-              type="text"
-              value={form.responsable}
-              onChange={e => handleChange('responsable', e.target.value)}
-              style={formStyles.input}
-              placeholder="Nombre del responsable"
-            />
-          </div>
-        </div>
-
-        {/* Equipo Asociado */}
-        <div style={formStyles.field}>
-          <label style={formStyles.label}>Equipo Asociado</label>
-          <select
-            value={form.equipo_id}
-            onChange={e => handleChange('equipo_id', e.target.value)}
-            style={formStyles.select}
-          >
-            <option value="">Sin equipo asociado</option>
-            {equiposDisponibles.map(eq => (
-              <option key={eq.id} value={eq.id}>
-                {eq.codigo} - {eq.nombre}
-              </option>
-            ))}
-          </select>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
-            Selecciona el equipo al que pertenece este sensor
-          </div>
-        </div>
-
-        {isEditing && (
-          <div style={formStyles.field}>
-            <label style={formStyles.label}>Estado</label>
-            <select
-              value={form.estado}
-              onChange={e => handleChange('estado', e.target.value)}
-              style={formStyles.select}
-            >
-              {ESTADOS_EQUIPO.map(est => (
-                <option key={est.value} value={est.value}>
-                  {est.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div style={formStyles.field}>
-          <label style={formStyles.label}>Observaciones</label>
-          <textarea
-            value={form.observaciones}
-            onChange={e => handleChange('observaciones', e.target.value)}
-            style={formStyles.textarea}
-            placeholder="Observaciones adicionales..."
-          />
-        </div>
-
-        <div style={formStyles.buttons}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={formStyles.buttonSecondary}
-            disabled={loading}
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            style={{
-              ...formStyles.buttonPrimary,
-              opacity: !isValid || loading ? 0.6 : 1,
-              cursor: !isValid || loading ? 'not-allowed' : 'pointer',
-            }}
-            disabled={!isValid || loading}
-          >
-            {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear Sensor'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ConfirmDeleteModal moved to ../components/modals/ConfirmDeleteModal.jsx
-
-// ============================================
-// COMPONENTE: DROPDOWN NUEVO ITEM
-// ============================================
-
-function NuevoDropdown({ onNewEquipo, onNewSensor }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          padding: '8px 16px',
-          backgroundColor: '#3B82F6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontSize: '0.875rem',
-          fontWeight: '500',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}
-      >
-        + Nuevo
-        <span style={{ fontSize: '0.7rem' }}>{isOpen ? '\u25B2' : '\u25BC'}</span>
-      </button>
-
-      {isOpen && (
-        <>
-          {/* Overlay para cerrar */}
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 10,
-            }}
-            onClick={() => setIsOpen(false)}
-          />
-          {/* Menu dropdown */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              marginTop: '4px',
-              backgroundColor: 'white',
-              borderRadius: '6px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              border: '1px solid #E5E7EB',
-              minWidth: '160px',
-              zIndex: 20,
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              onClick={() => {
-                onNewEquipo();
-                setIsOpen(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                border: 'none',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-              onMouseEnter={e => (e.target.style.backgroundColor = '#F3F4F6')}
-              onMouseLeave={e => (e.target.style.backgroundColor = 'white')}
-            >
-              <span style={{ color: '#3B82F6' }}>Equipos</span>
-              Nuevo Equipo
-            </button>
-            <button
-              onClick={() => {
-                onNewSensor();
-                setIsOpen(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                border: 'none',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                borderTop: '1px solid #E5E7EB',
-              }}
-              onMouseEnter={e => (e.target.style.backgroundColor = '#F3F4F6')}
-              onMouseLeave={e => (e.target.style.backgroundColor = 'white')}
-            >
-              <span style={{ color: '#8B5CF6' }}>Sensores</span>
-              Nuevo Sensor
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ============================================
-// HELPERS (usando utilidades centralizadas)
-// ============================================
-
-// getEstadoEquipo, getDiasParaVencimiento, getAlertaVencimiento y formatDate
-// ahora se importan desde '../utils'
-
-// ============================================
-// COMPONENTE: LISTA DE SENSORES ASOCIADOS
-// ============================================
-
-function SensoresAsociados({ sensoresIds, todosEquipos, onSensorClick }) {
-  const sensores = todosEquipos.filter(e => sensoresIds.includes(e.id));
-
-  if (sensores.length === 0) return null;
-
-  return (
-    <div style={{ marginTop: '16px' }}>
-      <h4
-        style={{
-          margin: '0 0 12px 0',
-          fontSize: '0.875rem',
-          color: '#374151',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <span
-          style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#8B5CF6' }}
-        ></span>
-        Sensores Asociados ({sensores.length})
-      </h4>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '12px',
-        }}
-      >
-        {sensores.map(sensor => {
-          const estadoInfo = getEstadoEquipo(sensor.estado);
-          const diasCal = getDiasParaVencimiento(sensor.proxima_calibracion);
-          const alertaCal = getAlertaVencimiento(diasCal);
-
-          return (
-            <div
-              key={sensor.id}
-              onClick={() => onSensorClick(sensor.id)}
-              style={{
-                padding: '12px',
-                backgroundColor: 'white',
-                borderRadius: '6px',
-                border: '1px solid #E5E7EB',
-                cursor: 'pointer',
-                transition: 'box-shadow 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'start',
-                  marginBottom: '8px',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{sensor.codigo}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{sensor.placa}</div>
-                </div>
-                <Badge color={estadoInfo.color}>{estadoInfo.label}</Badge>
-              </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#374151', marginBottom: '4px' }}>
-                {sensor.nombre}
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '8px',
-                }}
-              >
-                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                  <span style={{ marginRight: '8px' }}>{sensor.marca}</span>
-                  <span>Rango: {sensor.rango}</span>
-                </div>
-                {sensor.factor_calibracion && (
-                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#3B82F6' }}>
-                    FC: {sensor.factor_calibracion}
-                  </div>
-                )}
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '8px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid #E5E7EB',
-                }}
-              >
-                <div style={{ fontSize: '0.7rem', color: '#6B7280' }}>
-                  Próx. Cal: {formatDate(sensor.proxima_calibracion)}
-                </div>
-                {alertaCal && (
-                  <span
-                    style={{
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '0.65rem',
-                      backgroundColor: alertaCal.bg,
-                      color: alertaCal.color,
-                      fontWeight: '500',
-                    }}
-                  >
-                    {alertaCal.texto}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// COMPONENTE: FILA EXPANDIBLE DE EQUIPO
-// ============================================
-
-function EquipoRow({
-  equipo,
-  todosEquipos,
-  comprobaciones,
-  calibraciones,
-  isExpanded,
-  onToggle,
-  onSensorClick,
-  onEdit,
-  onDelete,
-}) {
-  const estadoInfo = getEstadoEquipo(equipo.estado);
-  const diasCalib = getDiasParaVencimiento(equipo.proxima_calibracion);
-  const alertaCalib = getAlertaVencimiento(diasCalib);
-  const diasComprob = getDiasParaVencimiento(equipo.proxima_comprobacion);
-  const alertaComprob = getAlertaVencimiento(diasComprob);
-
-  const comprobacionesEquipo = comprobaciones.filter(c => c.equipoId === equipo.id);
-  const calibracionesEquipo = calibraciones.filter(c => c.equipoId === equipo.id);
-
-  const numSensores = equipo.sensoresAsociados?.length || 0;
-
-  return (
-    <>
-      <tr
-        onClick={onToggle}
-        style={{
-          cursor: 'pointer',
-          backgroundColor: isExpanded ? '#F9FAFB' : 'white',
-          borderBottom: isExpanded ? 'none' : '1px solid #E5E7EB',
-        }}
-      >
-        <td style={{ padding: '12px', width: '40px' }}>
-          <span style={{ color: '#6B7280', fontSize: '0.875rem' }}>{isExpanded ? '▼' : '▶'}</span>
-        </td>
-        <td style={{ padding: '12px' }}>
-          <div style={{ fontWeight: '600' }}>{equipo.codigo}</div>
-          <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{equipo.placa}</div>
-        </td>
-        <td style={{ padding: '12px', fontSize: '0.875rem' }}>{equipo.nombre}</td>
-        <td style={{ padding: '12px' }}>
-          <Badge color={equipo.tipo === 'sensor' ? '#8B5CF6' : '#3B82F6'}>
-            {equipo.tipo === 'sensor' ? 'Sensor' : 'Equipo'}
-          </Badge>
-          {numSensores > 0 && (
-            <span style={{ marginLeft: '6px', fontSize: '0.7rem', color: '#8B5CF6' }}>
-              +{numSensores}
-            </span>
-          )}
-        </td>
-        <td style={{ padding: '12px', fontSize: '0.875rem' }}>{equipo.marca}</td>
-        <td style={{ padding: '12px', fontSize: '0.875rem' }}>{equipo.modelo}</td>
-        <td style={{ padding: '12px', fontSize: '0.8rem' }}>{equipo.rango}</td>
-        <td style={{ padding: '12px', fontSize: '0.875rem' }}>{equipo.ubicacion}</td>
-        <td style={{ padding: '12px' }}>
-          <Badge color={estadoInfo.color}>{estadoInfo.label}</Badge>
-        </td>
-        <td style={{ padding: '12px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-            {formatDate(equipo.proxima_calibracion)}
-          </div>
-          {alertaCalib && (
-            <span
-              style={{
-                display: 'inline-block',
-                marginTop: '2px',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                fontSize: '0.65rem',
-                backgroundColor: alertaCalib.bg,
-                color: alertaCalib.color,
-                fontWeight: '500',
-              }}
-            >
-              {alertaCalib.texto}
-            </span>
-          )}
-        </td>
-        <td style={{ padding: '12px' }}>
-          {equipo.proxima_comprobacion ? (
-            <>
-              <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {formatDate(equipo.proxima_comprobacion)}
-              </div>
-              {alertaComprob && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginTop: '2px',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '0.65rem',
-                    backgroundColor: alertaComprob.bg,
-                    color: alertaComprob.color,
-                    fontWeight: '500',
-                  }}
-                >
-                  {alertaComprob.texto}
-                </span>
-              )}
-            </>
-          ) : (
-            <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>-</span>
-          )}
-        </td>
-        <td style={{ padding: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                onEdit(equipo);
-              }}
-              style={{
-                padding: '6px 10px',
-                backgroundColor: '#EFF6FF',
-                color: '#3B82F6',
-                border: '1px solid #BFDBFE',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.75rem',
-                fontWeight: '500',
-              }}
-              title="Editar"
-            >
-              Editar
-            </button>
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                onDelete(equipo);
-              }}
-              style={{
-                padding: '6px 10px',
-                backgroundColor: '#FEF2F2',
-                color: '#EF4444',
-                border: '1px solid #FECACA',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.75rem',
-                fontWeight: '500',
-              }}
-              title="Eliminar"
-            >
-              Eliminar
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      {isExpanded && (
-        <tr>
-          <td colSpan={12} style={{ padding: 0, backgroundColor: '#F9FAFB' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB' }}>
-              {/* Info general */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(5, 1fr)',
-                  gap: '16px',
-                  marginBottom: '20px',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                    N° Serie
-                  </div>
-                  <div style={{ fontWeight: '500' }}>{equipo.serie}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                    Placa / Inventario
-                  </div>
-                  <div style={{ fontWeight: '500' }}>{equipo.placa}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                    Resolución
-                  </div>
-                  <div style={{ fontWeight: '500' }}>{equipo.resolucion || '-'}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                    Responsable
-                  </div>
-                  <div style={{ fontWeight: '500' }}>{equipo.responsable}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                    Fecha Adquisición
-                  </div>
-                  <div style={{ fontWeight: '500' }}>{formatDate(equipo.fecha_adquisicion)}</div>
-                </div>
-                {equipo.factor_calibracion && (
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                      Factor de Calibración
-                    </div>
-                    <div style={{ fontWeight: '600', color: '#3B82F6', fontSize: '1.1rem' }}>
-                      {equipo.factor_calibracion}
-                    </div>
-                  </div>
-                )}
-                {equipo.observaciones && (
-                  <div style={{ gridColumn: 'span 4' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-                      Observaciones
-                    </div>
-                    <div style={{ fontStyle: 'italic' }}>{equipo.observaciones}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Sensores asociados (solo para equipos) */}
-              {equipo.tipo === 'equipo' && equipo.sensoresAsociados?.length > 0 && (
-                <SensoresAsociados
-                  sensoresIds={equipo.sensoresAsociados}
-                  todosEquipos={todosEquipos}
-                  onSensorClick={onSensorClick}
-                />
-              )}
-
-              {/* Tabs de histórico */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '24px',
-                  marginTop: '20px',
-                }}
-              >
-                {/* Histórico de Comprobaciones */}
-                <div>
-                  <h4
-                    style={{
-                      margin: '0 0 12px 0',
-                      fontSize: '0.875rem',
-                      color: '#374151',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: '#10B981',
-                      }}
-                    ></span>
-                    Histórico de Comprobaciones ({comprobacionesEquipo.length})
-                  </h4>
-
-                  {comprobacionesEquipo.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '16px',
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        color: '#9CA3AF',
-                        textAlign: 'center',
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      Sin comprobaciones registradas
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        overflow: 'hidden',
-                        border: '1px solid #E5E7EB',
-                      }}
-                    >
-                      <table
-                        style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}
-                      >
-                        <thead>
-                          <tr style={{ backgroundColor: '#F9FAFB' }}>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Fecha
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Tipo
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Resultado
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Responsable
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {comprobacionesEquipo.slice(0, 5).map(comp => (
-                            <tr key={comp.id} style={{ borderTop: '1px solid #E5E7EB' }}>
-                              <td style={{ padding: '8px' }}>{formatDate(comp.fecha)}</td>
-                              <td style={{ padding: '8px' }}>{comp.tipo}</td>
-                              <td style={{ padding: '8px' }}>
-                                <span
-                                  style={{
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    backgroundColor:
-                                      comp.resultado === 'Conforme' ? '#D1FAE5' : '#FEE2E2',
-                                    color: comp.resultado === 'Conforme' ? '#065F46' : '#991B1B',
-                                    fontSize: '0.7rem',
-                                  }}
-                                >
-                                  {comp.resultado}
-                                </span>
-                              </td>
-                              <td style={{ padding: '8px', color: '#6B7280' }}>
-                                {comp.responsable}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {comprobacionesEquipo.length > 5 && (
-                        <div
-                          style={{
-                            padding: '8px',
-                            textAlign: 'center',
-                            fontSize: '0.75rem',
-                            color: '#6B7280',
-                            borderTop: '1px solid #E5E7EB',
-                          }}
-                        >
-                          + {comprobacionesEquipo.length - 5} comprobaciones más
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Histórico de Calibraciones */}
-                <div>
-                  <h4
-                    style={{
-                      margin: '0 0 12px 0',
-                      fontSize: '0.875rem',
-                      color: '#374151',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: '#3B82F6',
-                      }}
-                    ></span>
-                    Histórico de Calibraciones ({calibracionesEquipo.length})
-                  </h4>
-
-                  {calibracionesEquipo.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '16px',
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        color: '#9CA3AF',
-                        textAlign: 'center',
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      Sin calibraciones registradas
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        overflow: 'hidden',
-                        border: '1px solid #E5E7EB',
-                      }}
-                    >
-                      <table
-                        style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}
-                      >
-                        <thead>
-                          <tr style={{ backgroundColor: '#F9FAFB' }}>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Fecha
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Laboratorio
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Certificado
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Factor
-                            </th>
-                            <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600' }}>
-                              Incert.
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {calibracionesEquipo.map(cal => (
-                            <tr key={cal.id} style={{ borderTop: '1px solid #E5E7EB' }}>
-                              <td style={{ padding: '8px' }}>{formatDate(cal.fecha)}</td>
-                              <td style={{ padding: '8px' }}>{cal.laboratorio}</td>
-                              <td style={{ padding: '8px' }}>
-                                <span style={{ color: '#3B82F6', cursor: 'pointer' }}>
-                                  {cal.certificado}
-                                </span>
-                              </td>
-                              <td
-                                style={{
-                                  padding: '8px',
-                                  fontWeight: cal.factor ? '600' : '400',
-                                  color: cal.factor ? '#3B82F6' : '#9CA3AF',
-                                }}
-                              >
-                                {cal.factor || 'N/A'}
-                              </td>
-                              <td style={{ padding: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
-                                {cal.incertidumbre}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
-// ============================================
-// COMPONENTE PRINCIPAL
-// ============================================
+import { EquipoFormModal, SensorFormModal, NuevoDropdown, EquipoRow } from '../components/equipo';
+import { useEquiposData } from '../hooks/useEquiposData';
+import { useEquiposModals } from '../hooks/useEquiposModals';
+import { getDiasParaVencimiento } from '../utils';
+import styles from './Equipos.module.css';
 
 export default function Equipos() {
-  // Usar hook centralizado para fetching de datos
+  // Hooks de datos y modales
   const {
-    data: { equiposRaw, sensoresRaw, comprobacionesRaw, calibracionesRaw },
+    equipos,
+    comprobaciones,
+    calibraciones,
     loading,
-    reload: reloadAllData,
-  } = useMultipleApiData(
-    {
-      equiposRaw: { api: EquiposAPI.list },
-      sensoresRaw: { api: SensoresAPI.list },
-      comprobacionesRaw: { api: ComprobacionesAPI.list },
-      calibracionesRaw: { api: CalibracionesAPI.list },
-    },
-    { fetchOnMount: true }
-  );
+    saving,
+    error,
+    createEquipo,
+    updateEquipo,
+    createSensor,
+    updateSensor,
+    deleteItem,
+    clearError,
+  } = useEquiposData();
 
-  // Combinar y transformar datos
-  const equipos = useMemo(() => {
-    return [
-      ...(equiposRaw || []).map(e => ({ ...e, tipo: 'equipo' })),
-      ...(sensoresRaw || []).map(s => ({ ...s, tipo: 'sensor' })),
-    ];
-  }, [equiposRaw, sensoresRaw]);
+  const {
+    selectedItem,
+    isEquipoFormOpen,
+    isSensorFormOpen,
+    isDeleteOpen,
+    openEquipoForm,
+    openSensorForm,
+    openDeleteConfirm,
+    openEditForm,
+    closeModal,
+  } = useEquiposModals();
 
-  const comprobaciones = useMemo(() => {
-    return (comprobacionesRaw || []).map(c => ({
-      id: c.id,
-      equipoId: c.equipo_id,
-      fecha: c.fecha,
-      tipo: c.tipo,
-      resultado: c.resultado,
-      responsable: c.responsable,
-      observaciones: c.observaciones,
-    }));
-  }, [comprobacionesRaw]);
-
-  const calibraciones = useMemo(() => {
-    return (calibracionesRaw || []).map(c => ({
-      id: c.id,
-      equipoId: c.equipo_id,
-      fecha: c.fecha,
-      laboratorio: c.laboratorio,
-      certificado: c.certificado,
-      factor: c.factor,
-      incertidumbre: c.incertidumbre,
-      proxima_calibracion: c.proxima_calibracion,
-    }));
-  }, [calibracionesRaw]);
-
+  // Estados locales de UI
   const [expandedRows, setExpandedRows] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroUbicacion, setFiltroUbicacion] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
 
-  // Estados para modales CRUD
-  const [showEquipoModal, setShowEquipoModal] = useState(false);
-  const [showSensorModal, setShowSensorModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editingEquipo, setEditingEquipo] = useState(null);
-  const [editingSensor, setEditingSensor] = useState(null);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [error, setError] = useState(null);
-
-  // Mutations para operaciones CRUD
-  const equipoMutation = useMutation(
-    async ({ action, id, data }) => {
-      if (action === 'create') return EquiposAPI.create(data);
-      if (action === 'update') return EquiposAPI.update(id, data);
-      if (action === 'delete') return EquiposAPI.delete(id);
-    },
-    {
-      onSuccess: () => reloadAllData(),
-      onError: err => setError(err.message || 'Error en operación de equipo'),
-    }
-  );
-
-  const sensorMutation = useMutation(
-    async ({ action, id, data }) => {
-      if (action === 'create') return SensoresAPI.create(data);
-      if (action === 'update') return SensoresAPI.update(id, data);
-      if (action === 'delete') return SensoresAPI.delete(id);
-    },
-    {
-      onSuccess: () => reloadAllData(),
-      onError: err => setError(err.message || 'Error en operación de sensor'),
-    }
-  );
-
-  const saving = equipoMutation.loading || sensorMutation.loading;
-
-  // Handlers para Equipos
-  const handleNewEquipo = () => {
-    setEditingEquipo(null);
-    setShowEquipoModal(true);
-  };
-
-  const handleEditEquipo = equipo => {
-    setEditingEquipo(equipo);
-    setShowEquipoModal(true);
-  };
-
+  // Handlers
   const handleSaveEquipo = async formData => {
-    setError(null);
-    try {
-      if (editingEquipo) {
-        await equipoMutation.mutateAsync({
-          action: 'update',
-          id: editingEquipo.id,
-          data: formData,
-        });
-      } else {
-        await equipoMutation.mutateAsync({ action: 'create', data: formData });
-      }
-      setShowEquipoModal(false);
-      setEditingEquipo(null);
-    } catch (err) {
-      // Error ya manejado por onError del mutation
+    if (selectedItem) {
+      await updateEquipo(selectedItem.id, formData);
+    } else {
+      await createEquipo(formData);
     }
-  };
-
-  // Handlers para Sensores
-  const handleNewSensor = () => {
-    setEditingSensor(null);
-    setShowSensorModal(true);
-  };
-
-  const handleEditSensor = sensor => {
-    setEditingSensor(sensor);
-    setShowSensorModal(true);
+    closeModal();
   };
 
   const handleSaveSensor = async formData => {
-    setError(null);
-    try {
-      if (editingSensor) {
-        await sensorMutation.mutateAsync({
-          action: 'update',
-          id: editingSensor.id,
-          data: formData,
-        });
-      } else {
-        await sensorMutation.mutateAsync({ action: 'create', data: formData });
-      }
-      setShowSensorModal(false);
-      setEditingSensor(null);
-    } catch (err) {
-      // Error ya manejado por onError del mutation
-    }
-  };
-
-  // Handler para editar (determina si es equipo o sensor)
-  const handleEdit = item => {
-    if (item.tipo === 'sensor') {
-      handleEditSensor(item);
+    if (selectedItem) {
+      await updateSensor(selectedItem.id, formData);
     } else {
-      handleEditEquipo(item);
+      await createSensor(formData);
     }
-  };
-
-  // Handler para eliminar
-  const handleDeleteClick = item => {
-    setItemToDelete(item);
-    setShowDeleteModal(true);
+    closeModal();
   };
 
   const handleConfirmDelete = async () => {
-    if (!itemToDelete) return;
-
-    setError(null);
-    try {
-      if (itemToDelete.tipo === 'sensor') {
-        await sensorMutation.mutateAsync({ action: 'delete', id: itemToDelete.id });
-      } else {
-        await equipoMutation.mutateAsync({ action: 'delete', id: itemToDelete.id });
-      }
-      setShowDeleteModal(false);
-      setItemToDelete(null);
-    } catch (err) {
-      // Error ya manejado por onError del mutation
+    if (selectedItem) {
+      await deleteItem(selectedItem);
+      closeModal();
     }
   };
-  // Toggle fila expandida
+
   const toggleRow = id => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Expandir y scrollear a un sensor
   const handleSensorClick = sensorId => {
     setExpandedRows(prev => ({ ...prev, [sensorId]: true }));
-    // Scroll al elemento
     setTimeout(() => {
       const element = document.getElementById(`equipo-${sensorId}`);
       if (element) {
@@ -1423,7 +90,7 @@ export default function Equipos() {
     }, 100);
   };
 
-  // Obtener ubicaciones únicas
+  // Ubicaciones unicas
   const ubicaciones = useMemo(() => {
     const unique = [...new Set(equipos.map(e => e.ubicacion))];
     return unique.sort();
@@ -1438,18 +105,18 @@ export default function Equipos() {
       if (busqueda) {
         const search = busqueda.toLowerCase();
         return (
-          e.codigo.toLowerCase().includes(search) ||
-          e.placa.toLowerCase().includes(search) ||
-          e.nombre.toLowerCase().includes(search) ||
-          e.marca.toLowerCase().includes(search) ||
-          e.modelo.toLowerCase().includes(search)
+          e.codigo?.toLowerCase().includes(search) ||
+          e.placa?.toLowerCase().includes(search) ||
+          e.nombre?.toLowerCase().includes(search) ||
+          e.marca?.toLowerCase().includes(search) ||
+          e.modelo?.toLowerCase().includes(search)
         );
       }
       return true;
     });
   }, [equipos, filtroTipo, filtroEstado, filtroUbicacion, busqueda]);
 
-  // Estadísticas
+  // Estadisticas
   const stats = useMemo(() => {
     const porVencerCal = equipos.filter(e => {
       const dias = getDiasParaVencimiento(e.proxima_calibracion);
@@ -1476,138 +143,53 @@ export default function Equipos() {
   if (loading) {
     return (
       <PageLayout title="Equipos">
-        <div style={{ textAlign: 'center', padding: '48px' }}>Cargando equipos...</div>
+        <div className={styles.loading}>Cargando equipos...</div>
       </PageLayout>
     );
   }
 
   return (
     <PageLayout title="Equipos y Sensores">
-      {/* Tarjetas de estadísticas */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '12px',
-          marginBottom: '24px',
-        }}
-      >
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>Total</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{stats.total}</div>
-          <div style={{ fontSize: '0.7rem', color: '#6B7280' }}>
-            {stats.equipos} equipos, {stats.sensores} sensores
-          </div>
-        </div>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-            Operativos
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#10B981' }}>
-            {stats.operativos}
-          </div>
-        </div>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-            En Calibración
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#F59E0B' }}>
-            {stats.enCalibracion}
-          </div>
-        </div>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-            Fuera de Servicio
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#EF4444' }}>
-            {stats.fueraServicio}
-          </div>
-        </div>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: stats.porVencerCal > 0 ? '#FEF3C7' : 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-            Cal. por Vencer
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#F59E0B' }}>
-            {stats.porVencerCal}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: '#6B7280' }}>próx. 30 días</div>
-        </div>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: stats.vencidosCal > 0 ? '#FEE2E2' : 'white',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-            Cal. Vencidas
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#EF4444' }}>
-            {stats.vencidosCal}
-          </div>
-        </div>
+      {/* Tarjetas de estadisticas */}
+      <div className={styles.statsGrid}>
+        <StatCard
+          label="Total"
+          value={stats.total}
+          subtext={`${stats.equipos} equipos, ${stats.sensores} sensores`}
+        />
+        <StatCard label="Operativos" value={stats.operativos} color="#10B981" />
+        <StatCard label="En Calibracion" value={stats.enCalibracion} color="#F59E0B" />
+        <StatCard label="Fuera de Servicio" value={stats.fueraServicio} color="#EF4444" />
+        <StatCard
+          label="Cal. por Vencer"
+          value={stats.porVencerCal}
+          color="#F59E0B"
+          subtext="prox. 30 dias"
+          highlight={stats.porVencerCal > 0}
+          highlightColor="#FEF3C7"
+        />
+        <StatCard
+          label="Cal. Vencidas"
+          value={stats.vencidosCal}
+          color="#EF4444"
+          highlight={stats.vencidosCal > 0}
+          highlightColor="#FEE2E2"
+        />
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <div className={styles.filtersBar}>
         <input
           type="text"
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar por código, placa, nombre, marca..."
-          style={{
-            flex: '1 1 200px',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: '1px solid #D1D5DB',
-            fontSize: '0.875rem',
-          }}
+          placeholder="Buscar por codigo, placa, nombre, marca..."
+          className={styles.searchInput}
         />
         <select
           value={filtroTipo}
           onChange={e => setFiltroTipo(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: '1px solid #D1D5DB',
-            fontSize: '0.875rem',
-          }}
+          className={styles.select}
         >
           <option value="todos">Todos los tipos</option>
           <option value="equipo">Equipos</option>
@@ -1616,27 +198,17 @@ export default function Equipos() {
         <select
           value={filtroEstado}
           onChange={e => setFiltroEstado(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: '1px solid #D1D5DB',
-            fontSize: '0.875rem',
-          }}
+          className={styles.select}
         >
           <option value="todos">Todos los estados</option>
           <option value="operativo">Operativo</option>
-          <option value="en_calibracion">En Calibración</option>
+          <option value="en_calibracion">En Calibracion</option>
           <option value="fuera_servicio">Fuera de Servicio</option>
         </select>
         <select
           value={filtroUbicacion}
           onChange={e => setFiltroUbicacion(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: '1px solid #D1D5DB',
-            fontSize: '0.875rem',
-          }}
+          className={styles.select}
         >
           <option value="todos">Todas las ubicaciones</option>
           {ubicaciones.map(ub => (
@@ -1645,84 +217,43 @@ export default function Equipos() {
             </option>
           ))}
         </select>
-
-        {/* Dropdown para nuevo equipo/sensor */}
-        <NuevoDropdown onNewEquipo={handleNewEquipo} onNewSensor={handleNewSensor} />
+        <NuevoDropdown onNewEquipo={() => openEquipoForm()} onNewSensor={() => openSensorForm()} />
       </div>
 
       {/* Mensaje de error */}
       {error && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            backgroundColor: '#FEE2E2',
-            color: '#991B1B',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
+        <div className={styles.errorMessage}>
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#991B1B',
-              cursor: 'pointer',
-              fontSize: '1.2rem',
-            }}
-          >
+          <button onClick={clearError} className={styles.errorClose}>
             &times;
           </button>
         </div>
       )}
 
       {/* Tabla de equipos */}
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1100px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F9FAFB' }}>
-                <th style={{ padding: '12px', width: '40px' }}></th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>
-                  Código / Placa
-                </th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Nombre</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Tipo</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Marca</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Modelo</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Rango</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Ubicación</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Estado</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>
-                  Próx. Calibración
-                </th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>
-                  Próx. Comprob.
-                </th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Acciones</th>
+      <div className={styles.tableContainer}>
+        <div className={styles.tableScroll}>
+          <table className={styles.table}>
+            <thead className={styles.tableHead}>
+              <tr>
+                <th className={styles.thIcon}></th>
+                <th className={styles.th}>Codigo / Placa</th>
+                <th className={styles.th}>Nombre</th>
+                <th className={styles.th}>Tipo</th>
+                <th className={styles.th}>Marca</th>
+                <th className={styles.th}>Modelo</th>
+                <th className={styles.th}>Rango</th>
+                <th className={styles.th}>Ubicacion</th>
+                <th className={styles.th}>Estado</th>
+                <th className={styles.th}>Prox. Calibracion</th>
+                <th className={styles.th}>Prox. Comprob.</th>
+                <th className={styles.th}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {equiposFiltrados.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={12}
-                    style={{ padding: '48px', textAlign: 'center', color: '#6B7280' }}
-                  >
-                    No se encontraron equipos con los filtros seleccionados
-                  </td>
+                <tr className={styles.emptyRow}>
+                  <td colSpan={12}>No se encontraron equipos con los filtros seleccionados</td>
                 </tr>
               ) : (
                 equiposFiltrados.map(equipo => (
@@ -1735,8 +266,8 @@ export default function Equipos() {
                     isExpanded={expandedRows[equipo.id]}
                     onToggle={() => toggleRow(equipo.id)}
                     onSensorClick={handleSensorClick}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
+                    onEdit={openEditForm}
+                    onDelete={openDeleteConfirm}
                   />
                 ))
               )}
@@ -1746,101 +277,75 @@ export default function Equipos() {
       </div>
 
       {/* Leyenda */}
-      <div
-        style={{
-          marginTop: '16px',
-          padding: '12px',
-          backgroundColor: '#F9FAFB',
-          borderRadius: '8px',
-          fontSize: '0.75rem',
-          color: '#6B7280',
-        }}
-      >
-        <strong>Nota:</strong> Haga clic en una fila para ver el histórico de comprobaciones,
-        calibraciones y sensores asociados. Los indicadores de tiempo muestran:
-        <span
-          style={{
-            marginLeft: '8px',
-            padding: '2px 6px',
-            backgroundColor: '#D1FAE5',
-            color: '#065F46',
-            borderRadius: '4px',
-          }}
-        >
+      <div className={styles.legend}>
+        <strong>Nota:</strong> Haga clic en una fila para ver el historico de comprobaciones,
+        calibraciones y sensores asociados.
+        <LegendBadge bg="#D1FAE5" color="#065F46">
           &gt;90d
-        </span>
-        <span
-          style={{
-            marginLeft: '4px',
-            padding: '2px 6px',
-            backgroundColor: '#DBEAFE',
-            color: '#1D4ED8',
-            borderRadius: '4px',
-          }}
-        >
-          ≤90d
-        </span>
-        <span
-          style={{
-            marginLeft: '4px',
-            padding: '2px 6px',
-            backgroundColor: '#FEF3C7',
-            color: '#B45309',
-            borderRadius: '4px',
-          }}
-        >
+        </LegendBadge>
+        <LegendBadge bg="#DBEAFE" color="#1D4ED8">
+          &le;90d
+        </LegendBadge>
+        <LegendBadge bg="#FEF3C7" color="#B45309">
           &le;30d
-        </span>
-        <span
-          style={{
-            marginLeft: '4px',
-            padding: '2px 6px',
-            backgroundColor: '#FEE2E2',
-            color: '#991B1B',
-            borderRadius: '4px',
-          }}
-        >
+        </LegendBadge>
+        <LegendBadge bg="#FEE2E2" color="#991B1B">
           Vencido
-        </span>
+        </LegendBadge>
       </div>
 
       {/* Modales CRUD */}
       <EquipoFormModal
-        key={editingEquipo?.id || 'new-equipo'}
-        isOpen={showEquipoModal}
-        onClose={() => {
-          setShowEquipoModal(false);
-          setEditingEquipo(null);
-        }}
+        key={selectedItem?.id || 'new-equipo'}
+        isOpen={isEquipoFormOpen}
+        onClose={closeModal}
         onSave={handleSaveEquipo}
-        equipo={editingEquipo}
+        equipo={selectedItem}
         loading={saving}
       />
 
       <SensorFormModal
-        key={editingSensor?.id || 'new-sensor'}
-        isOpen={showSensorModal}
-        onClose={() => {
-          setShowSensorModal(false);
-          setEditingSensor(null);
-        }}
+        key={selectedItem?.id || 'new-sensor'}
+        isOpen={isSensorFormOpen}
+        onClose={closeModal}
         onSave={handleSaveSensor}
-        sensor={editingSensor}
+        sensor={selectedItem}
         loading={saving}
         equiposDisponibles={equipos.filter(e => e.tipo === 'equipo')}
       />
 
       <ConfirmDeleteModal
-        isOpen={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false);
-          setItemToDelete(null);
-        }}
+        isOpen={isDeleteOpen}
+        onClose={closeModal}
         onConfirm={handleConfirmDelete}
-        itemType={itemToDelete?.tipo === 'sensor' ? 'sensor' : 'equipo'}
-        itemName={itemToDelete?.nombre || itemToDelete?.codigo}
+        itemType={selectedItem?.tipo === 'sensor' ? 'sensor' : 'equipo'}
+        itemName={selectedItem?.nombre || selectedItem?.codigo}
         loading={saving}
       />
     </PageLayout>
+  );
+}
+
+// Componentes auxiliares internos
+function StatCard({ label, value, color, subtext, highlight, highlightColor }) {
+  return (
+    <div
+      className={highlight ? styles.statCardHighlight : styles.statCard}
+      style={highlight ? { backgroundColor: highlightColor } : undefined}
+    >
+      <div className={styles.statLabel}>{label}</div>
+      <div className={styles.statValue} style={{ color: color || 'inherit' }}>
+        {value}
+      </div>
+      {subtext && <div className={styles.statSubtext}>{subtext}</div>}
+    </div>
+  );
+}
+
+function LegendBadge({ bg, color, children }) {
+  return (
+    <span className={styles.legendBadge} style={{ backgroundColor: bg, color }}>
+      {children}
+    </span>
   );
 }

@@ -1,0 +1,107 @@
+/**
+ * ConfirmDeleteModal.module.css
+ * Estilos para el modal de confirmación de eliminación
+ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.iconContainer {
+  text-align: center;
+}
+
+.iconCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-error-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 28px;
+}
+
+.messageContainer {
+  text-align: center;
+}
+
+.message {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--text-base);
+  color: var(--color-gray-700);
+}
+
+.disclaimer {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.warningBox {
+  padding: var(--spacing-3);
+  background-color: var(--color-warning-100);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-warning-500);
+}
+
+.warningContent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.warningIcon {
+  font-size: var(--text-base);
+}
+
+.warningText {
+  font-size: var(--text-sm);
+  color: var(--color-warning-800);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.btnCancel {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnCancel:hover:not(:disabled) {
+  background-color: var(--color-gray-50);
+}
+
+.btnCancel:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btnDelete {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-error-500);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnDelete:hover:not(:disabled) {
+  background-color: var(--color-error-600);
+}
+
+.btnDelete:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

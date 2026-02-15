@@ -1,0 +1,161 @@
+/**
+ * AgregarPersonaModal.module.css - Estilos para modal de agregar persona
+ */
+
+/* Tipo selector */
+.tipoSection {
+  margin-bottom: var(--spacing-5);
+}
+
+.tipoLabel {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.tipoButtons {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.tipoButton {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-gray-200);
+  background-color: white;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  transition: all 200ms ease;
+}
+
+.tipoButton:hover {
+  border-color: var(--color-gray-300);
+}
+
+.tipoButtonInterno {
+  composes: tipoButton;
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.tipoButtonCliente {
+  composes: tipoButton;
+  border-color: var(--color-pink-500);
+  background-color: var(--color-pink-50);
+  color: var(--color-pink-700);
+}
+
+/* Form grid */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+}
+
+.formGridSpaced {
+  composes: formGrid;
+  margin-top: var(--spacing-4);
+}
+
+/* Form field */
+.formField {
+  margin-top: var(--spacing-4);
+}
+
+/* Label */
+.label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+/* Input */
+.input {
+  width: 100%;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.input::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* Select */
+.select {
+  composes: input;
+  background-color: white;
+  cursor: pointer;
+}
+
+/* Cargo description hint */
+.cargoHint {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+/* Footer buttons */
+.footer {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.buttonSecondary {
+  padding: var(--spacing-2-5) var(--spacing-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.buttonSecondary:hover {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+.buttonPrimary {
+  padding: var(--spacing-2-5) var(--spacing-5);
+  border-radius: var(--radius-md);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.buttonPrimary:hover {
+  background-color: var(--color-primary-600);
+}
+
+.buttonPrimary:disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}

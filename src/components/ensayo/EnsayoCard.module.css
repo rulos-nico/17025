@@ -1,0 +1,110 @@
+/**
+ * EnsayoCard.module.css - Estilos para la tarjeta de ensayo Kanban
+ */
+
+.card {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-gray-200);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cardOwn {
+  composes: card;
+  border: 2px solid var(--color-primary-500);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-2);
+}
+
+.codigo {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.tipo {
+  font-size: 0.8rem;
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-1);
+}
+
+.muestra {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-2);
+}
+
+.tecnico {
+  font-size: 0.7rem;
+  color: var(--color-gray-400);
+  margin-bottom: var(--spacing-2);
+}
+
+.novedad {
+  font-size: 0.7rem;
+  color: var(--color-warning-500);
+  margin-bottom: var(--spacing-2);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: var(--transition-fast);
+}
+
+.btnPrimary:hover {
+  background-color: var(--color-primary-600);
+}
+
+.btnWarning {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-warning-500);
+  color: white;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: var(--transition-fast);
+}
+
+.btnWarning:hover {
+  background-color: var(--color-warning-600);
+}
+
+.btnSecondary {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: var(--transition-fast);
+}
+
+.btnSecondary:hover {
+  background-color: var(--color-gray-50);
+}

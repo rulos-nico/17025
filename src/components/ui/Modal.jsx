@@ -7,40 +7,21 @@
  * @param {React.ReactNode} props.children - Modal content
  * @param {string} props.width - Max width (default: 500px)
  */
+import styles from './Modal.module.css';
+
 export function Modal({ isOpen, onClose, title, children, width = '500px' }) {
   if (!isOpen) return null;
-  
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
+    <div className={styles.backdrop} onClick={onClose}>
       <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '24px',
-          width: '100%',
-          maxWidth: width,
-          maxHeight: '90vh',
-          overflow: 'auto',
-        }}
-        onClick={(e) => e.stopPropagation()}
+        className={styles.container}
+        style={{ maxWidth: width }}
+        onClick={e => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ margin: 0 }}>{title}</h2>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7280' }}
-          >
+        <div className={styles.header}>
+          <h2 className={styles.title}>{title}</h2>
+          <button className={styles.closeButton} onClick={onClose}>
             ×
           </button>
         </div>

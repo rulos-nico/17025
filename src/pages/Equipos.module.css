@@ -1,0 +1,168 @@
+/**
+ * Equipos.module.css - Estilos para la pagina de Equipos
+ */
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-gray-500);
+}
+
+/* Stats grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+}
+
+/* Stat card */
+.statCard {
+  padding: var(--spacing-4);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.statCardHighlight {
+  composes: statCard;
+}
+
+.statLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-1);
+}
+
+.statValue {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+}
+
+.statSubtext {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+/* Filters bar */
+.filtersBar {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1 1 200px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.searchInput::placeholder {
+  color: var(--color-gray-400);
+}
+
+.select {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  background-color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+/* Error message */
+.errorMessage {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-error-100);
+  color: var(--color-error-800);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.errorClose {
+  background: none;
+  border: none;
+  color: var(--color-error-800);
+  cursor: pointer;
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+/* Table container */
+.tableContainer {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
+}
+
+.tableHead {
+  background-color: var(--color-gray-50);
+}
+
+.th {
+  padding: var(--spacing-3);
+  text-align: left;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.thIcon {
+  composes: th;
+  width: 40px;
+}
+
+.emptyRow td {
+  padding: var(--spacing-12);
+  text-align: center;
+  color: var(--color-gray-500);
+}
+
+/* Legend */
+.legend {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.legendBadge {
+  margin-left: var(--spacing-2);
+  padding: 2px var(--spacing-1-5);
+  border-radius: var(--radius-sm);
+}

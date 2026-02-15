@@ -1,0 +1,168 @@
+/**
+ * PersonalRow.module.css - Estilos para filas de tabla de personal
+ */
+
+/* Fila principal */
+.row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-gray-200);
+  transition: background-color var(--transition-fast);
+}
+
+.row:hover {
+  background-color: var(--color-gray-50);
+}
+
+.rowExpanded {
+  border-bottom: none;
+  background-color: var(--color-primary-50);
+}
+
+/* Celdas */
+.cell {
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.cellCode {
+  composes: cell;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.cellCenter {
+  composes: cell;
+  text-align: center;
+}
+
+/* Avatar */
+.avatarContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  flex-shrink: 0;
+}
+
+.personName {
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+}
+
+.personEmail {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.empresaText {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+}
+
+/* Autorizaciones */
+.authCount {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.authNumber {
+  font-weight: var(--font-semibold);
+}
+
+.authNumberActive {
+  composes: authNumber;
+  color: var(--color-success-500);
+}
+
+.authNumberInactive {
+  composes: authNumber;
+  color: var(--color-gray-500);
+}
+
+.authLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.placeholder {
+  color: var(--color-gray-400);
+}
+
+/* Proyectos */
+.projectsContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.projectCount {
+  font-weight: var(--font-medium);
+}
+
+/* Boton ver detalle */
+.detailButton {
+  padding: var(--spacing-1-5) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.detailButton:hover {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* Fila expandida */
+.expandedRow {
+  background-color: var(--color-primary-50);
+}
+
+.expandedCell {
+  padding: 0 var(--spacing-4) var(--spacing-4) var(--spacing-4);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.expandedContent {
+  margin-top: var(--spacing-2);
+}
+
+.expandedTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-2);
+}
+
+/* Tags de proyectos/autorizaciones */
+.tagContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+}
+
+.tag {
+  padding: var(--spacing-1) var(--spacing-2);
+  background-color: white;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.emptyText {
+  color: var(--color-gray-500);
+  font-size: var(--text-xs);
+}

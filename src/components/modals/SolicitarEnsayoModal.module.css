@@ -1,0 +1,134 @@
+/**
+ * SolicitarEnsayoModal.module.css
+ * Estilos para el modal de solicitar ensayo
+ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* Información de muestra/perforación */
+.infoBox {
+  padding: var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+}
+
+.infoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.infoSubtext {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.infoDescription {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+  margin-top: var(--spacing-2);
+}
+
+.infoMeta {
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  margin-top: var(--spacing-2);
+}
+
+.infoPerforacion {
+  margin-top: var(--spacing-1);
+  font-size: var(--text-sm);
+}
+
+/* Mensaje de error/no disponible */
+.errorBox {
+  padding: var(--spacing-4);
+  background-color: var(--color-error-100);
+  border-radius: var(--radius-lg);
+  color: var(--color-error-800);
+}
+
+/* Campos de formulario */
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-medium);
+}
+
+.select,
+.input,
+.textarea {
+  width: 100%;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-base);
+  transition: var(--transition-fast);
+}
+
+.select:focus,
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.hint {
+  margin-top: var(--spacing-1);
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+/* Botones */
+.actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.btnCancel {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnCancel:hover {
+  background-color: var(--color-gray-50);
+}
+
+.btnSubmit {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-success-500);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnSubmit:hover:not(:disabled) {
+  background-color: var(--color-success-600);
+}
+
+.btnSubmit:disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}

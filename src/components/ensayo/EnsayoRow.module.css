@@ -1,0 +1,90 @@
+/**
+ * EnsayoRow.module.css - Estilos para la fila de ensayo
+ */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: 10px var(--spacing-3);
+  background-color: white;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-1);
+  cursor: pointer;
+  border: 1px solid var(--color-gray-200);
+  transition: var(--transition-fast);
+}
+
+.row:hover {
+  background-color: var(--color-gray-50);
+}
+
+.rowIndent2 {
+  composes: row;
+  margin-left: 48px;
+}
+
+.rowIndent3 {
+  composes: row;
+  margin-left: 72px;
+}
+
+.codigo {
+  font-weight: var(--font-semibold);
+  font-size: 0.85rem;
+  min-width: 120px;
+  color: var(--color-gray-800);
+}
+
+.tipo {
+  font-size: 0.85rem;
+  min-width: 140px;
+  color: var(--color-gray-700);
+}
+
+.muestra {
+  font-size: 0.85rem;
+  flex: 1;
+  color: var(--color-gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.norma {
+  font-size: var(--text-xs);
+  min-width: 80px;
+  color: var(--color-gray-400);
+}
+
+.fecha {
+  font-size: var(--text-xs);
+  min-width: 90px;
+  color: var(--color-gray-400);
+}
+
+.sheetLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #34a853;
+  border-radius: var(--radius-sm);
+  color: white;
+  text-decoration: none;
+  font-size: var(--text-xs);
+}
+
+.sheetLink:hover {
+  opacity: 0.9;
+}
+
+.sheetPlaceholder {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-300);
+}

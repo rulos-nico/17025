@@ -1,0 +1,10 @@
+/**
+ * Relacion_muestras.module.css
+ * Estilos para la página de relación de muestras
+ */
+
+.relationActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}

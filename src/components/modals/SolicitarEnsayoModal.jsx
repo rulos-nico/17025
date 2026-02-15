@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { Modal, Badge } from '../ui';
 import { TIPOS_ENSAYO, getTipoMuestra } from '../../config';
+import styles from './SolicitarEnsayoModal.module.css';
 
 /**
  * @param {Object} props
@@ -80,17 +81,15 @@ export function SolicitarEnsayoModal({
       title={`Solicitar Ensayo${muestra ? ` - ${muestra.codigo}` : ''}`}
     >
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className={styles.content}>
           {/* Información de la muestra */}
-          <div style={{ padding: '12px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
+          <div className={styles.infoBox}>
             {muestra ? (
               <>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}
-                >
+                <div className={styles.infoHeader}>
                   <div>
                     <strong>Muestra:</strong> {muestra.codigo}
-                    <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '2px' }}>
+                    <div className={styles.infoSubtext}>
                       Profundidad: {muestra.profundidadInicio}m - {muestra.profundidadFin}m
                     </div>
                   </div>
@@ -99,11 +98,9 @@ export function SolicitarEnsayoModal({
                   )}
                 </div>
                 {muestra.descripcion && (
-                  <div style={{ fontSize: '0.875rem', color: '#374151', marginTop: '8px' }}>
-                    {muestra.descripcion}
-                  </div>
+                  <div className={styles.infoDescription}>{muestra.descripcion}</div>
                 )}
-                <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '8px' }}>
+                <div className={styles.infoMeta}>
                   Perforación: {perforacion?.codigo} • Muestra física: {perforacion?.muestraFisica}
                 </div>
               </>
@@ -111,7 +108,7 @@ export function SolicitarEnsayoModal({
               <>
                 <strong>Perforación:</strong> {perforacion?.descripcion}
                 {perforacion?.muestraFisica && (
-                  <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
+                  <div className={styles.infoPerforacion}>
                     <strong>Código físico:</strong> {perforacion.muestraFisica}
                   </div>
                 )}
@@ -120,22 +117,13 @@ export function SolicitarEnsayoModal({
           </div>
 
           {tiposDisponibles.length === 0 ? (
-            <div
-              style={{
-                padding: '16px',
-                backgroundColor: '#FEE2E2',
-                borderRadius: '8px',
-                color: '#991B1B',
-              }}
-            >
+            <div className={styles.errorBox}>
               No hay ensayos cotizados disponibles para este proyecto.
             </div>
           ) : (
             <>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Tipo de Ensayo *
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Tipo de Ensayo *</label>
                 <select
                   value={form.tipo}
                   onChange={e => {
@@ -143,12 +131,7 @@ export function SolicitarEnsayoModal({
                     setForm({ ...form, tipo: e.target.value, norma: tipo?.norma || '' });
                   }}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
+                  className={styles.select}
                 >
                   <option value="">Seleccionar tipo...</option>
                   {tiposDisponibles.map(tipo => (
@@ -158,77 +141,44 @@ export function SolicitarEnsayoModal({
                   ))}
                 </select>
                 {tipoSeleccionado && (
-                  <div style={{ marginTop: '4px', fontSize: '0.875rem', color: '#6B7280' }}>
+                  <div className={styles.hint}>
                     Disponibles: {cotizadosRestantes} | Norma: {tipoSeleccionado.norma}
                   </div>
                 )}
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Norma de Referencia
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Norma de Referencia</label>
                 <input
                   type="text"
                   value={form.norma}
                   onChange={e => setForm({ ...form, norma: e.target.value })}
                   placeholder="Ej: ASTM E8"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
+                  className={styles.input}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Observaciones
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Observaciones</label>
                 <textarea
                   value={form.observaciones}
                   onChange={e => setForm({ ...form, observaciones: e.target.value })}
                   rows={2}
                   placeholder="Condiciones especiales, requerimientos..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                    resize: 'vertical',
-                  }}
+                  className={styles.textarea}
                 />
               </div>
             </>
           )}
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.actions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || creando || tiposDisponibles.length === 0}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: tiposDisponibles.length === 0 ? '#9CA3AF' : '#10B981',
-                color: 'white',
-                cursor:
-                  loading || creando || tiposDisponibles.length === 0 ? 'not-allowed' : 'pointer',
-              }}
+              className={styles.btnSubmit}
             >
               {creando ? 'Creando...' : 'Solicitar Ensayo'}
             </button>

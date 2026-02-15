@@ -1,0 +1,86 @@
+/**
+ * Ensayo.module.css
+ * Estilos para la página principal de ensayos
+ */
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: var(--spacing-12);
+}
+
+/* Barra de filtros */
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+.filters {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+}
+
+.checkboxText {
+  font-size: var(--text-sm);
+}
+
+.filterSelect {
+  padding: 6px var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+}
+
+/* Estadísticas */
+.stats {
+  display: flex;
+  gap: var(--spacing-4);
+  font-size: var(--text-sm);
+}
+
+.statPending {
+  color: var(--color-warning-500);
+}
+
+.statExecution {
+  color: var(--color-primary-500);
+}
+
+.statReview {
+  color: var(--color-purple-500);
+}
+
+.statNovedad {
+  color: var(--color-error-500);
+}
+
+/* Kanban container */
+.kanbanContainer {
+  display: flex;
+  gap: var(--spacing-4);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-4);
+  min-height: calc(100vh - 350px);
+}

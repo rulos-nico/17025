@@ -3,6 +3,7 @@ import PageLayout from '../components/PageLayout';
 import { Badge } from '../components/ui';
 import { ProyectosAPI, ClientesAPI, EnsayosAPI } from '../services/apiService';
 import { WORKFLOW_STATES_INFO, TIPOS_ENSAYO, getWorkflowInfo } from '../config';
+import styles from './Reportes.module.css';
 
 // ============================================
 // HELPERS
@@ -56,82 +57,26 @@ function EstadisticasResumen({ ensayos }) {
   }, [ensayos]);
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px',
-      }}
-    >
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-          Total Ensayos
-        </div>
-        <div style={{ fontSize: '1.75rem', fontWeight: '700' }}>{stats.total}</div>
+    <div className={styles.statsGrid}>
+      <div className={styles.statCard}>
+        <div className={styles.statLabel}>Total Ensayos</div>
+        <div className={styles.statValue}>{stats.total}</div>
       </div>
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>Pendientes</div>
-        <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#F59E0B' }}>
-          {stats.pendientes}
-        </div>
+      <div className={styles.statCard}>
+        <div className={styles.statLabel}>Pendientes</div>
+        <div className={`${styles.statValue} ${styles.statPending}`}>{stats.pendientes}</div>
       </div>
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>En Proceso</div>
-        <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#3B82F6' }}>
-          {stats.enProceso}
-        </div>
+      <div className={styles.statCard}>
+        <div className={styles.statLabel}>En Proceso</div>
+        <div className={`${styles.statValue} ${styles.statProcess}`}>{stats.enProceso}</div>
       </div>
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-          En Revisión
-        </div>
-        <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#8B5CF6' }}>
-          {stats.enRevision}
-        </div>
+      <div className={styles.statCard}>
+        <div className={styles.statLabel}>En Revisión</div>
+        <div className={`${styles.statValue} ${styles.statReview}`}>{stats.enRevision}</div>
       </div>
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>
-          Completados
-        </div>
-        <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#10B981' }}>
-          {stats.completados}
-        </div>
+      <div className={styles.statCard}>
+        <div className={styles.statLabel}>Completados</div>
+        <div className={`${styles.statValue} ${styles.statComplete}`}>{stats.completados}</div>
       </div>
     </div>
   );
@@ -155,54 +100,21 @@ function DistribucionPorTipo({ ensayos }) {
   const maxCount = Math.max(...porTipo.map(t => t.count), 1);
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      }}
-    >
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '600' }}>
-        Distribución por Tipo de Ensayo
-      </h3>
+    <div className={styles.distributionCard}>
+      <h3 className={styles.distributionTitle}>Distribución por Tipo de Ensayo</h3>
 
       {porTipo.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '24px', color: '#6B7280' }}>
-          No hay ensayos registrados
-        </div>
+        <div className={styles.distributionEmpty}>No hay ensayos registrados</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className={styles.distributionList}>
           {porTipo.map(({ tipo, count, nombre }) => (
             <div key={tipo}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: '4px',
-                  fontSize: '0.875rem',
-                }}
-              >
+              <div className={styles.distributionItem}>
                 <span>{nombre}</span>
-                <span style={{ fontWeight: '600' }}>{count}</span>
+                <span className={styles.distributionCount}>{count}</span>
               </div>
-              <div
-                style={{
-                  height: '8px',
-                  backgroundColor: '#E5E7EB',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${(count / maxCount) * 100}%`,
-                    backgroundColor: '#3B82F6',
-                    borderRadius: '4px',
-                    transition: 'width 0.3s ease',
-                  }}
-                />
+              <div className={styles.barContainer}>
+                <div className={styles.barFill} style={{ width: `${(count / maxCount) * 100}%` }} />
               </div>
             </div>
           ))}
@@ -239,37 +151,19 @@ function DistribucionPorEstado({ ensayos }) {
   const total = ensayos.length || 1;
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      }}
-    >
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '600' }}>
-        Distribución por Estado
-      </h3>
+    <div className={styles.distributionCard}>
+      <h3 className={styles.distributionTitle}>Distribución por Estado</h3>
 
       {porEstado.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '24px', color: '#6B7280' }}>
-          No hay ensayos registrados
-        </div>
+        <div className={styles.distributionEmpty}>No hay ensayos registrados</div>
       ) : (
         <>
           {/* Barra de progreso apilada */}
-          <div
-            style={{
-              display: 'flex',
-              height: '24px',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              marginBottom: '16px',
-            }}
-          >
+          <div className={styles.stackedBar}>
             {porEstado.map(({ estado, count, info }) => (
               <div
                 key={estado}
+                className={styles.stackedBarSegment}
                 style={{
                   width: `${(count / total) * 100}%`,
                   backgroundColor: info.color,
@@ -281,30 +175,12 @@ function DistribucionPorEstado({ ensayos }) {
           </div>
 
           {/* Leyenda */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className={styles.legendGrid}>
             {porEstado.map(({ estado, count, info }) => (
-              <div
-                key={estado}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 8px',
-                  backgroundColor: '#F9FAFB',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                }}
-              >
-                <span
-                  style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '2px',
-                    backgroundColor: info.color,
-                  }}
-                />
-                <span style={{ color: '#374151' }}>{estado}</span>
-                <span style={{ fontWeight: '600' }}>{count}</span>
+              <div key={estado} className={styles.legendItem}>
+                <span className={styles.legendDot} style={{ backgroundColor: info.color }} />
+                <span className={styles.legendText}>{estado}</span>
+                <span className={styles.distributionCount}>{count}</span>
               </div>
             ))}
           </div>
@@ -352,109 +228,44 @@ function TablaProyectos({ proyectos, ensayos, clientes }) {
   }, [proyectos, ensayos]);
 
   const getClienteNombre = clienteId => {
-    return clientes.find(c => c.id === clienteId)?.nombre || proyecto.cliente_nombre || 'N/A';
+    return clientes.find(c => c.id === clienteId)?.nombre || 'N/A';
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Seguimiento por Proyecto</h3>
+    <div className={styles.tableContainer}>
+      <div className={styles.tableHeader}>
+        <h3 className={styles.tableTitle}>Seguimiento por Proyecto</h3>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
           <thead>
-            <tr style={{ backgroundColor: '#F9FAFB' }}>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Proyecto
-              </th>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Cliente
-              </th>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'left',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Estado
-              </th>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Ensayos
-              </th>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'center',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Progreso
-              </th>
-              <th
-                style={{
-                  padding: '12px 16px',
-                  textAlign: 'right',
-                  fontWeight: '600',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Acciones
-              </th>
+            <tr>
+              <th>Proyecto</th>
+              <th>Cliente</th>
+              <th>Estado</th>
+              <th className="center">Ensayos</th>
+              <th className="center">Progreso</th>
+              <th className="right">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {proyectosConStats.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: '#6B7280' }}>
+                <td colSpan={6} className={styles.emptyRow}>
                   No hay proyectos registrados
                 </td>
               </tr>
             ) : (
               proyectosConStats.map(proyecto => (
                 <>
-                  <tr key={proyecto.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: '600' }}>{proyecto.codigo}</div>
-                      <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
-                        {proyecto.nombre}
-                      </div>
+                  <tr key={proyecto.id}>
+                    <td>
+                      <div className={styles.projectCode}>{proyecto.codigo}</div>
+                      <div className={styles.projectName}>{proyecto.nombre}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '0.875rem' }}>
-                      {getClienteNombre(proyecto.clienteId)}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td>{getClienteNombre(proyecto.clienteId)}</td>
+                    <td>
                       <Badge
                         color={
                           proyecto.estado === 'activo'
@@ -467,68 +278,31 @@ function TablaProyectos({ proyectos, ensayos, clientes }) {
                         {proyecto.estado}
                       </Badge>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '8px',
-                          justifyContent: 'center',
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        <span style={{ color: '#F59E0B' }}>{proyecto.stats.pendientes}P</span>
-                        <span style={{ color: '#3B82F6' }}>{proyecto.stats.enProceso}E</span>
-                        <span style={{ color: '#10B981' }}>{proyecto.stats.completados}C</span>
+                    <td>
+                      <div className={styles.statsInline}>
+                        <span className={styles.statP}>{proyecto.stats.pendientes}P</span>
+                        <span className={styles.statE}>{proyecto.stats.enProceso}E</span>
+                        <span className={styles.statC}>{proyecto.stats.completados}C</span>
                       </div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
-                        {proyecto.stats.total} total
-                      </div>
+                      <div className={styles.totalText}>{proyecto.stats.total} total</div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div
-                          style={{
-                            flex: 1,
-                            height: '8px',
-                            backgroundColor: '#E5E7EB',
-                            borderRadius: '4px',
-                            overflow: 'hidden',
-                          }}
-                        >
+                    <td>
+                      <div className={styles.progressContainer}>
+                        <div className={styles.progressBar}>
                           <div
-                            style={{
-                              height: '100%',
-                              width: `${proyecto.stats.progreso}%`,
-                              backgroundColor: '#10B981',
-                              transition: 'width 0.3s ease',
-                            }}
+                            className={styles.progressFill}
+                            style={{ width: `${proyecto.stats.progreso}%` }}
                           />
                         </div>
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            minWidth: '40px',
-                            textAlign: 'right',
-                          }}
-                        >
-                          {proyecto.stats.progreso}%
-                        </span>
+                        <span className={styles.progressText}>{proyecto.stats.progreso}%</span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <td style={{ textAlign: 'right' }}>
                       <button
                         onClick={() =>
                           setExpandedProyecto(expandedProyecto === proyecto.id ? null : proyecto.id)
                         }
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          border: '1px solid #D1D5DB',
-                          backgroundColor: 'white',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                        }}
+                        className={styles.btnSmall}
                       >
                         {expandedProyecto === proyecto.id ? 'Ocultar' : 'Ver ensayos'}
                       </button>
@@ -538,56 +312,31 @@ function TablaProyectos({ proyectos, ensayos, clientes }) {
                   {/* Fila expandida con ensayos */}
                   {expandedProyecto === proyecto.id && (
                     <tr>
-                      <td colSpan={6} style={{ padding: 0, backgroundColor: '#F9FAFB' }}>
-                        <div style={{ padding: '16px 24px' }}>
-                          <h4
-                            style={{ margin: '0 0 12px 0', fontSize: '0.875rem', color: '#374151' }}
-                          >
+                      <td colSpan={6} className={styles.expandedRow}>
+                        <div className={styles.expandedContent}>
+                          <h4 className={styles.expandedTitle}>
                             Ensayos del proyecto ({proyecto.ensayos.length})
                           </h4>
                           {proyecto.ensayos.length === 0 ? (
-                            <div style={{ color: '#6B7280', fontSize: '0.875rem' }}>
+                            <div className={styles.expandedEmpty}>
                               No hay ensayos registrados para este proyecto
                             </div>
                           ) : (
-                            <div
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                                gap: '12px',
-                              }}
-                            >
+                            <div className={styles.ensayosGrid}>
                               {proyecto.ensayos.map(ensayo => {
                                 const workflow = getWorkflowInfo(ensayo.workflow_state);
                                 return (
-                                  <div
-                                    key={ensayo.id}
-                                    style={{
-                                      padding: '12px',
-                                      backgroundColor: 'white',
-                                      borderRadius: '6px',
-                                      border: '1px solid #E5E7EB',
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'start',
-                                        marginBottom: '8px',
-                                      }}
-                                    >
+                                  <div key={ensayo.id} className={styles.ensayoCard}>
+                                    <div className={styles.ensayoHeader}>
                                       <div>
-                                        <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                                          {ensayo.codigo}
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                        <div className={styles.ensayoCodigo}>{ensayo.codigo}</div>
+                                        <div className={styles.ensayoTipo}>
                                           {getTipoEnsayoNombre(ensayo.tipo)}
                                         </div>
                                       </div>
                                       <Badge color={workflow.color}>{workflow.nombre}</Badge>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                    <div className={styles.ensayoFechas}>
                                       Solicitud: {formatDate(ensayo.fecha_solicitud)}
                                       {ensayo.fecha_ejecucion && (
                                         <span>
@@ -720,7 +469,7 @@ export default function Reportes() {
   if (loading) {
     return (
       <PageLayout title="Reportes">
-        <div style={{ textAlign: 'center', padding: '48px' }}>Cargando reportes...</div>
+        <div className={styles.loading}>Cargando reportes...</div>
       </PageLayout>
     );
   }
@@ -731,71 +480,31 @@ export default function Reportes() {
       <EstadisticasResumen ensayos={ensayosFiltrados} />
 
       {/* Filtros */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          marginBottom: '24px',
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          flexWrap: 'wrap',
-          alignItems: 'flex-end',
-        }}
-      >
-        <div>
-          <label
-            style={{ display: 'block', fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}
-          >
-            Desde
-          </label>
+      <div className={styles.filterBar}>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Desde</label>
           <input
             type="date"
             value={filtroFechaDesde}
             onChange={e => setFiltroFechaDesde(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              fontSize: '0.875rem',
-            }}
+            className={styles.filterInput}
           />
         </div>
-        <div>
-          <label
-            style={{ display: 'block', fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}
-          >
-            Hasta
-          </label>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Hasta</label>
           <input
             type="date"
             value={filtroFechaHasta}
             onChange={e => setFiltroFechaHasta(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              fontSize: '0.875rem',
-            }}
+            className={styles.filterInput}
           />
         </div>
-        <div>
-          <label
-            style={{ display: 'block', fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}
-          >
-            Cliente
-          </label>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Cliente</label>
           <select
             value={filtroCliente}
             onChange={e => setFiltroCliente(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              fontSize: '0.875rem',
-              minWidth: '150px',
-            }}
+            className={styles.filterSelect}
           >
             <option value="todos">Todos los clientes</option>
             {clientes.map(c => (
@@ -805,22 +514,12 @@ export default function Reportes() {
             ))}
           </select>
         </div>
-        <div>
-          <label
-            style={{ display: 'block', fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}
-          >
-            Estado
-          </label>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Estado</label>
           <select
             value={filtroEstado}
             onChange={e => setFiltroEstado(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              fontSize: '0.875rem',
-              minWidth: '150px',
-            }}
+            className={styles.filterSelect}
           >
             <option value="todos">Todos</option>
             <option value="pendientes">Pendientes</option>
@@ -829,43 +528,20 @@ export default function Reportes() {
             <option value="completados">Completados</option>
           </select>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <button
-            onClick={exportarCSV}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: '#3B82F6',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-            </svg>
-            Exportar CSV
-          </button>
-        </div>
+        <button onClick={exportarCSV} className={styles.exportBtn}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+          Exportar CSV
+        </button>
       </div>
 
       {/* Gráficos de distribución */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-          gap: '24px',
-          marginBottom: '24px',
-        }}
-      >
+      <div className={styles.distributionGrid}>
         <DistribucionPorTipo ensayos={ensayosFiltrados} />
         <DistribucionPorEstado ensayos={ensayosFiltrados} />
       </div>

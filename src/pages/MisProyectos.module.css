@@ -1,0 +1,516 @@
+/**
+ * MisProyectos.module.css
+ * Estilos para el portal de clientes
+ */
+
+/* Welcome Banner */
+.welcomeBanner {
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
+  background-color: var(--color-primary-50);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-primary-500);
+}
+
+.welcomeTitle {
+  font-weight: var(--font-semibold);
+  color: var(--color-primary-800);
+}
+
+.welcomeText {
+  font-size: var(--text-sm);
+  color: var(--color-primary-500);
+  margin-top: var(--spacing-1);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.statLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: var(--font-bold);
+}
+
+.statSubtext {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.statPending {
+  color: var(--color-warning-500);
+}
+.statProcess {
+  color: var(--color-primary-500);
+}
+.statReady {
+  color: var(--color-teal-500);
+}
+.statComplete {
+  color: var(--color-success-500);
+}
+
+/* Filter Buttons */
+.filterButtons {
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.filterBtn {
+  padding: 6px var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  transition: var(--transition-fast);
+}
+
+.filterBtn:hover {
+  background-color: var(--color-gray-50);
+}
+
+.filterBtnActive {
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-500);
+  font-weight: var(--font-medium);
+}
+
+/* Three Column Layout */
+.columnsLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: var(--spacing-6);
+  min-height: 500px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnHeader {
+  margin: 0 0 var(--spacing-4) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.columnCount {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+  font-weight: var(--font-normal);
+}
+
+.columnHeaderWithAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.columnTitle {
+  margin: 0;
+}
+
+/* Card List */
+.cardList {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Empty State */
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-500);
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.emptyArrow {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+.emptyCenter {
+  text-align: center;
+  padding: var(--spacing-6);
+}
+
+.emptyText {
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Project Card */
+.projectCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.projectCode {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.projectName {
+  font-weight: var(--font-medium);
+  margin-top: 2px;
+  font-size: 0.9rem;
+}
+
+.projectStats {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-2);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+/* Muestra Card */
+.muestraCode {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.muestraDesc {
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+
+.muestraLocation {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.muestraEnsayos {
+  margin-top: var(--spacing-2);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+/* Ensayo Card */
+.ensayoCode {
+  font-weight: var(--font-semibold);
+}
+
+.ensayoTipo {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.ensayoNorma {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.ensayoBadges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-1);
+}
+
+.ensayoFechas {
+  margin-top: var(--spacing-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ensayoFecha {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.reporteDisponible {
+  margin-top: var(--spacing-2);
+  padding: 6px 10px;
+  background-color: var(--color-success-100);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-success-800);
+  font-weight: var(--font-medium);
+  text-align: center;
+}
+
+/* Buttons */
+.btnPrimary {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-success-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.btnPrimary:hover {
+  background-color: var(--color-success-600);
+}
+
+.btnLarge {
+  padding: 10px 20px;
+}
+
+/* Modal Styles */
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.infoBox {
+  padding: var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+}
+
+.infoLabel {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.infoValue {
+  font-weight: var(--font-semibold);
+}
+
+.infoValueMuted {
+  font-weight: var(--font-medium);
+}
+
+.infoMuted {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-medium);
+}
+
+.select,
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-base);
+}
+
+.hint {
+  margin-top: var(--spacing-1);
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  padding-top: var(--spacing-6);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox {
+  margin-right: var(--spacing-2);
+  width: 18px;
+  height: 18px;
+}
+
+.checkboxText {
+  font-weight: var(--font-medium);
+}
+
+.checkboxUrgent {
+  color: var(--color-error-600);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+  margin-top: var(--spacing-2);
+}
+
+.btnCancel {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+}
+
+.btnSubmit {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-success-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+}
+
+.btnSubmit:disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+/* Detalle Modal */
+.detalleEstado {
+  text-align: center;
+  padding: var(--spacing-5);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+}
+
+.detalleEtapa {
+  font-size: 1.25rem;
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--spacing-2);
+}
+
+.progressSection {
+  margin-top: var(--spacing-4);
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-1);
+}
+
+.progressBar {
+  height: 8px;
+  background-color: var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.progressPercent {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+  text-align: right;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+}
+
+.infoGridFull {
+  grid-column: 1 / -1;
+}
+
+.historialSection h4 {
+  margin-bottom: var(--spacing-3);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.historialList {
+  max-height: 150px;
+  overflow: auto;
+}
+
+.historialItem {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-left-width: 3px;
+  border-left-style: solid;
+  margin-bottom: var(--spacing-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.historialItemFirst {
+  background-color: var(--color-primary-50);
+}
+
+.historialItemRest {
+  background-color: var(--color-gray-50);
+}
+
+.historialEstado {
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+}
+
+.historialFecha {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.detalleActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+}
+
+.btnDownload {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+}
+
+.btnClose {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+}

@@ -1,0 +1,182 @@
+/**
+ * Personal.module.css - Estilos para la pagina de Personal
+ */
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-gray-500);
+}
+
+/* Stats grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+}
+
+.statCard {
+  cursor: pointer;
+}
+
+.statDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-2);
+}
+
+.statNumber {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+}
+
+.statLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  line-height: 1.2;
+}
+
+/* Filters bar */
+.filtersBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.filtersLeft {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.filtersRight {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+}
+
+/* Select filter */
+.select {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  background-color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+/* Filter tag (cargo activo) */
+.filterTag {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: var(--color-warning-100);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  transition: var(--transition-fast);
+}
+
+.filterTag:hover {
+  background-color: var(--color-warning-200);
+}
+
+.filterTagClose {
+  font-weight: var(--font-bold);
+}
+
+/* Results count */
+.resultsCount {
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+}
+
+/* Search input */
+.searchInput {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  width: 280px;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.searchInput::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* Add button */
+.addButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.addButton:hover {
+  background-color: var(--color-primary-600);
+}
+
+/* Table container */
+.tableContainer {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table header */
+.tableHead {
+  background-color: var(--color-gray-50);
+}
+
+.th {
+  padding: var(--spacing-3) var(--spacing-4);
+  text-align: left;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.thCenter {
+  composes: th;
+  text-align: center;
+}
+
+/* Empty state */
+.emptyRow td {
+  padding: var(--spacing-12);
+  text-align: center;
+  color: var(--color-gray-500);
+}

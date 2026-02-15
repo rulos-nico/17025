@@ -1,0 +1,56 @@
+/**
+ * KanbanColumn.module.css - Estilos para columna Kanban
+ */
+
+.column {
+  flex: 1 1 200px;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+}
+
+.count {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+}
+
+.titulo {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.descripcion {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-gray-400);
+  padding: var(--spacing-6) var(--spacing-3);
+  font-size: var(--text-sm);
+}

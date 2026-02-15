@@ -99,3 +99,26 @@ export {
   calcularProgresoProyecto,
   contarEnsayosPorEstado,
 } from './helpers';
+
+// ============================================
+// PERMISSIONS - Helpers de permisos y roles
+// ============================================
+export {
+  // Constantes
+  ROLES_CON_CAMBIO_ESTADO,
+  ROLES_CON_REASIGNACION,
+  ROLES_CON_APROBACION,
+  ROLES_CON_NOVEDAD,
+  ESTADOS_SIN_NOVEDAD,
+  ESTADOS_APROBACION,
+  // Verificación de permisos
+  canChangeState,
+  canReassign,
+  canApproveReject,
+  canMarkAsNovedad,
+  isClienteRole,
+  canEnsayoHaveNovedad,
+  // Filtrado de transiciones
+  filterTransitionsByRole,
+  canPerformTransition,
+} from './permissions';

@@ -4,6 +4,7 @@ import { Badge, Card, Modal } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { TIPOS_ENSAYO, ESTADO_PROYECTO, ESTADO_MUESTRA, getWorkflowInfo } from '../config';
 import { ProyectosAPI, PerforacionesAPI, EnsayosAPI } from '../services/apiService';
+import styles from './MisProyectos.module.css';
 
 // ============================================
 // MODAL: SOLICITAR ENSAYO
@@ -51,23 +52,19 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, muestra, proyecto, lo
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Ensayo" width="550px">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className={styles.modalContent}>
           {/* Info de contexto */}
-          <div style={{ padding: '12px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Proyecto</div>
-            <div style={{ fontWeight: '600' }}>{proyecto?.nombre}</div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '8px' }}>Muestra</div>
-            <div style={{ fontWeight: '500' }}>{muestra?.descripcion}</div>
-            {muestra?.ubicacion && (
-              <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>{muestra.ubicacion}</div>
-            )}
+          <div className={styles.infoBox}>
+            <div className={styles.infoLabel}>Proyecto</div>
+            <div className={styles.infoValue}>{proyecto?.nombre}</div>
+            <div className={styles.infoMuted}>Muestra</div>
+            <div className={styles.infoValueMuted}>{muestra?.descripcion}</div>
+            {muestra?.ubicacion && <div className={styles.infoLabel}>{muestra.ubicacion}</div>}
           </div>
 
           {/* Tipo de ensayo */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Tipo de Ensayo *
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Tipo de Ensayo *</label>
             <select
               value={form.tipo}
               onChange={e => {
@@ -75,12 +72,7 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, muestra, proyecto, lo
                 setForm({ ...form, tipo: e.target.value, norma: tipo?.norma || '' });
               }}
               required
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.select}
             >
               <option value="">Seleccionar tipo de ensayo...</option>
               {tiposDisponibles.map(tipo => {
@@ -93,59 +85,47 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, muestra, proyecto, lo
               })}
             </select>
             {tipoSeleccionado && (
-              <div style={{ marginTop: '4px', fontSize: '0.875rem', color: '#6B7280' }}>
+              <div className={styles.hint}>
                 Categoria: {tipoSeleccionado.categoria} | Norma sugerida: {tipoSeleccionado.norma}
               </div>
             )}
           </div>
 
           {/* Norma */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Norma de Referencia
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Norma de Referencia</label>
             <input
               type="text"
               value={form.norma}
               onChange={e => setForm({ ...form, norma: e.target.value })}
               placeholder="Ej: ASTM E8, ASTM E18, ISO 6892-1"
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.input}
             />
           </div>
 
           {/* Cantidad y Urgente */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Cantidad de probetas
-              </label>
+          <div className={styles.gridTwo}>
+            <div className={styles.field}>
+              <label className={styles.label}>Cantidad de probetas</label>
               <input
                 type="number"
                 min="1"
                 value={form.cantidad}
                 onChange={e => setForm({ ...form, cantidad: parseInt(e.target.value) || 1 })}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
+                className={styles.input}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', paddingTop: '24px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <div className={styles.checkboxContainer}>
+              <label className={styles.checkboxLabel}>
                 <input
                   type="checkbox"
                   checked={form.urgente}
                   onChange={e => setForm({ ...form, urgente: e.target.checked })}
-                  style={{ marginRight: '8px', width: '18px', height: '18px' }}
+                  className={styles.checkbox}
                 />
-                <span style={{ fontWeight: '500', color: form.urgente ? '#DC2626' : '#374151' }}>
+                <span
+                  className={`${styles.checkboxText} ${form.urgente ? styles.checkboxUrgent : ''}`}
+                >
                   Urgente
                 </span>
               </label>
@@ -153,55 +133,23 @@ function SolicitarEnsayoModal({ isOpen, onClose, onCreate, muestra, proyecto, lo
           </div>
 
           {/* Observaciones */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Observaciones / Requerimientos especiales
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Observaciones / Requerimientos especiales</label>
             <textarea
               value={form.observaciones}
               onChange={e => setForm({ ...form, observaciones: e.target.value })}
               rows={3}
               placeholder="Condiciones especiales, temperatura de ensayo, criterios de aceptacion..."
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                resize: 'vertical',
-              }}
+              className={styles.textarea}
             />
           </div>
 
           {/* Botones */}
-          <div
-            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.actions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading || !form.tipo}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: !form.tipo || loading ? '#9CA3AF' : '#10B981',
-                color: 'white',
-                cursor: !form.tipo || loading ? 'not-allowed' : 'pointer',
-                fontWeight: '500',
-              }}
-            >
+            <button type="submit" disabled={loading || !form.tipo} className={styles.btnSubmit}>
               {loading ? 'Enviando...' : 'Solicitar Ensayo'}
             </button>
           </div>
@@ -247,104 +195,60 @@ function EnsayoDetalleCliente({ ensayo, onClose }) {
 
   return (
     <Modal isOpen={true} onClose={onClose} title={`Ensayo ${ensayo.codigo}`} width="600px">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className={styles.modalContent}>
         {/* Estado actual - Vista simplificada para cliente */}
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '20px',
-            backgroundColor: '#F9FAFB',
-            borderRadius: '8px',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '1.25rem',
-              fontWeight: '600',
-              color: workflow.color,
-              marginBottom: '8px',
-            }}
-          >
+        <div className={styles.detalleEstado}>
+          <div className={styles.detalleEtapa} style={{ color: workflow.color }}>
             {etapa.texto}
           </div>
           <Badge color={workflow.color}>{workflow.nombre}</Badge>
 
           {/* Barra de progreso */}
-          <div style={{ marginTop: '16px' }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.75rem',
-                color: '#6B7280',
-                marginBottom: '4px',
-              }}
-            >
+          <div className={styles.progressSection}>
+            <div className={styles.progressLabels}>
               <span>Solicitado</span>
               <span>En proceso</span>
               <span>Completado</span>
             </div>
-            <div
-              style={{
-                height: '8px',
-                backgroundColor: '#E5E7EB',
-                borderRadius: '4px',
-                overflow: 'hidden',
-              }}
-            >
+            <div className={styles.progressBar}>
               <div
-                style={{
-                  height: '100%',
-                  width: `${getProgreso()}%`,
-                  backgroundColor: workflow.color,
-                  transition: 'width 0.3s',
-                }}
+                className={styles.progressFill}
+                style={{ width: `${getProgreso()}%`, backgroundColor: workflow.color }}
               />
             </div>
-            <div
-              style={{
-                fontSize: '0.75rem',
-                color: '#6B7280',
-                marginTop: '4px',
-                textAlign: 'right',
-              }}
-            >
-              {getProgreso()}% completado
-            </div>
+            <div className={styles.progressPercent}>{getProgreso()}% completado</div>
           </div>
         </div>
 
         {/* Informacion del ensayo */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.infoGrid}>
           <div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Tipo de Ensayo</div>
-            <div style={{ fontWeight: '500' }}>{tipoEnsayo?.nombre || ensayo.tipo}</div>
+            <div className={styles.infoLabel}>Tipo de Ensayo</div>
+            <div className={styles.infoValue}>{tipoEnsayo?.nombre || ensayo.tipo}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Norma</div>
-            <div style={{ fontWeight: '500' }}>{ensayo.norma || 'No especificada'}</div>
+            <div className={styles.infoLabel}>Norma</div>
+            <div className={styles.infoValue}>{ensayo.norma || 'No especificada'}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Fecha Solicitud</div>
-            <div style={{ fontWeight: '500' }}>{ensayo.fecha_solicitud}</div>
+            <div className={styles.infoLabel}>Fecha Solicitud</div>
+            <div className={styles.infoValue}>{ensayo.fecha_solicitud}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Fecha Programada</div>
-            <div style={{ fontWeight: '500' }}>{ensayo.fecha_programada || 'Pendiente'}</div>
+            <div className={styles.infoLabel}>Fecha Programada</div>
+            <div className={styles.infoValue}>{ensayo.fecha_programada || 'Pendiente'}</div>
           </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Muestra</div>
-            <div style={{ fontWeight: '500' }}>{ensayo.muestra}</div>
+          <div className={styles.infoGridFull}>
+            <div className={styles.infoLabel}>Muestra</div>
+            <div className={styles.infoValue}>{ensayo.muestra}</div>
           </div>
         </div>
 
         {/* Historial simplificado - Solo estados relevantes para cliente */}
         {ensayo.historial_workflow && ensayo.historial_workflow.length > 0 && (
-          <div>
-            <h4 style={{ marginBottom: '12px', fontSize: '0.875rem', color: '#374151' }}>
-              Seguimiento
-            </h4>
-            <div style={{ maxHeight: '150px', overflow: 'auto' }}>
+          <div className={styles.historialSection}>
+            <h4>Seguimiento</h4>
+            <div className={styles.historialList}>
               {ensayo.historial_workflow
                 .slice()
                 .reverse()
@@ -353,18 +257,11 @@ function EnsayoDetalleCliente({ ensayo, onClose }) {
                   return (
                     <div
                       key={index}
-                      style={{
-                        padding: '8px 12px',
-                        borderLeft: '3px solid ' + (infoEstado.color || '#6B7280'),
-                        backgroundColor: index === 0 ? '#EFF6FF' : '#F9FAFB',
-                        marginBottom: '8px',
-                        borderRadius: '0 4px 4px 0',
-                      }}
+                      className={`${styles.historialItem} ${index === 0 ? styles.historialItemFirst : styles.historialItemRest}`}
+                      style={{ borderLeftColor: infoEstado.color || '#6B7280' }}
                     >
-                      <div style={{ fontWeight: '500', fontSize: '0.875rem' }}>
-                        {infoEstado.nombre}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                      <div className={styles.historialEstado}>{infoEstado.nombre}</div>
+                      <div className={styles.historialFecha}>
                         {new Date(h.fecha).toLocaleDateString('es-CL', {
                           day: 'numeric',
                           month: 'short',
@@ -381,34 +278,17 @@ function EnsayoDetalleCliente({ ensayo, onClose }) {
         )}
 
         {/* Acciones */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <div className={styles.detalleActions}>
           {/* Boton descargar reporte si esta disponible */}
           {['E13', 'E14', 'E15'].includes(ensayo.workflow_state) && (
             <button
               onClick={() => alert('Funcionalidad de descarga pendiente de implementar')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                cursor: 'pointer',
-                fontWeight: '500',
-              }}
+              className={styles.btnDownload}
             >
               Descargar Reporte
             </button>
           )}
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={onClose} className={styles.btnClose}>
             Cerrar
           </button>
         </div>
@@ -578,95 +458,51 @@ export default function MisProyectos() {
   return (
     <PageLayout title="Mis Proyectos">
       {/* Mensaje de bienvenida */}
-      <div
-        style={{
-          marginBottom: '24px',
-          padding: '16px',
-          backgroundColor: '#EFF6FF',
-          borderRadius: '8px',
-          borderLeft: '4px solid #3B82F6',
-        }}
-      >
-        <div style={{ fontWeight: '600', color: '#1E40AF' }}>
-          Bienvenido, {user?.name || 'Cliente'}
-        </div>
-        <div style={{ fontSize: '0.875rem', color: '#3B82F6', marginTop: '4px' }}>
+      <div className={styles.welcomeBanner}>
+        <div className={styles.welcomeTitle}>Bienvenido, {user?.name || 'Cliente'}</div>
+        <div className={styles.welcomeText}>
           Desde aqui puede ver el estado de sus proyectos, muestras y solicitar nuevos ensayos.
         </div>
       </div>
 
       {/* Resumen superior */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
+      <div className={styles.statsGrid}>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase' }}>
-            Proyectos
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#374151' }}>
+          <div className={styles.statLabel}>Proyectos</div>
+          <div className={styles.statValue}>
             {proyectos.filter(p => p.estado === 'activo').length}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#10B981' }}>activos</div>
+          <div className={`${styles.statSubtext} ${styles.statComplete}`}>activos</div>
         </Card>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase' }}>
-            Pendientes
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#F59E0B' }}>
-            {stats.pendientes}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>por ejecutar</div>
+          <div className={styles.statLabel}>Pendientes</div>
+          <div className={`${styles.statValue} ${styles.statPending}`}>{stats.pendientes}</div>
+          <div className={styles.statSubtext}>por ejecutar</div>
         </Card>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase' }}>
-            En Proceso
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#3B82F6' }}>
-            {stats.enProceso}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>ejecutando</div>
+          <div className={styles.statLabel}>En Proceso</div>
+          <div className={`${styles.statValue} ${styles.statProcess}`}>{stats.enProceso}</div>
+          <div className={styles.statSubtext}>ejecutando</div>
         </Card>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase' }}>
-            Listos
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#14B8A6' }}>
-            {stats.listos}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>por enviar</div>
+          <div className={styles.statLabel}>Listos</div>
+          <div className={`${styles.statValue} ${styles.statReady}`}>{stats.listos}</div>
+          <div className={styles.statSubtext}>por enviar</div>
         </Card>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase' }}>
-            Entregados
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#10B981' }}>
-            {stats.completados}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>finalizados</div>
+          <div className={styles.statLabel}>Entregados</div>
+          <div className={`${styles.statValue} ${styles.statComplete}`}>{stats.completados}</div>
+          <div className={styles.statSubtext}>finalizados</div>
         </Card>
       </div>
 
       {/* Filtro de proyectos */}
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
+      <div className={styles.filterButtons}>
         {['todos', 'activo', 'completado'].map(estado => (
           <button
             key={estado}
             onClick={() => setFiltroEstado(estado)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '4px',
-              border: '1px solid ' + (filtroEstado === estado ? '#3B82F6' : '#D1D5DB'),
-              backgroundColor: filtroEstado === estado ? '#EFF6FF' : 'white',
-              color: filtroEstado === estado ? '#3B82F6' : '#374151',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: filtroEstado === estado ? '500' : '400',
-            }}
+            className={`${styles.filterBtn} ${filtroEstado === estado ? styles.filterBtnActive : ''}`}
           >
             {estado === 'todos' ? 'Todos' : estado.charAt(0).toUpperCase() + estado.slice(1)}
           </button>
@@ -674,34 +510,17 @@ export default function MisProyectos() {
       </div>
 
       {/* Vista principal en 3 columnas */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1.5fr',
-          gap: '24px',
-          minHeight: '500px',
-        }}
-      >
+      <div className={styles.columnsLayout}>
         {/* COLUMNA 1: PROYECTOS */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className={styles.column}>
+          <h3 className={styles.columnHeader}>
             <span>Proyectos</span>
-            <span style={{ fontSize: '0.875rem', color: '#6B7280', fontWeight: 'normal' }}>
-              ({proyectosFiltrados.length})
-            </span>
+            <span className={styles.columnCount}>({proyectosFiltrados.length})</span>
           </h3>
 
-          <div
-            style={{
-              flex: 1,
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}
-          >
+          <div className={styles.cardList}>
             {proyectosFiltrados.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
+              <div className={styles.emptyCenter}>
                 No tiene proyectos {filtroEstado !== 'todos' ? filtroEstado + 's' : ''}
               </div>
             ) : (
@@ -722,32 +541,14 @@ export default function MisProyectos() {
                     }}
                     selected={selectedProyecto?.id === proyecto.id}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                      }}
-                    >
+                    <div className={styles.projectCardHeader}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', fontSize: '0.875rem', color: '#6B7280' }}>
-                          {proyecto.codigo}
-                        </div>
-                        <div style={{ fontWeight: '500', marginTop: '2px', fontSize: '0.9rem' }}>
-                          {proyecto.nombre}
-                        </div>
+                        <div className={styles.projectCode}>{proyecto.codigo}</div>
+                        <div className={styles.projectName}>{proyecto.nombre}</div>
                       </div>
                       <Badge color={estado.color}>{estado.label}</Badge>
                     </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginTop: '8px',
-                        fontSize: '0.75rem',
-                        color: '#6B7280',
-                      }}
-                    >
+                    <div className={styles.projectStats}>
                       <span>{numMuestras} muestras</span>
                       <span>{numEnsayos} ensayos</span>
                     </div>
@@ -759,52 +560,23 @@ export default function MisProyectos() {
         </div>
 
         {/* COLUMNA 2: MUESTRAS */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ margin: '0 0 16px 0' }}>
+        <div className={styles.column}>
+          <h3 className={styles.columnHeader}>
             Muestras
             {selectedProyecto && (
-              <span
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                  fontWeight: 'normal',
-                  marginLeft: '8px',
-                }}
-              >
-                ({muestrasProyecto.length})
-              </span>
+              <span className={styles.columnCount}>({muestrasProyecto.length})</span>
             )}
           </h3>
 
           {!selectedProyecto ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6B7280',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
-              <div style={{ fontSize: '2rem', opacity: 0.3 }}>&#8592;</div>
+            <div className={styles.emptyState}>
+              <div className={styles.emptyArrow}>&#8592;</div>
               <div>Seleccione un proyecto</div>
             </div>
           ) : (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
+            <div className={styles.cardList}>
               {muestrasProyecto.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                  No hay muestras registradas
-                </div>
+                <div className={styles.emptyCenter}>No hay muestras registradas</div>
               ) : (
                 muestrasProyecto.map(muestra => {
                   const estado = ESTADO_MUESTRA[muestra.estado] || {
@@ -819,33 +591,17 @@ export default function MisProyectos() {
                       onClick={() => setSelectedMuestra(muestra)}
                       selected={selectedMuestra?.id === muestra.id}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'start',
-                        }}
-                      >
+                      <div className={styles.projectCardHeader}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                            {muestra.codigo}
-                          </div>
-                          <div style={{ fontSize: '0.875rem', marginTop: '2px' }}>
-                            {muestra.descripcion}
-                          </div>
+                          <div className={styles.muestraCode}>{muestra.codigo}</div>
+                          <div className={styles.muestraDesc}>{muestra.descripcion}</div>
                           {muestra.ubicacion && (
-                            <div
-                              style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}
-                            >
-                              {muestra.ubicacion}
-                            </div>
+                            <div className={styles.muestraLocation}>{muestra.ubicacion}</div>
                           )}
                         </div>
                         <Badge color={estado.color}>{estado.label}</Badge>
                       </div>
-                      <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
-                        {numEnsayos} ensayos solicitados
-                      </div>
+                      <div className={styles.muestraEnsayos}>{numEnsayos} ensayos solicitados</div>
                     </Card>
                   );
                 })
@@ -855,91 +611,37 @@ export default function MisProyectos() {
         </div>
 
         {/* COLUMNA 3: ENSAYOS */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>
+        <div className={styles.column}>
+          <div className={styles.columnHeaderWithAction}>
+            <h3 className={styles.columnTitle}>
               Ensayos
               {selectedMuestra && (
-                <span
-                  style={{
-                    fontSize: '0.875rem',
-                    color: '#6B7280',
-                    fontWeight: 'normal',
-                    marginLeft: '8px',
-                  }}
-                >
+                <span className={styles.columnCount} style={{ marginLeft: '8px' }}>
                   ({ensayosMuestra.length})
                 </span>
               )}
             </h3>
             {selectedMuestra && selectedProyecto?.estado === 'activo' && (
-              <button
-                onClick={() => setShowSolicitar(true)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  border: 'none',
-                  backgroundColor: '#10B981',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  fontSize: '0.875rem',
-                }}
-              >
+              <button onClick={() => setShowSolicitar(true)} className={styles.btnPrimary}>
                 + Solicitar Ensayo
               </button>
             )}
           </div>
 
           {!selectedMuestra ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6B7280',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
-              <div style={{ fontSize: '2rem', opacity: 0.3 }}>&#8592;</div>
+            <div className={styles.emptyState}>
+              <div className={styles.emptyArrow}>&#8592;</div>
               <div>Seleccione una muestra</div>
             </div>
           ) : (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
+            <div className={styles.cardList}>
               {ensayosMuestra.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px' }}>
-                  <p style={{ color: '#6B7280', marginBottom: '16px' }}>
-                    No hay ensayos solicitados
-                  </p>
+                <div className={styles.emptyCenter}>
+                  <p className={styles.emptyText}>No hay ensayos solicitados</p>
                   {selectedProyecto?.estado === 'activo' && (
                     <button
                       onClick={() => setShowSolicitar(true)}
-                      style={{
-                        padding: '10px 20px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        backgroundColor: '#10B981',
-                        color: 'white',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                      }}
+                      className={`${styles.btnPrimary} ${styles.btnLarge}`}
                     >
                       Solicitar primer ensayo
                     </button>
@@ -951,72 +653,35 @@ export default function MisProyectos() {
                   const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
 
                   return (
-                    <Card
-                      key={ensayo.id}
-                      onClick={() => setSelectedEnsayo(ensayo)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'start',
-                        }}
-                      >
+                    <Card key={ensayo.id} onClick={() => setSelectedEnsayo(ensayo)}>
+                      <div className={styles.projectCardHeader}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600' }}>{ensayo.codigo}</div>
-                          <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                          <div className={styles.ensayoCode}>{ensayo.codigo}</div>
+                          <div className={styles.ensayoTipo}>
                             {tipoEnsayo?.nombre || ensayo.tipo}
                           </div>
                           {ensayo.norma && (
-                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                              Norma: {ensayo.norma}
-                            </div>
+                            <div className={styles.ensayoNorma}>Norma: {ensayo.norma}</div>
                           )}
                         </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: '4px',
-                          }}
-                        >
+                        <div className={styles.ensayoBadges}>
                           <Badge color={workflow.color}>{workflow.nombre}</Badge>
                           {ensayo.urgente && <Badge color="#DC2626">Urgente</Badge>}
                         </div>
                       </div>
-                      <div
-                        style={{
-                          marginTop: '8px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                      <div className={styles.ensayoFechas}>
+                        <span className={styles.ensayoFecha}>
                           Solicitado: {ensayo.fecha_solicitud}
                         </span>
                         {ensayo.fecha_programada && (
-                          <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                          <span className={styles.ensayoFecha}>
                             Prog: {ensayo.fecha_programada}
                           </span>
                         )}
                       </div>
                       {/* Indicador de descarga disponible */}
                       {['E13', 'E14', 'E15'].includes(ensayo.workflow_state) && (
-                        <div
-                          style={{
-                            marginTop: '8px',
-                            padding: '6px 10px',
-                            backgroundColor: '#D1FAE5',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            color: '#065F46',
-                            fontWeight: '500',
-                            textAlign: 'center',
-                          }}
-                        >
+                        <div className={styles.reporteDisponible}>
                           Reporte disponible para descarga
                         </div>
                       )}

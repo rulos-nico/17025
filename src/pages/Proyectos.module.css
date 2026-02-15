@@ -1,0 +1,1107 @@
+/**
+ * Proyectos.module.css
+ * Estilos para la página de gestión de proyectos
+ */
+
+/* Role Switcher (Dev Mode) */
+.roleSwitcher {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-gray-300);
+}
+
+.roleSwitcherLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-right: var(--spacing-2);
+}
+
+.roleSelect {
+  padding: 6px var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+}
+
+/* Error Alert */
+.errorAlert {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  background-color: var(--color-error-100);
+  border-radius: var(--radius-lg);
+  color: var(--color-error-800);
+  font-size: var(--text-sm);
+}
+
+/* Header Bar */
+.headerBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+.filters {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  min-width: 150px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+}
+
+.btnPrimary {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.btnPrimary:hover {
+  background-color: var(--color-primary-600);
+}
+
+/* Three Column Layout */
+.columnsLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: var(--spacing-6);
+  min-height: 500px;
+}
+
+@media (max-width: 1200px) {
+  .columnsLayout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .columnsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.columnTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.columnCount {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+  font-weight: var(--font-normal);
+}
+
+/* Card List */
+.cardList {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Empty State */
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-500);
+  flex-direction: column;
+  gap: var(--spacing-2);
+  text-align: center;
+  padding: var(--spacing-6);
+}
+
+.emptyArrow {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+/* Project Card */
+.projectCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.projectCode {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.projectName {
+  font-weight: var(--font-medium);
+  margin-top: 2px;
+}
+
+.projectClient {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.projectStats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-2);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.projectBadgeActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.projectActions {
+  margin-top: var(--spacing-1);
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.btnSmall {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnSmall:hover {
+  background-color: var(--color-gray-50);
+}
+
+.btnEdit {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+}
+
+.btnEdit:hover {
+  background-color: var(--color-primary-50);
+}
+
+.btnDanger {
+  border-color: var(--color-error-300);
+  color: var(--color-error-600);
+}
+
+.btnDanger:hover {
+  background-color: var(--color-error-50);
+}
+
+/* Perforacion Card */
+.perforacionCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.perforacionInfo {
+  flex: 1;
+}
+
+.perforacionCode {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.perforacionDesc {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+  margin-top: 2px;
+}
+
+.perforacionLocation {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.perforacionMuestra {
+  font-size: var(--text-xs);
+  color: var(--color-gray-600);
+  margin-top: var(--spacing-1);
+}
+
+.perforacionMuestraFisica {
+  font-size: var(--text-xs);
+  color: var(--color-success-600);
+  margin-top: 2px;
+}
+
+.perforacionBadgeActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.perforacionStats {
+  margin-top: var(--spacing-2);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.perforacionActions {
+  margin-top: 2px;
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.btnRelacionar {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-warning-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnRelacionar:hover {
+  background-color: var(--color-warning-600);
+}
+
+.btnAddMuestra {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnAddMuestra:hover {
+  background-color: var(--color-primary-600);
+}
+
+.warningCount {
+  margin-left: var(--spacing-2);
+  font-size: var(--text-xs);
+  color: var(--color-warning-500);
+  font-weight: var(--font-normal);
+}
+
+.ensayosCotizadosBox {
+  margin-bottom: var(--spacing-3);
+  padding: var(--spacing-2);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+}
+
+.btnSuccess {
+  border-color: var(--color-success-300);
+  color: var(--color-success-700);
+  background-color: var(--color-success-50);
+}
+
+.btnSuccess:hover {
+  background-color: var(--color-success-100);
+}
+
+.btnWarning {
+  border-color: var(--color-warning-300);
+  color: var(--color-warning-700);
+  background-color: var(--color-warning-50);
+}
+
+.btnWarning:hover {
+  background-color: var(--color-warning-100);
+}
+
+/* Muestra Section */
+.muestrasSection {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.muestrasSectionHeader {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-600);
+  margin-bottom: var(--spacing-2);
+}
+
+.muestraItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-2);
+  background-color: var(--color-warning-50);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-1);
+  font-size: var(--text-xs);
+}
+
+.muestraInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.muestraCodigo {
+  font-weight: var(--font-medium);
+  color: var(--color-warning-800);
+}
+
+.muestraProf {
+  color: var(--color-gray-600);
+}
+
+/* Third Column - Combined View */
+.thirdColumn {
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+}
+
+.thirdColumnHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.subSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.subSectionTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.ensayosList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.ensayoCard {
+  padding: var(--spacing-3);
+  background-color: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
+}
+
+.ensayoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ensayoCodigo {
+  font-weight: var(--font-semibold);
+}
+
+.ensayoTipo {
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+}
+
+.ensayoMuestra {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+}
+
+.ensayoFecha {
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  margin-top: var(--spacing-1);
+}
+
+/* Modal Form Styles */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: var(--spacing-2);
+}
+
+.fieldset {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+}
+
+.legend {
+  font-weight: var(--font-semibold);
+  padding: 0 var(--spacing-2);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-medium);
+}
+
+.labelSmall {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-base);
+}
+
+.inputSm {
+  padding: 6px;
+  font-size: var(--text-sm);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3);
+}
+
+.gridThree {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-2);
+}
+
+/* Perforacion Row in Modal */
+.perforacionRow {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  padding: var(--spacing-2);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-sm);
+}
+
+.perforacionRowCode {
+  flex: 0 0 100px;
+}
+
+.perforacionRowDesc {
+  flex: 1;
+}
+
+.perforacionRowLoc {
+  flex: 0 0 120px;
+}
+
+.btnRemove {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-error-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.btnRemove:disabled {
+  background-color: var(--color-gray-200);
+  cursor: not-allowed;
+}
+
+.btnAddDashed {
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-gray-400);
+  background-color: transparent;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.btnAddDashed:hover {
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-700);
+}
+
+.btnAddWarning {
+  border-color: var(--color-warning-500);
+  color: var(--color-warning-800);
+}
+
+/* Ensayos Cotizados Grid */
+.cotizadosGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-2);
+}
+
+.cotizadoItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cotizadoInput {
+  width: 60px;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+}
+
+.cotizadoLabel {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+/* Muestra Form in Modal */
+.muestraForm {
+  padding: var(--spacing-3);
+  background-color: var(--color-warning-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-warning-200);
+}
+
+.muestraFormHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.muestraFormTitle {
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  color: var(--color-warning-800);
+}
+
+.btnRemoveSmall {
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-error-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+}
+
+.btnRemoveSmall:disabled {
+  background-color: var(--color-gray-200);
+  cursor: not-allowed;
+}
+
+/* Info Boxes */
+.infoBox {
+  padding: var(--spacing-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+}
+
+.infoBoxWarning {
+  background-color: var(--color-warning-100);
+  border: 1px solid var(--color-warning-500);
+}
+
+.infoBoxInfo {
+  background-color: var(--color-primary-100);
+}
+
+.infoBoxError {
+  background-color: var(--color-error-100);
+  border: 1px solid var(--color-error-500);
+}
+
+.infoBoxTitle {
+  font-weight: var(--font-semibold);
+}
+
+.infoBoxWarningTitle {
+  color: var(--color-warning-800);
+}
+
+.infoBoxErrorTitle {
+  color: var(--color-error-800);
+}
+
+/* Modal Actions */
+.modalActions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.btnCancel {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+}
+
+.btnSubmit {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+}
+
+.btnSubmit:disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+.btnSubmitSuccess {
+  background-color: var(--color-success-500);
+}
+
+.btnSubmitWarning {
+  background-color: var(--color-warning-500);
+}
+
+.btnDelete {
+  background-color: var(--color-error-500);
+}
+
+/* Delete Modal */
+.deleteWarning {
+  padding: var(--spacing-4);
+  background-color: var(--color-error-100);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-error-500);
+}
+
+.deleteWarningContent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+}
+
+.deleteWarningIcon {
+  font-size: 1.5rem;
+}
+
+.deleteWarningTitle {
+  font-weight: var(--font-semibold);
+  color: var(--color-error-800);
+  margin-bottom: var(--spacing-1);
+}
+
+.deleteWarningText {
+  color: var(--color-error-900);
+  font-size: var(--text-sm);
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-gray-500);
+}
+
+/* Empty State Variants */
+.emptyStateWarning {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-warning-500);
+  text-align: center;
+  padding: var(--spacing-6);
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-2);
+}
+
+.emptySubtext {
+  font-size: var(--text-xs);
+  margin-top: var(--spacing-2);
+  color: var(--color-gray-400);
+}
+
+.btnWarningLarge {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-warning-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.btnWarningLarge:hover {
+  background-color: var(--color-warning-600);
+}
+
+/* Muestra Card Styles */
+.muestraCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.muestraInfo {
+  flex: 1;
+}
+
+.muestraHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.muestraIcon {
+  font-size: 1rem;
+}
+
+.muestraCodigo {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.muestraProf {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.muestraDesc {
+  font-size: var(--text-xs);
+  color: var(--color-gray-700);
+  margin-top: var(--spacing-1);
+  margin-left: 28px;
+}
+
+.muestraBadgeActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.muestraEnsayosCount {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.muestraActions {
+  margin-top: var(--spacing-2);
+  text-align: right;
+}
+
+.btnSolicitarEnsayo {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-success-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnSolicitarEnsayo:hover {
+  background-color: var(--color-success-600);
+}
+
+/* Ensayos Expandible */
+.ensayosExpandible {
+  margin-left: 20px;
+  margin-top: var(--spacing-1);
+  border-left: 2px solid var(--color-gray-200);
+  padding-left: var(--spacing-3);
+}
+
+.ensayoItemExpanded {
+  padding: var(--spacing-2) var(--spacing-3);
+  margin-bottom: var(--spacing-1);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.ensayoItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ensayoItemCodigo {
+  font-weight: var(--font-medium);
+}
+
+.ensayoItemTipo {
+  color: var(--color-gray-500);
+  margin-left: var(--spacing-2);
+}
+
+.ensayoItemLinks {
+  margin-top: var(--spacing-1);
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.btnSheetLink {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background-color: #34a853;
+  color: white;
+  text-decoration: none;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnSheetLink:hover {
+  opacity: 0.9;
+}
+
+.btnVerLink {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-500);
+  color: white;
+  text-decoration: none;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.btnVerLink:hover {
+  background-color: var(--color-primary-600);
+}
+
+/* Ensayos Sin Muestra (Legacy) */
+.ensayosSinMuestra {
+  margin-top: var(--spacing-4);
+}
+
+.ensayosSinMuestraTitle {
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  margin-bottom: var(--spacing-2);
+  text-transform: uppercase;
+}
+
+.ensayoLegacyCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ensayoLegacyCodigo {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.ensayoLegacyTipo {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+/* Resumen Bar */
+.resumenBar {
+  margin-top: var(--spacing-6);
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  font-size: var(--text-sm);
+}
+
+/* Dev Role Switcher */
+.devRoleSwitcher {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-primary-100);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+.devRoleSwitcherLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.devRoleLabel {
+  font-weight: var(--font-medium);
+}
+
+.devRoleSelect {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-500);
+  background-color: white;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+}
+
+.devRolePermisos {
+  color: var(--color-primary-700);
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+/* Error Banner */
+.errorBanner {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-error-100);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-error-500);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.errorBannerContent {
+  color: var(--color-error-800);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.errorIcon {
+  font-size: 1.25rem;
+}
+
+.errorBannerClose {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-error-500);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: var(--transition-fast);
+}
+
+.errorBannerClose:hover {
+  background-color: var(--color-error-600);
+}
+
+/* Info Box Extensions */
+.infoBoxContent {
+  margin-top: var(--spacing-1);
+}
+
+.infoBoxSubtext {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.infoBoxPrimary {
+  background-color: var(--color-primary-100);
+  border: 1px solid var(--color-primary-500);
+}
+
+.infoBoxPrimaryTitle {
+  color: var(--color-primary-700);
+}
+
+.infoBoxPrimaryText {
+  font-size: var(--text-sm);
+  color: var(--color-primary-700);
+  margin-top: var(--spacing-1);
+}
+
+/* Grid Extensions */
+.gridThreeMb {
+  margin-bottom: var(--spacing-2);
+}
+
+/* Codigo Asignado Box */
+.codigoAsignadoBox {
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}

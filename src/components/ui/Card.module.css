@@ -1,0 +1,24 @@
+/**
+ * Card.module.css - Estilos para el componente Card
+ */
+
+.card {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+  border: 2px solid transparent;
+  transition: var(--transition-normal);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.selected {
+  border-color: var(--color-primary-500);
+}

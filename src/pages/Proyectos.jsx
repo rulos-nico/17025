@@ -19,6 +19,7 @@ import {
   ESTADO_MUESTRA,
   getWorkflowInfo,
 } from '../config';
+import styles from './Proyectos.module.css';
 
 // Alias para perforaciones (mismo estado que muestras)
 const ESTADO_PERFORACION = {
@@ -111,55 +112,32 @@ function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nuevo Proyecto">
       <form onSubmit={handleSubmit}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            maxHeight: '70vh',
-            overflowY: 'auto',
-            paddingRight: '8px',
-          }}
-        >
+        <div className={styles.modalForm}>
           {/* Datos básicos del proyecto */}
-          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-            <legend style={{ fontWeight: '600', padding: '0 8px' }}>Datos del Proyecto</legend>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Datos del Proyecto</legend>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Nombre del Proyecto *
-                </label>
+            <div className={styles.fieldGroup}>
+              <div className={styles.field}>
+                <label className={styles.label}>Nombre del Proyecto *</label>
                 <input
                   type="text"
                   value={form.nombre}
                   onChange={e => setForm({ ...form, nombre: e.target.value })}
                   required
                   placeholder="Ej: Construcción Edificio Central"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
+                  className={styles.input}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                    Cliente *
-                  </label>
+              <div className={styles.gridTwo}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Cliente *</label>
                   <select
                     value={form.clienteId}
                     onChange={e => setForm({ ...form, clienteId: e.target.value })}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #D1D5DB',
-                    }}
+                    className={styles.select}
                   >
                     <option value="">Seleccionar...</option>
                     {clientes.map(c => (
@@ -169,210 +147,110 @@ function NuevoProyectoModal({ isOpen, onClose, onCreate, clientes, loading }) {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                    Fecha Fin Estimada
-                  </label>
+                <div className={styles.field}>
+                  <label className={styles.label}>Fecha Fin Estimada</label>
                   <input
                     type="date"
                     value={form.fecha_fin_estimada}
                     onChange={e => setForm({ ...form, fecha_fin_estimada: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #D1D5DB',
-                    }}
+                    className={styles.input}
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Descripción
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Descripción</label>
                 <textarea
                   value={form.descripcion}
                   onChange={e => setForm({ ...form, descripcion: e.target.value })}
                   rows={2}
                   placeholder="Descripción del proyecto..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                    resize: 'vertical',
-                  }}
+                  className={styles.textarea}
                 />
               </div>
             </div>
           </fieldset>
 
           {/* Perforaciones */}
-          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
-              Perforaciones ({perforaciones.length})
-            </legend>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Perforaciones ({perforaciones.length})</legend>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className={styles.fieldGroup}>
               {perforaciones.map((perf, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                    alignItems: 'flex-start',
-                    padding: '8px',
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <div style={{ flex: '0 0 100px' }}>
+                <div key={index} className={styles.perforacionRow}>
+                  <div className={styles.perforacionRowCode}>
                     <input
                       type="text"
                       value={perf.codigo}
                       onChange={e => handlePerforacionChange(index, 'codigo', e.target.value)}
                       placeholder="Código *"
-                      style={{
-                        width: '100%',
-                        padding: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '0.875rem',
-                      }}
+                      className={`${styles.input} ${styles.inputSm}`}
                     />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div className={styles.perforacionRowDesc}>
                     <input
                       type="text"
                       value={perf.descripcion}
                       onChange={e => handlePerforacionChange(index, 'descripcion', e.target.value)}
                       placeholder="Descripción"
-                      style={{
-                        width: '100%',
-                        padding: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '0.875rem',
-                      }}
+                      className={`${styles.input} ${styles.inputSm}`}
                     />
                   </div>
-                  <div style={{ flex: '0 0 120px' }}>
+                  <div className={styles.perforacionRowLoc}>
                     <input
                       type="text"
                       value={perf.ubicacion}
                       onChange={e => handlePerforacionChange(index, 'ubicacion', e.target.value)}
                       placeholder="Ubicación"
-                      style={{
-                        width: '100%',
-                        padding: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '0.875rem',
-                      }}
+                      className={`${styles.input} ${styles.inputSm}`}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemovePerforacion(index)}
                     disabled={perforaciones.length <= 1}
-                    style={{
-                      padding: '6px 10px',
-                      borderRadius: '4px',
-                      border: 'none',
-                      backgroundColor: perforaciones.length <= 1 ? '#E5E7EB' : '#EF4444',
-                      color: 'white',
-                      cursor: perforaciones.length <= 1 ? 'not-allowed' : 'pointer',
-                      fontSize: '0.875rem',
-                    }}
+                    className={styles.btnRemove}
                   >
                     ×
                   </button>
                 </div>
               ))}
 
-              <button
-                type="button"
-                onClick={handleAddPerforacion}
-                style={{
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px dashed #9CA3AF',
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                  color: '#6B7280',
-                  fontSize: '0.875rem',
-                }}
-              >
+              <button type="button" onClick={handleAddPerforacion} className={styles.btnAddDashed}>
                 + Agregar perforación
               </button>
             </div>
           </fieldset>
 
           {/* Ensayos Cotizados */}
-          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>
               Ensayos Cotizados (Total: {totalEnsayosCotizados})
             </legend>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+            <div className={styles.cotizadosGrid}>
               {TIPOS_ENSAYO.map(tipo => (
-                <div key={tipo.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={tipo.id} className={styles.cotizadoItem}>
                   <input
                     type="number"
                     min="0"
                     value={ensayosCotizados[tipo.id] || ''}
                     onChange={e => handleEnsayoCotizadoChange(tipo.id, e.target.value)}
                     placeholder="0"
-                    style={{
-                      width: '60px',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #D1D5DB',
-                      fontSize: '0.875rem',
-                    }}
+                    className={styles.cotizadoInput}
                   />
-                  <span style={{ fontSize: '0.875rem', color: '#374151' }}>{tipo.nombre}</span>
+                  <span className={styles.cotizadoLabel}>{tipo.nombre}</span>
                 </div>
               ))}
             </div>
           </fieldset>
 
           {/* Botones */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end',
-              paddingTop: '8px',
-              borderTop: '1px solid #E5E7EB',
-            }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
+            <button type="submit" disabled={loading} className={styles.btnSubmit}>
               {loading ? 'Creando...' : 'Crear Proyecto'}
             </button>
           </div>
@@ -418,57 +296,35 @@ function EditarProyectoModal({ isOpen, onClose, onEdit, proyecto, loading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Proyecto">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Nombre del Proyecto *
-            </label>
+        <div className={styles.modalForm}>
+          <div className={styles.field}>
+            <label className={styles.label}>Nombre del Proyecto *</label>
             <input
               type="text"
               value={form.nombre}
               onChange={e => setForm({ ...form, nombre: e.target.value })}
               required
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.input}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Descripción
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Descripción</label>
             <textarea
               value={form.descripcion}
               onChange={e => setForm({ ...form, descripcion: e.target.value })}
               rows={2}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                resize: 'vertical',
-              }}
+              className={styles.textarea}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Estado
-              </label>
+          <div className={styles.gridTwo}>
+            <div className={styles.field}>
+              <label className={styles.label}>Estado</label>
               <select
                 value={form.estado}
                 onChange={e => setForm({ ...form, estado: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
+                className={styles.select}
               >
                 <option value="activo">Activo</option>
                 <option value="pausado">Pausado</option>
@@ -476,70 +332,33 @@ function EditarProyectoModal({ isOpen, onClose, onEdit, proyecto, loading }) {
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Fecha Fin Estimada
-              </label>
+            <div className={styles.field}>
+              <label className={styles.label}>Fecha Fin Estimada</label>
               <input
                 type="date"
                 value={form.fecha_fin_estimada}
                 onChange={e => setForm({ ...form, fecha_fin_estimada: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
+                className={styles.input}
               />
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Contacto
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Contacto</label>
             <input
               type="text"
               value={form.contacto}
               onChange={e => setForm({ ...form, contacto: e.target.value })}
               placeholder="Nombre o email del contacto"
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.input}
             />
           </div>
 
-          <div
-            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '8px' }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
+            <button type="submit" disabled={loading} className={styles.btnSubmit}>
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
@@ -580,89 +399,44 @@ function EditarPerforacionModal({ isOpen, onClose, onEdit, perforacion, loading 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Perforación">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Nombre/Código *
-            </label>
+        <div className={styles.modalForm}>
+          <div className={styles.field}>
+            <label className={styles.label}>Nombre/Código *</label>
             <input
               type="text"
               value={form.nombre}
               onChange={e => setForm({ ...form, nombre: e.target.value })}
               required
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.input}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Descripción
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Descripción</label>
             <textarea
               value={form.descripcion}
               onChange={e => setForm({ ...form, descripcion: e.target.value })}
               rows={2}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                resize: 'vertical',
-              }}
+              className={styles.textarea}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Ubicación
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Ubicación</label>
             <input
               type="text"
               value={form.ubicacion}
               onChange={e => setForm({ ...form, ubicacion: e.target.value })}
               placeholder="Ej: Sector Norte, Km 5+200"
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.input}
             />
           </div>
 
-          <div
-            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '8px' }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
+            <button type="submit" disabled={loading} className={styles.btnSubmit}>
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
@@ -688,53 +462,26 @@ function ConfirmDeleteModal({ isOpen, onClose, onConfirm, itemToDelete, loading 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={titulo}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div
-          style={{
-            padding: '16px',
-            backgroundColor: '#FEE2E2',
-            borderRadius: '8px',
-            border: '1px solid #EF4444',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+      <div className={styles.modalForm}>
+        <div className={styles.deleteWarning}>
+          <div className={styles.deleteWarningContent}>
+            <span className={styles.deleteWarningIcon}>⚠️</span>
             <div>
-              <div style={{ fontWeight: '600', color: '#991B1B', marginBottom: '4px' }}>
-                Advertencia
-              </div>
-              <div style={{ color: '#7F1D1D', fontSize: '0.875rem' }}>{mensaje}</div>
+              <div className={styles.deleteWarningTitle}>Advertencia</div>
+              <div className={styles.deleteWarningText}>{mensaje}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              backgroundColor: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
+        <div className={styles.modalActions}>
+          <button type="button" onClick={onClose} disabled={loading} className={styles.btnCancel}>
             Cancelar
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
+            className={`${styles.btnSubmit} ${styles.btnDelete}`}
           >
             {loading ? 'Eliminando...' : 'Eliminar'}
           </button>
@@ -809,94 +556,57 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Relacionar Perforación y Agregar Muestras">
       <form onSubmit={handleSubmit}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            maxHeight: '70vh',
-            overflowY: 'auto',
-            paddingRight: '8px',
-          }}
-        >
+        <div className={styles.modalForm}>
           {/* Info de la perforación */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: '#FEF3C7',
-              borderRadius: '8px',
-              border: '1px solid #F59E0B',
-            }}
-          >
-            <div style={{ fontWeight: '600', color: '#92400E' }}>Perforación a relacionar:</div>
-            <div style={{ marginTop: '4px' }}>
+          <div className={`${styles.infoBox} ${styles.infoBoxWarning}`}>
+            <div className={`${styles.infoBoxTitle} ${styles.infoBoxWarningTitle}`}>
+              Perforación a relacionar:
+            </div>
+            <div className={styles.infoBoxContent}>
               <strong>{perforacion.codigo}</strong> - {perforacion.descripcion}
             </div>
             {perforacion.ubicacion && (
-              <div style={{ fontSize: '0.875rem', color: '#78716C' }}>
-                Ubicación: {perforacion.ubicacion}
-              </div>
+              <div className={styles.infoBoxSubtext}>Ubicación: {perforacion.ubicacion}</div>
             )}
           </div>
 
           {/* Datos de recepción */}
-          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-            <legend style={{ fontWeight: '600', padding: '0 8px' }}>Datos de Recepción</legend>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Datos de Recepción</legend>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Código de Muestra Física *
-                </label>
+            <div className={styles.fieldGroup}>
+              <div className={styles.field}>
+                <label className={styles.label}>Código de Muestra Física *</label>
                 <input
                   type="text"
                   value={form.codigoMuestra}
                   onChange={e => setForm({ ...form, codigoMuestra: e.target.value })}
                   required
                   placeholder="Ej: MF-2025-0001"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                  }}
+                  className={styles.input}
                 />
-                <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                <div className={styles.hint}>
                   Código de la etiqueta de la muestra física recibida
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                    Fecha de Recepción *
-                  </label>
+              <div className={styles.gridTwo}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Fecha de Recepción *</label>
                   <input
                     type="date"
                     value={form.fechaRecepcion}
                     onChange={e => setForm({ ...form, fechaRecepcion: e.target.value })}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #D1D5DB',
-                    }}
+                    className={styles.input}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                    Condición de Muestra
-                  </label>
+                <div className={styles.field}>
+                  <label className={styles.label}>Condición de Muestra</label>
                   <select
                     value={form.condicionMuestra}
                     onChange={e => setForm({ ...form, condicionMuestra: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #D1D5DB',
-                    }}
+                    className={styles.select}
                   >
                     <option value="buena">Buena</option>
                     <option value="regular">Regular</option>
@@ -905,92 +615,45 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                  Observaciones de Recepción
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Observaciones de Recepción</label>
                 <textarea
                   value={form.observaciones}
                   onChange={e => setForm({ ...form, observaciones: e.target.value })}
                   rows={2}
                   placeholder="Observaciones de recepción..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #D1D5DB',
-                    resize: 'vertical',
-                  }}
+                  className={styles.textarea}
                 />
               </div>
             </div>
           </fieldset>
 
           {/* Muestras */}
-          <fieldset style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px' }}>
-            <legend style={{ fontWeight: '600', padding: '0 8px' }}>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>
               Muestras de la Perforación ({muestrasForm.length})
             </legend>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className={styles.fieldGroup}>
               {muestrasForm.map((muestra, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: '#FFFBEB',
-                    borderRadius: '6px',
-                    border: '1px solid #FDE68A',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    <span style={{ fontWeight: '500', fontSize: '0.875rem', color: '#92400E' }}>
+                <div key={index} className={styles.muestraForm}>
+                  <div className={styles.muestraFormHeader}>
+                    <span className={styles.muestraFormTitle}>
                       Muestra M-{String(index + 1).padStart(3, '0')}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleRemoveMuestra(index)}
                       disabled={muestrasForm.length <= 1}
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        backgroundColor: muestrasForm.length <= 1 ? '#E5E7EB' : '#EF4444',
-                        color: 'white',
-                        cursor: muestrasForm.length <= 1 ? 'not-allowed' : 'pointer',
-                        fontSize: '0.75rem',
-                      }}
+                      className={styles.btnRemoveSmall}
                     >
                       Quitar
                     </button>
                   </div>
 
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr 1fr',
-                      gap: '8px',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: '2px',
-                          fontSize: '0.75rem',
-                          color: '#6B7280',
-                        }}
-                      >
-                        Prof. Inicio (m) *
-                      </label>
+                  <div className={`${styles.gridThree} ${styles.gridThreeMb}`}>
+                    <div className={styles.field}>
+                      <label className={styles.labelSmall}>Prof. Inicio (m) *</label>
                       <input
                         type="number"
                         step="0.1"
@@ -1000,26 +663,11 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
                           handleMuestraChange(index, 'profundidadInicio', e.target.value)
                         }
                         placeholder="0.0"
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          borderRadius: '4px',
-                          border: '1px solid #D1D5DB',
-                          fontSize: '0.875rem',
-                        }}
+                        className={`${styles.input} ${styles.inputSm}`}
                       />
                     </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: '2px',
-                          fontSize: '0.75rem',
-                          color: '#6B7280',
-                        }}
-                      >
-                        Prof. Fin (m) *
-                      </label>
+                    <div className={styles.field}>
+                      <label className={styles.labelSmall}>Prof. Fin (m) *</label>
                       <input
                         type="number"
                         step="0.1"
@@ -1027,36 +675,15 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
                         value={muestra.profundidadFin}
                         onChange={e => handleMuestraChange(index, 'profundidadFin', e.target.value)}
                         placeholder="0.5"
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          borderRadius: '4px',
-                          border: '1px solid #D1D5DB',
-                          fontSize: '0.875rem',
-                        }}
+                        className={`${styles.input} ${styles.inputSm}`}
                       />
                     </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: '2px',
-                          fontSize: '0.75rem',
-                          color: '#6B7280',
-                        }}
-                      >
-                        Tipo de Muestra
-                      </label>
+                    <div className={styles.field}>
+                      <label className={styles.labelSmall}>Tipo de Muestra</label>
                       <select
                         value={muestra.tipoMuestra}
                         onChange={e => handleMuestraChange(index, 'tipoMuestra', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          borderRadius: '4px',
-                          border: '1px solid #D1D5DB',
-                          fontSize: '0.875rem',
-                        }}
+                        className={`${styles.select} ${styles.inputSm}`}
                       >
                         {TIPOS_MUESTRA.map(tipo => (
                           <option key={tipo.id} value={tipo.id}>
@@ -1067,29 +694,14 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
                     </div>
                   </div>
 
-                  <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        marginBottom: '2px',
-                        fontSize: '0.75rem',
-                        color: '#6B7280',
-                      }}
-                    >
-                      Descripción
-                    </label>
+                  <div className={styles.field}>
+                    <label className={styles.labelSmall}>Descripción</label>
                     <input
                       type="text"
                       value={muestra.descripcion}
                       onChange={e => handleMuestraChange(index, 'descripcion', e.target.value)}
                       placeholder="Ej: Arcilla café con gravas, N=15..."
-                      style={{
-                        width: '100%',
-                        padding: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '0.875rem',
-                      }}
+                      className={`${styles.input} ${styles.inputSm}`}
                     />
                   </div>
                 </div>
@@ -1098,58 +710,26 @@ function RelacionarMuestraModal({ isOpen, onClose, onRelate, perforacion, loadin
               <button
                 type="button"
                 onClick={handleAddMuestra}
-                style={{
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px dashed #F59E0B',
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                  color: '#92400E',
-                  fontSize: '0.875rem',
-                }}
+                className={`${styles.btnAddDashed} ${styles.btnAddWarning}`}
               >
                 + Agregar otra muestra
               </button>
             </div>
           </fieldset>
 
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: '#DBEAFE',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-            }}
-          >
+          <div className={`${styles.infoBox} ${styles.infoBoxInfo}`}>
             <strong>Nota:</strong> Al relacionar la perforación y registrar las muestras, el cliente
             podrá solicitar ensayos para cada muestra específica.
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#10B981',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
+              className={`${styles.btnSubmit} ${styles.btnSubmitSuccess}`}
             >
               {loading ? 'Relacionando...' : 'Relacionar y Guardar'}
             </button>
@@ -1202,47 +782,33 @@ function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExis
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Agregar Nueva Muestra">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className={styles.modalForm}>
           {/* Info de la perforación */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: '#DBEAFE',
-              borderRadius: '8px',
-              border: '1px solid #3B82F6',
-            }}
-          >
-            <div style={{ fontWeight: '600', color: '#1E40AF' }}>Perforación:</div>
-            <div style={{ marginTop: '4px' }}>
+          <div className={`${styles.infoBox} ${styles.infoBoxPrimary}`}>
+            <div className={`${styles.infoBoxTitle} ${styles.infoBoxPrimaryTitle}`}>
+              Perforación:
+            </div>
+            <div className={styles.infoBoxContent}>
               <strong>{perforacion.codigo}</strong> - {perforacion.descripcion}
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#1E40AF', marginTop: '4px' }}>
+            <div className={styles.infoBoxPrimaryText}>
               Muestra física: {perforacion.muestraFisica}
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '2px' }}>
+            <div className={styles.infoBoxSubtext}>
               Muestras registradas: {muestrasExistentes.length}
             </div>
           </div>
 
           {/* Código automático */}
-          <div
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#F3F4F6',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-            }}
-          >
+          <div className={styles.codigoAsignadoBox}>
             <strong>Código asignado:</strong> M-
             {String(muestrasExistentes.length + 1).padStart(3, '0')}
           </div>
 
           {/* Formulario */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Profundidad Inicio (m) *
-              </label>
+          <div className={styles.gridTwo}>
+            <div className={styles.field}>
+              <label className={styles.label}>Profundidad Inicio (m) *</label>
               <input
                 type="number"
                 step="0.1"
@@ -1251,18 +817,11 @@ function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExis
                 onChange={e => setForm({ ...form, profundidadInicio: e.target.value })}
                 required
                 placeholder="0.0"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
+                className={styles.input}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-                Profundidad Fin (m) *
-              </label>
+            <div className={styles.field}>
+              <label className={styles.label}>Profundidad Fin (m) *</label>
               <input
                 type="number"
                 step="0.1"
@@ -1271,29 +830,17 @@ function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExis
                 onChange={e => setForm({ ...form, profundidadFin: e.target.value })}
                 required
                 placeholder="0.5"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #D1D5DB',
-                }}
+                className={styles.input}
               />
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Tipo de Muestra *
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Tipo de Muestra *</label>
             <select
               value={form.tipoMuestra}
               onChange={e => setForm({ ...form, tipoMuestra: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-              }}
+              className={styles.select}
             >
               {TIPOS_MUESTRA.map(tipo => (
                 <option key={tipo.id} value={tipo.id}>
@@ -1303,50 +850,25 @@ function AgregarMuestraModal({ isOpen, onClose, onAdd, perforacion, muestrasExis
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
-              Descripción
-            </label>
+          <div className={styles.field}>
+            <label className={styles.label}>Descripción</label>
             <textarea
               value={form.descripcion}
               onChange={e => setForm({ ...form, descripcion: e.target.value })}
               rows={2}
               placeholder="Ej: Arcilla café con gravas, N=15..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                resize: 'vertical',
-              }}
+              className={styles.textarea}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.btnCancel}>
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#F59E0B',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
+              className={`${styles.btnSubmit} ${styles.btnSubmitWarning}`}
             >
               {loading ? 'Agregando...' : 'Agregar Muestra'}
             </button>
@@ -1737,7 +1259,7 @@ export default function Proyectos() {
   if (loading) {
     return (
       <PageLayout title="Proyectos">
-        <div style={{ textAlign: 'center', padding: '48px' }}>Cargando proyectos...</div>
+        <div className={styles.loading}>Cargando proyectos...</div>
       </PageLayout>
     );
   }
@@ -1746,34 +1268,13 @@ export default function Proyectos() {
     <PageLayout title="Proyectos">
       {/* Selector de rol para desarrollo */}
       {import.meta.env.DEV && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            backgroundColor: '#DBEAFE',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontWeight: '500' }}>Rol actual:</span>
+        <div className={styles.devRoleSwitcher}>
+          <div className={styles.devRoleSwitcherLeft}>
+            <span className={styles.devRoleLabel}>Rol actual:</span>
             <select
               value={devRole}
               onChange={e => setDevRole(e.target.value)}
-              style={{
-                padding: '4px 8px',
-                borderRadius: '4px',
-                border: '1px solid #3B82F6',
-                backgroundColor: 'white',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-              }}
+              className={styles.devRoleSelect}
             >
               {ROLES_DISPONIBLES.map(rol => (
                 <option key={rol.id} value={rol.id}>
@@ -1782,7 +1283,7 @@ export default function Proyectos() {
               ))}
             </select>
           </div>
-          <div style={{ color: '#1E40AF', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div className={styles.devRolePermisos}>
             {canCreateProject(userRole) && <span>✓ Crear proyectos</span>}
             {canRelatePhysicalSample(userRole) && <span>✓ Relacionar muestras</span>}
             {canAddMuestras(userRole) && <span>✓ Agregar muestras</span>}
@@ -1793,88 +1294,35 @@ export default function Proyectos() {
 
       {/* Banner de error */}
       {error && (
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            backgroundColor: '#FEE2E2',
-            borderRadius: '6px',
-            border: '1px solid #EF4444',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ color: '#991B1B', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+        <div className={styles.errorBanner}>
+          <div className={styles.errorBannerContent}>
+            <span className={styles.errorIcon}>⚠️</span>
             <span>{error}</span>
           </div>
-          <button
-            onClick={() => setError(null)}
-            style={{
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-            }}
-          >
+          <button onClick={() => setError(null)} className={styles.errorBannerClose}>
             Cerrar
           </button>
         </div>
       )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: '24px',
-          height: 'calc(100vh - 240px)',
-        }}
-      >
+      <div className={styles.columnsLayout}>
         {/* COLUMNA 1: PROYECTOS */}
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Proyectos</h3>
+        <div className={styles.column}>
+          <div className={styles.columnHeader}>
+            <h3 className={styles.columnTitle}>Proyectos</h3>
             {canCreateProject(userRole) && (
-              <button
-                onClick={() => setShowNuevoProyecto(true)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  border: 'none',
-                  backgroundColor: '#3B82F6',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                }}
-              >
+              <button onClick={() => setShowNuevoProyecto(true)} className={styles.btnPrimary}>
                 + Nuevo
               </button>
             )}
           </div>
 
           {/* Filtros */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <div className={styles.filters}>
             <select
               value={filtroEstado}
               onChange={e => setFiltroEstado(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '6px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                fontSize: '0.875rem',
-              }}
+              className={styles.filterSelect}
             >
               <option value="todos">Todos</option>
               <option value="activo">Activos</option>
@@ -1883,13 +1331,7 @@ export default function Proyectos() {
             <select
               value={filtroCliente}
               onChange={e => setFiltroCliente(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '6px',
-                borderRadius: '4px',
-                border: '1px solid #D1D5DB',
-                fontSize: '0.875rem',
-              }}
+              className={styles.filterSelect}
             >
               <option value="todos">Todos clientes</option>
               {clientes.map(c => (
@@ -1901,19 +1343,9 @@ export default function Proyectos() {
           </div>
 
           {/* Lista de proyectos */}
-          <div
-            style={{
-              flex: 1,
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}
-          >
+          <div className={styles.cardList}>
             {proyectosFiltrados.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                No hay proyectos
-              </div>
+              <div className={styles.emptyState}>No hay proyectos</div>
             ) : (
               proyectosFiltrados.map(proyecto => {
                 const estado = getEstadoProyecto(proyecto.estado);
@@ -1933,48 +1365,25 @@ export default function Proyectos() {
                     }}
                     selected={selectedProyecto?.id === proyecto.id}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                      }}
-                    >
+                    <div className={styles.projectCard}>
                       <div>
-                        <div style={{ fontWeight: '600' }}>{proyecto.codigo}</div>
-                        <div style={{ fontSize: '0.875rem', color: '#374151' }}>
-                          {proyecto.nombre}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                        <div className={styles.projectCode}>{proyecto.codigo}</div>
+                        <div className={styles.projectName}>{proyecto.nombre}</div>
+                        <div className={styles.projectClient}>
                           {getClienteNombre(proyecto.clienteId)}
                         </div>
                       </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          alignItems: 'flex-end',
-                        }}
-                      >
+                      <div className={styles.projectBadgeActions}>
                         <Badge color={estado.color}>{estado.label}</Badge>
                         {canEditProject(userRole) && (
-                          <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                          <div className={styles.projectActions}>
                             <button
                               onClick={e => {
                                 e.stopPropagation();
                                 setEditingProyecto(proyecto);
                                 setShowEditarProyecto(true);
                               }}
-                              style={{
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                border: '1px solid #3B82F6',
-                                backgroundColor: 'white',
-                                color: '#3B82F6',
-                                cursor: 'pointer',
-                                fontSize: '0.65rem',
-                              }}
+                              className={`${styles.btnSmall} ${styles.btnEdit}`}
                             >
                               Editar
                             </button>
@@ -1984,15 +1393,7 @@ export default function Proyectos() {
                                   e.stopPropagation();
                                   handleDeleteClick('proyecto', proyecto);
                                 }}
-                                style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  border: '1px solid #EF4444',
-                                  backgroundColor: 'white',
-                                  color: '#EF4444',
-                                  cursor: 'pointer',
-                                  fontSize: '0.65rem',
-                                }}
+                                className={`${styles.btnSmall} ${styles.btnDanger}`}
                               >
                                 Eliminar
                               </button>
@@ -2001,15 +1402,7 @@ export default function Proyectos() {
                         )}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '12px',
-                        marginTop: '8px',
-                        fontSize: '0.75rem',
-                        color: '#6B7280',
-                      }}
-                    >
+                    <div className={styles.projectStats}>
                       <span>{numPerfs} perforaciones</span>
                       <span>
                         {numEnsayos}/{totalCotizados} ensayos
@@ -2023,51 +1416,24 @@ export default function Proyectos() {
         </div>
 
         {/* COLUMNA 2: PERFORACIONES */}
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>
+        <div className={styles.column}>
+          <div className={styles.columnHeader}>
+            <h3 className={styles.columnTitle}>
               Perforaciones
               {selectedProyecto && perfsSinRelacionar > 0 && (
-                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#F59E0B' }}>
-                  ({perfsSinRelacionar} sin relacionar)
-                </span>
+                <span className={styles.warningCount}>({perfsSinRelacionar} sin relacionar)</span>
               )}
             </h3>
           </div>
 
           {!selectedProyecto ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6B7280',
-              }}
-            >
-              Selecciona un proyecto
-            </div>
+            <div className={styles.emptyState}>Selecciona un proyecto</div>
           ) : (
             <>
               {/* Resumen de ensayos cotizados */}
               {selectedProyecto.ensayosCotizados &&
                 Object.keys(selectedProyecto.ensayosCotizados).length > 0 && (
-                  <div
-                    style={{
-                      marginBottom: '12px',
-                      padding: '8px',
-                      backgroundColor: '#F3F4F6',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                    }}
-                  >
+                  <div className={styles.ensayosCotizadosBox}>
                     <strong>Ensayos cotizados:</strong>{' '}
                     {Object.entries(selectedProyecto.ensayosCotizados)
                       .map(([tipo, cant]) => {
@@ -2078,19 +1444,9 @@ export default function Proyectos() {
                   </div>
                 )}
 
-              <div
-                style={{
-                  flex: 1,
-                  overflow: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
+              <div className={styles.cardList}>
                 {perforacionesProyecto.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                    No hay perforaciones definidas
-                  </div>
+                  <div className={styles.emptyState}>No hay perforaciones definidas</div>
                 ) : (
                   perforacionesProyecto.map(perf => {
                     const estado = getEstadoPerforacion(perf.estado);
@@ -2107,43 +1463,20 @@ export default function Proyectos() {
                         onClick={() => setSelectedPerforacion(perf)}
                         selected={selectedPerforacion?.id === perf.id}
                       >
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'start',
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                              {perf.codigo}
-                            </div>
-                            <div style={{ fontSize: '0.875rem', color: '#374151' }}>
-                              {perf.descripcion}
-                            </div>
+                        <div className={styles.perforacionCard}>
+                          <div className={styles.perforacionInfo}>
+                            <div className={styles.perforacionCode}>{perf.codigo}</div>
+                            <div className={styles.perforacionDesc}>{perf.descripcion}</div>
                             {perf.ubicacion && (
-                              <div
-                                style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}
-                              >
-                                {perf.ubicacion}
-                              </div>
+                              <div className={styles.perforacionLocation}>{perf.ubicacion}</div>
                             )}
                             {perf.muestraFisica && (
-                              <div
-                                style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '2px' }}
-                              >
+                              <div className={styles.perforacionMuestraFisica}>
                                 Muestra: {perf.muestraFisica}
                               </div>
                             )}
                           </div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              alignItems: 'flex-end',
-                            }}
-                          >
+                          <div className={styles.perforacionBadgeActions}>
                             <Badge color={estado.color}>{estado.label}</Badge>
                             {puedeRelacionar && (
                               <button
@@ -2152,15 +1485,7 @@ export default function Proyectos() {
                                   setSelectedPerforacion(perf);
                                   setShowRelacionarMuestra(true);
                                 }}
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  border: 'none',
-                                  backgroundColor: '#F59E0B',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                }}
+                                className={styles.btnRelacionar}
                               >
                                 Relacionar
                               </button>
@@ -2172,36 +1497,20 @@ export default function Proyectos() {
                                   setPerforacionParaMuestra(perf);
                                   setShowAgregarMuestra(true);
                                 }}
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  border: 'none',
-                                  backgroundColor: '#3B82F6',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                }}
+                                className={styles.btnAddMuestra}
                               >
                                 + Muestra
                               </button>
                             )}
                             {canEditProject(userRole) && (
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                              <div className={styles.perforacionActions}>
                                 <button
                                   onClick={e => {
                                     e.stopPropagation();
                                     setEditingPerforacion(perf);
                                     setShowEditarPerforacion(true);
                                   }}
-                                  style={{
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    border: '1px solid #3B82F6',
-                                    backgroundColor: 'white',
-                                    color: '#3B82F6',
-                                    cursor: 'pointer',
-                                    fontSize: '0.6rem',
-                                  }}
+                                  className={`${styles.btnSmall} ${styles.btnEdit}`}
                                 >
                                   Editar
                                 </button>
@@ -2211,15 +1520,7 @@ export default function Proyectos() {
                                       e.stopPropagation();
                                       handleDeleteClick('perforacion', perf);
                                     }}
-                                    style={{
-                                      padding: '2px 6px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #EF4444',
-                                      backgroundColor: 'white',
-                                      color: '#EF4444',
-                                      cursor: 'pointer',
-                                      fontSize: '0.6rem',
-                                    }}
+                                    className={`${styles.btnSmall} ${styles.btnDanger}`}
                                   >
                                     Eliminar
                                   </button>
@@ -2228,7 +1529,7 @@ export default function Proyectos() {
                             )}
                           </div>
                         </div>
-                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
+                        <div className={styles.perforacionStats}>
                           {numMuestras} muestra{numMuestras !== 1 ? 's' : ''} • {numEnsayos} ensayo
                           {numEnsayos !== 1 ? 's' : ''}
                           {perf.fecha_recepcion && ` • Recibido: ${perf.fecha_recepcion}`}
@@ -2243,64 +1544,27 @@ export default function Proyectos() {
         </div>
 
         {/* COLUMNA 3: MUESTRAS Y ENSAYOS */}
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <h3 style={{ margin: 0 }}>
+        <div className={styles.column}>
+          <div className={styles.columnHeader}>
+            <h3 className={styles.columnTitle}>
               Muestras y Ensayos
               {selectedPerforacion && muestrasPerforacion.length > 0 && (
-                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6B7280' }}>
-                  ({muestrasPerforacion.length})
-                </span>
+                <span className={styles.columnCount}>({muestrasPerforacion.length})</span>
               )}
             </h3>
           </div>
 
           {!selectedPerforacion ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6B7280',
-              }}
-            >
-              Selecciona una perforación
-            </div>
+            <div className={styles.emptyState}>Selecciona una perforación</div>
           ) : selectedPerforacion.estado === 'sin_relacionar' ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#F59E0B',
-                textAlign: 'center',
-                padding: '24px',
-              }}
-            >
+            <div className={styles.emptyStateWarning}>
               <div>
-                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⏳</div>
+                <div className={styles.emptyIcon}>⏳</div>
                 <div>Esta perforación aún no tiene muestra física relacionada.</div>
                 {canRelatePhysicalSample(userRole) && (
                   <button
                     onClick={() => setShowRelacionarMuestra(true)}
-                    style={{
-                      marginTop: '12px',
-                      padding: '8px 16px',
-                      borderRadius: '4px',
-                      border: 'none',
-                      backgroundColor: '#F59E0B',
-                      color: 'white',
-                      cursor: 'pointer',
-                    }}
+                    className={styles.btnWarningLarge}
                   >
                     Relacionar muestra
                   </button>
@@ -2308,20 +1572,12 @@ export default function Proyectos() {
               </div>
             </div>
           ) : (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
+            <div className={styles.cardList}>
               {muestrasPerforacion.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#6B7280', padding: '24px' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>📋</div>
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}>📋</div>
                   <div>No hay muestras registradas</div>
-                  <div style={{ fontSize: '0.75rem', marginTop: '8px', color: '#9CA3AF' }}>
+                  <div className={styles.emptySubtext}>
                     El personal del laboratorio debe agregar muestras desde la columna de
                     perforaciones
                   </div>
@@ -2341,50 +1597,26 @@ export default function Proyectos() {
                           onClick={() => setSelectedMuestra(isSelected ? null : muestra)}
                           selected={isSelected}
                         >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'start',
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '1rem' }}>📍</span>
+                          <div className={styles.muestraCard}>
+                            <div className={styles.muestraInfo}>
+                              <div className={styles.muestraHeader}>
+                                <span className={styles.muestraIcon}>📍</span>
                                 <div>
-                                  <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                                    {muestra.codigo}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                  <div className={styles.muestraCodigo}>{muestra.codigo}</div>
+                                  <div className={styles.muestraProf}>
                                     {muestra.profundidadInicio}m - {muestra.profundidadFin}m
                                   </div>
                                 </div>
                               </div>
                               {muestra.descripcion && (
-                                <div
-                                  style={{
-                                    fontSize: '0.75rem',
-                                    color: '#374151',
-                                    marginTop: '4px',
-                                    marginLeft: '28px',
-                                  }}
-                                >
-                                  {muestra.descripcion}
-                                </div>
+                                <div className={styles.muestraDesc}>{muestra.descripcion}</div>
                               )}
                             </div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '4px',
-                                alignItems: 'flex-end',
-                              }}
-                            >
+                            <div className={styles.muestraBadgeActions}>
                               <Badge color={tipoMuestra?.color || '#6B7280'}>
                                 {tipoMuestra?.nombre || muestra.tipoMuestra}
                               </Badge>
-                              <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                              <span className={styles.muestraEnsayosCount}>
                                 {ensayosMuestra.length} ensayo
                                 {ensayosMuestra.length !== 1 ? 's' : ''}
                               </span>
@@ -2393,22 +1625,14 @@ export default function Proyectos() {
 
                           {/* Botón solicitar ensayo (solo para clientes) */}
                           {canRequestTest(userRole) && (
-                            <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                            <div className={styles.muestraActions}>
                               <button
                                 onClick={e => {
                                   e.stopPropagation();
                                   setSelectedMuestra(muestra);
                                   setShowSolicitarEnsayo(true);
                                 }}
-                                style={{
-                                  padding: '4px 10px',
-                                  borderRadius: '4px',
-                                  border: 'none',
-                                  backgroundColor: '#10B981',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  fontSize: '0.75rem',
-                                }}
+                                className={styles.btnSolicitarEnsayo}
                               >
                                 + Solicitar Ensayo
                               </button>
@@ -2418,39 +1642,19 @@ export default function Proyectos() {
 
                         {/* Ensayos de la muestra (expandible) */}
                         {isSelected && ensayosMuestra.length > 0 && (
-                          <div
-                            style={{
-                              marginLeft: '20px',
-                              marginTop: '4px',
-                              borderLeft: '2px solid #E5E7EB',
-                              paddingLeft: '12px',
-                            }}
-                          >
+                          <div className={styles.ensayosExpandible}>
                             {ensayosMuestra.map(ensayo => {
                               const workflow = getWorkflowInfo(ensayo.workflow_state);
                               const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
 
                               return (
-                                <div
-                                  key={ensayo.id}
-                                  style={{
-                                    padding: '8px 12px',
-                                    marginBottom: '4px',
-                                    backgroundColor: '#F9FAFB',
-                                    borderRadius: '6px',
-                                    fontSize: '0.875rem',
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                    }}
-                                  >
+                                <div key={ensayo.id} className={styles.ensayoItemExpanded}>
+                                  <div className={styles.ensayoItemHeader}>
                                     <div>
-                                      <span style={{ fontWeight: '500' }}>{ensayo.codigo}</span>
-                                      <span style={{ color: '#6B7280', marginLeft: '8px' }}>
+                                      <span className={styles.ensayoItemCodigo}>
+                                        {ensayo.codigo}
+                                      </span>
+                                      <span className={styles.ensayoItemTipo}>
                                         {tipoEnsayo?.nombre || ensayo.tipo}
                                       </span>
                                     </div>
@@ -2458,26 +1662,13 @@ export default function Proyectos() {
                                       {workflow.nombre}
                                     </Badge>
                                   </div>
-                                  <div
-                                    style={{
-                                      marginTop: '4px',
-                                      display: 'flex',
-                                      gap: '8px',
-                                    }}
-                                  >
+                                  <div className={styles.ensayoItemLinks}>
                                     {ensayo.spreadsheet_url && (
                                       <a
                                         href={ensayo.spreadsheet_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        style={{
-                                          padding: '2px 6px',
-                                          borderRadius: '4px',
-                                          backgroundColor: '#34A853',
-                                          color: 'white',
-                                          textDecoration: 'none',
-                                          fontSize: '0.7rem',
-                                        }}
+                                        className={styles.btnSheetLink}
                                         onClick={e => e.stopPropagation()}
                                       >
                                         Sheet
@@ -2485,14 +1676,7 @@ export default function Proyectos() {
                                     )}
                                     <a
                                       href={`/ensayos?id=${ensayo.id}`}
-                                      style={{
-                                        padding: '2px 6px',
-                                        borderRadius: '4px',
-                                        backgroundColor: '#3B82F6',
-                                        color: 'white',
-                                        textDecoration: 'none',
-                                        fontSize: '0.7rem',
-                                      }}
+                                      className={styles.btnVerLink}
                                     >
                                       Ver
                                     </a>
@@ -2509,17 +1693,8 @@ export default function Proyectos() {
 
               {/* Mostrar ensayos sin muestra asignada (legacy) */}
               {ensayosPerforacion.filter(e => !e.muestraId).length > 0 && (
-                <div style={{ marginTop: '16px' }}>
-                  <div
-                    style={{
-                      fontSize: '0.75rem',
-                      color: '#9CA3AF',
-                      marginBottom: '8px',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Ensayos sin muestra asignada
-                  </div>
+                <div className={styles.ensayosSinMuestra}>
+                  <div className={styles.ensayosSinMuestraTitle}>Ensayos sin muestra asignada</div>
                   {ensayosPerforacion
                     .filter(e => !e.muestraId)
                     .map(ensayo => {
@@ -2528,18 +1703,10 @@ export default function Proyectos() {
 
                       return (
                         <Card key={ensayo.id}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'start',
-                            }}
-                          >
+                          <div className={styles.ensayoLegacyCard}>
                             <div>
-                              <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-                                {ensayo.codigo}
-                              </div>
-                              <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                              <div className={styles.ensayoLegacyCodigo}>{ensayo.codigo}</div>
+                              <div className={styles.ensayoLegacyTipo}>
                                 {tipoEnsayo?.nombre || ensayo.tipo}
                               </div>
                             </div>
@@ -2556,18 +1723,7 @@ export default function Proyectos() {
       </div>
 
       {/* Resumen inferior */}
-      <div
-        style={{
-          marginTop: '24px',
-          padding: '16px',
-          backgroundColor: '#F9FAFB',
-          borderRadius: '8px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}
-      >
+      <div className={styles.resumenBar}>
         <div>
           <strong>Total Proyectos:</strong> {proyectos.length}
         </div>

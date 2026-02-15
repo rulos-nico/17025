@@ -1,0 +1,100 @@
+/**
+ * CambiarEstadoModal.module.css - Estilos para modal de cambio de estado
+ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.estadoActual {
+  padding: var(--spacing-3);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+}
+
+.estadoActual strong {
+  display: block;
+  margin-bottom: var(--spacing-1);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.label {
+  font-weight: var(--font-medium);
+}
+
+.select {
+  width: 100%;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  resize: vertical;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.btnCancel {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnCancel:hover {
+  background-color: var(--color-gray-50);
+}
+
+.btnSubmit {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background-color: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btnSubmit:hover:not(:disabled) {
+  background-color: var(--color-primary-600);
+}
+
+.btnSubmit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

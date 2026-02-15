@@ -1,0 +1,346 @@
+/**
+ * DetallePersonaModal.module.css - Estilos para modal de detalle de persona
+ */
+
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+/* Header con info basica */
+.header {
+  display: flex;
+  gap: var(--spacing-5);
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+}
+
+/* Avatar grande */
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  flex-shrink: 0;
+}
+
+/* Info section */
+.infoSection {
+  flex: 1;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-1);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.cargoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.codigo {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+/* Info empresa para clientes */
+.empresaBox {
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-fuchsia-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-purple-200);
+}
+
+.empresaNombre {
+  font-weight: var(--font-semibold);
+  color: var(--color-fuchsia-800);
+}
+
+.empresaRut {
+  font-size: var(--text-sm);
+  color: var(--color-fuchsia-700);
+}
+
+/* Grid de info */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+  font-size: var(--text-sm);
+}
+
+.infoLabel {
+  color: var(--color-gray-500);
+}
+
+.infoValue {
+  color: var(--color-gray-900);
+}
+
+.infoValueHighlight {
+  font-weight: var(--font-semibold);
+  color: var(--color-pink-500);
+}
+
+/* Tabs container */
+.tabsContainer {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.tabsList {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.tab {
+  padding: var(--spacing-2-5) var(--spacing-4);
+  border: none;
+  background-color: transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--color-gray-500);
+  font-weight: var(--font-normal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  transition: var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--color-gray-700);
+}
+
+.tabActive {
+  composes: tab;
+  border-bottom-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+  font-weight: var(--font-semibold);
+}
+
+.tabCount {
+  padding: 2px var(--spacing-2);
+  border-radius: 10px;
+  font-size: var(--text-xs);
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-500);
+}
+
+.tabCountActive {
+  composes: tabCount;
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-500);
+}
+
+/* Tab content */
+.tabContent {
+  min-height: 300px;
+  max-height: 400px;
+  overflow: auto;
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  color: var(--color-gray-500);
+  padding: var(--spacing-6);
+}
+
+/* Section list */
+.sectionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* Category header */
+.categoryHeader {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.categoryDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+/* Auth tags container */
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+/* Auth card */
+.authCard {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.authCardVigente {
+  composes: authCard;
+  background-color: var(--color-success-50);
+  border: 1px solid var(--color-success-200);
+}
+
+.authCardNoVigente {
+  composes: authCard;
+  background-color: var(--color-error-50);
+  border: 1px solid var(--color-error-200);
+}
+
+.authName {
+  font-weight: var(--font-medium);
+}
+
+.authNameVigente {
+  composes: authName;
+  color: var(--color-success-800);
+}
+
+.authNameNoVigente {
+  composes: authName;
+  color: var(--color-error-800);
+}
+
+.authMeta {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+/* Item card (estudios, capacitaciones, proyectos) */
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.itemCard {
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-primary-500);
+}
+
+.itemCardSuccess {
+  composes: itemCard;
+  border-left-color: var(--color-success-500);
+}
+
+.itemCardError {
+  composes: itemCard;
+  border-left-color: var(--color-error-500);
+}
+
+.itemCardNeutral {
+  composes: itemCard;
+  border-left-color: var(--color-gray-500);
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.itemContent {
+  flex: 1;
+}
+
+.itemTitle {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-base);
+}
+
+.itemTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.itemSubtitle {
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+}
+
+.itemMeta {
+  font-size: var(--text-sm);
+  color: var(--color-gray-400);
+  margin-top: var(--spacing-1);
+}
+
+.itemMetaRow {
+  display: flex;
+  gap: var(--spacing-4);
+  font-size: var(--text-sm);
+  color: var(--color-gray-400);
+  margin-top: var(--spacing-1);
+}
+
+/* Link button */
+.linkButton {
+  padding: var(--spacing-1-5) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  text-decoration: none;
+  color: white;
+  white-space: nowrap;
+}
+
+.linkButtonPrimary {
+  composes: linkButton;
+  background-color: var(--color-primary-500);
+}
+
+.linkButtonSuccess {
+  composes: linkButton;
+  background-color: var(--color-success-500);
+}
+
+/* Footer buttons */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  border-top: 1px solid var(--color-gray-200);
+  padding-top: var(--spacing-4);
+}
+
+.buttonSecondary {
+  padding: var(--spacing-2-5) var(--spacing-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+}
+
+.buttonSecondary:hover {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}

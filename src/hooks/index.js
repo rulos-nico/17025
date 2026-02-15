@@ -19,3 +19,15 @@ export { useMultipleApiData } from './useMultipleApiData';
 
 // Mutations
 export { useMutation, useCrudMutations } from './useMutation';
+
+// Ensayo-specific hooks
+export { useEnsayosData } from './useEnsayosData';
+export { useEnsayoModals, MODAL_TYPES } from './useEnsayoModals';
+
+// Equipo-specific hooks
+export { useEquiposData } from './useEquiposData';
+export { useEquiposModals, EQUIPO_MODAL_TYPES } from './useEquiposModals';
+
+// Personal-specific hooks
+export { usePersonalData } from './usePersonalData';
+export { usePersonalModals, PERSONAL_MODAL_TYPES } from './usePersonalModals';

@@ -1,0 +1,98 @@
+/**
+ * ProyectoNode.module.css - Estilos para nodo de proyecto
+ */
+
+.container {
+  margin-bottom: var(--spacing-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  border: 1px solid;
+  transition: var(--transition-fast);
+}
+
+.headerCollapsed {
+  composes: header;
+  background-color: var(--color-gray-100);
+  border-color: var(--color-gray-200);
+}
+
+.headerExpanded {
+  composes: header;
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.arrow {
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.arrowExpanded {
+  composes: arrow;
+  transform: rotate(90deg);
+}
+
+.icon {
+  font-size: 1.2rem;
+}
+
+.info {
+  flex: 1;
+}
+
+.nombre {
+  font-weight: var(--font-semibold);
+  font-size: 1rem;
+  color: var(--color-gray-800);
+}
+
+.cliente {
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+}
+
+.stats {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.statBadge {
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+  background-color: var(--color-gray-200);
+  padding: var(--spacing-1) 10px;
+  border-radius: 12px;
+}
+
+.stateBadges {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.stateBadge {
+  font-size: 0.7rem;
+  padding: 3px var(--spacing-2);
+  border-radius: 10px;
+  color: white;
+  font-weight: var(--font-medium);
+}
+
+.children {
+  margin-top: var(--spacing-2);
+}
+
+.emptyChildren {
+  margin-left: 24px;
+  padding: var(--spacing-3);
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+  font-style: italic;
+}

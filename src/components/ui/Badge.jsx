@@ -4,19 +4,11 @@
  * @param {React.ReactNode} props.children - Badge content
  * @param {string} props.color - Background color (hex)
  */
+import styles from './Badge.module.css';
+
 export function Badge({ children, color = '#6B7280' }) {
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '4px 8px',
-        borderRadius: '9999px',
-        fontSize: '0.75rem',
-        fontWeight: '600',
-        backgroundColor: color,
-        color: 'white',
-      }}
-    >
+    <span className={styles.badge} style={{ backgroundColor: color }}>
       {children}
     </span>
   );

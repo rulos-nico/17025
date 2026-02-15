@@ -1,0 +1,77 @@
+/**
+ * HierarchyView.module.css - Estilos para vista jerarquica
+ */
+
+.searchBar {
+  margin-bottom: var(--spacing-4);
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-300);
+  font-size: 0.9rem;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.searchResults {
+  margin-left: var(--spacing-3);
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  margin-left: 48px;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.colEstado {
+  min-width: 40px;
+}
+
+.colCodigo {
+  min-width: 120px;
+}
+
+.colTipo {
+  min-width: 140px;
+}
+
+.colMuestra {
+  flex: 1;
+}
+
+.colNorma {
+  min-width: 80px;
+}
+
+.colFecha {
+  min-width: 90px;
+}
+
+.colSheet {
+  width: 28px;
+}
+
+.empty {
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-gray-400);
+}

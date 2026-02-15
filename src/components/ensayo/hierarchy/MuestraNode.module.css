@@ -1,0 +1,106 @@
+/**
+ * MuestraNode.module.css - Estilos para nodo de muestra
+ */
+
+.container {
+  margin-bottom: 2px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1-5) 10px;
+  margin-left: 48px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: var(--transition-fast);
+}
+
+.headerCollapsed {
+  composes: header;
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.headerExpanded {
+  composes: header;
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.arrow {
+  font-size: var(--text-xs);
+  transition: transform 0.2s;
+  color: #92400e;
+}
+
+.arrowExpanded {
+  composes: arrow;
+  transform: rotate(90deg);
+}
+
+.icon {
+  font-size: 0.9rem;
+}
+
+.codigo {
+  font-weight: var(--font-medium);
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.profundidad {
+  font-size: var(--text-xs);
+  color: #b45309;
+  font-family: monospace;
+}
+
+.tipo {
+  font-size: var(--text-xs);
+  color: #78350f;
+  font-style: italic;
+}
+
+.descripcion {
+  font-size: 0.7rem;
+  color: #a16207;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statBadge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: #92400e;
+  background-color: #fde68a;
+  padding: 2px var(--spacing-1-5);
+  border-radius: var(--radius-lg);
+}
+
+.stateBadges {
+  display: flex;
+  gap: 3px;
+}
+
+.stateBadge {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: var(--radius-md);
+  color: white;
+}
+
+.children {
+  margin-top: 2px;
+}
+
+.emptyChildren {
+  margin-left: 72px;
+  padding: var(--spacing-2);
+  color: var(--color-gray-400);
+  font-size: 0.8rem;
+  font-style: italic;
+}

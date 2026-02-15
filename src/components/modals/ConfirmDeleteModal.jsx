@@ -6,6 +6,7 @@
  */
 
 import { Modal } from '../ui';
+import styles from './ConfirmDeleteModal.module.css';
 
 /**
  * @param {Object} props
@@ -39,84 +40,36 @@ export function ConfirmDeleteModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} width="450px">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className={styles.content}>
         {/* Icono de advertencia */}
-        <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: '#FEE2E2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto',
-              fontSize: '28px',
-            }}
-          >
-            ⚠️
-          </div>
+        <div className={styles.iconContainer}>
+          <div className={styles.iconCircle}>⚠️</div>
         </div>
 
         {/* Mensaje principal */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ margin: '0 0 8px', fontSize: '1rem', color: '#374151' }}>{displayMessage}</p>
+        <div className={styles.messageContainer}>
+          <p className={styles.message}>{displayMessage}</p>
           {itemName && !message && (
-            <p style={{ margin: '0', fontSize: '0.875rem', color: '#6B7280' }}>
-              Esta acción no se puede deshacer.
-            </p>
+            <p className={styles.disclaimer}>Esta acción no se puede deshacer.</p>
           )}
         </div>
 
         {/* Advertencia adicional */}
         {warning && (
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: '#FEF3C7',
-              borderRadius: '8px',
-              border: '1px solid #F59E0B',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
-              <span style={{ fontSize: '1rem' }}>⚠️</span>
-              <div style={{ fontSize: '0.875rem', color: '#92400E' }}>{warning}</div>
+          <div className={styles.warningBox}>
+            <div className={styles.warningContent}>
+              <span className={styles.warningIcon}>⚠️</span>
+              <div className={styles.warningText}>{warning}</div>
             </div>
           </div>
         )}
 
         {/* Botones */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: '1px solid #D1D5DB',
-              backgroundColor: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
+        <div className={styles.actions}>
+          <button type="button" onClick={onClose} disabled={loading} className={styles.btnCancel}>
             {cancelText}
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: '#EF4444',
-              color: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
+          <button type="button" onClick={onConfirm} disabled={loading} className={styles.btnDelete}>
             {loading ? 'Eliminando...' : confirmText}
           </button>
         </div>
