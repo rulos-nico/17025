@@ -117,7 +117,7 @@
 .buttonDanger {
   padding: var(--spacing-2) var(--spacing-4);
   background-color: var(--color-error-500);
-  color: white;
+  color: blue-100;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
