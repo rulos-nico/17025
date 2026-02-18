@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/rulos-nico/17025#readme",
   "dependencies": {
+    "@dhtmlx/trial-react-gantt": "^9.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.7.0"

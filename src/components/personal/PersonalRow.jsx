@@ -11,7 +11,15 @@ import {
 } from '../../config/personal';
 import styles from './PersonalRow.module.css';
 
-export default function PersonalRow({ persona, proyectos, isExpanded, onToggle, onViewDetail }) {
+export default function PersonalRow({
+  persona,
+  proyectos,
+  isExpanded,
+  onToggle,
+  onViewDetail,
+  onDelete,
+  canEdit,
+}) {
   const cargo = getCargoInfo(persona.cargo);
   const esCliente = cargo.tipo === 'externo';
 
@@ -91,15 +99,28 @@ export default function PersonalRow({ persona, proyectos, isExpanded, onToggle, 
 
         {/* Acciones */}
         <td className={styles.cellCenter}>
-          <button
-            onClick={e => {
-              e.stopPropagation();
-              onViewDetail();
-            }}
-            className={styles.detailButton}
-          >
-            Ver detalle
-          </button>
+          <div className={styles.actionsContainer}>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onViewDetail();
+              }}
+              className={styles.detailButton}
+            >
+              Ver detalle
+            </button>
+            {canEdit && onDelete && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onDelete(persona);
+                }}
+                className={styles.deleteButton}
+              >
+                Eliminar
+              </button>
+            )}
+          </div>
         </td>
       </tr>
 

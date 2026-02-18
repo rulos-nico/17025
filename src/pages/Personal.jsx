@@ -12,14 +12,22 @@ import { usePersonalData } from '../hooks/usePersonalData';
 import { usePersonalModals } from '../hooks/usePersonalModals';
 import { CARGOS } from '../config/personal';
 import { PersonalRow, DetallePersonaModal, AgregarPersonaModal } from '../components/personal';
+import { ConfirmDeleteModal } from '../components/modals/ConfirmDeleteModal';
 import styles from './Personal.module.css';
 
 export default function Personal() {
   const { user } = useAuth();
 
   // Hooks de datos y modales
-  const { personal, proyectos, statsPorCargo, totalActivos, loading, createPersona } =
-    usePersonalData();
+  const {
+    personal,
+    proyectos,
+    statsPorCargo,
+    totalActivos,
+    loading,
+    createPersona,
+    deletePersona,
+  } = usePersonalData();
   const { selectedPersona, isDetalleOpen, isAgregarOpen, openDetalle, openAgregar, closeModal } =
     usePersonalModals();
 
@@ -29,6 +37,10 @@ export default function Personal() {
   const [filtroActivo, setFiltroActivo] = useState('activos');
   const [busqueda, setBusqueda] = useState('');
   const [vistaExpandida, setVistaExpandida] = useState(null);
+
+  // Estado para modal de eliminación
+  const [personaAEliminar, setPersonaAEliminar] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Permisos
   const canEdit = user?.rol === 'admin' || user?.rol === 'coordinador';
@@ -74,6 +86,20 @@ export default function Personal() {
       await createPersona(nuevaPersona);
     } catch (err) {
       alert('Error al crear persona: ' + err.message);
+    }
+  };
+
+  // Handler para confirmar eliminación
+  const handleConfirmDelete = async () => {
+    if (!personaAEliminar) return;
+    setDeleteLoading(true);
+    try {
+      await deletePersona(personaAEliminar);
+      setPersonaAEliminar(null);
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -195,6 +221,8 @@ export default function Personal() {
                     setVistaExpandida(vistaExpandida === persona.id ? null : persona.id)
                   }
                   onViewDetail={() => openDetalle(persona)}
+                  onDelete={setPersonaAEliminar}
+                  canEdit={canEdit}
                 />
               ))
             )}
@@ -212,6 +240,25 @@ export default function Personal() {
         isOpen={isAgregarOpen}
         onClose={closeModal}
         onSave={handleAgregarPersona}
+      />
+
+      {/* Modal confirmar eliminación */}
+      <ConfirmDeleteModal
+        isOpen={!!personaAEliminar}
+        onClose={() => setPersonaAEliminar(null)}
+        onConfirm={handleConfirmDelete}
+        itemType={personaAEliminar?.cargo === 'cliente' ? 'cliente' : 'personal'}
+        itemName={
+          personaAEliminar
+            ? `${personaAEliminar.nombre} ${personaAEliminar.apellido || ''}`.trim()
+            : ''
+        }
+        loading={deleteLoading}
+        warning={
+          personaAEliminar?.cargo === 'cliente'
+            ? 'Si el cliente tiene proyectos asociados, estos quedarán sin cliente asignado.'
+            : undefined
+        }
       />
     </PageLayout>
   );

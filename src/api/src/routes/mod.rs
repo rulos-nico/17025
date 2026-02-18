@@ -9,7 +9,6 @@ pub mod perforacion;
 pub mod personal_interno;
 pub mod proyecto;
 pub mod sensores;
-pub mod sync;
 
 use axum::Router;
 use crate::AppState;
@@ -29,7 +28,6 @@ pub fn api_routes() -> Router<AppState> {
         .nest("/personal-interno", personal_interno::routes())
         .nest("/proyectos", proyecto::routes())
         .nest("/sensores", sensores::routes())
-        .nest("/sync", sync::routes())
 }
 
 /// Helper para obtener el cliente de Sheets o retornar error si no está configurado

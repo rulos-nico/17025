@@ -141,6 +141,21 @@ export function usePersonalData() {
     }
   }, []);
 
+  // Eliminar persona (cliente o personal interno)
+  const deletePersona = useCallback(async persona => {
+    try {
+      if (persona.cargo === 'cliente') {
+        await ClientesAPI.delete(persona.id);
+      } else {
+        await PersonalInternoAPI.delete(persona.id);
+      }
+      setPersonal(prev => prev.filter(p => p.id !== persona.id));
+    } catch (err) {
+      console.error('Error eliminando persona:', err);
+      throw err;
+    }
+  }, []);
+
   // Estadisticas por cargo
   const statsPorCargo = useMemo(() => {
     const stats = {};
@@ -166,6 +181,7 @@ export function usePersonalData() {
 
     // Metodos
     createPersona,
+    deletePersona,
     clearError: () => setError(null),
   };
 }
