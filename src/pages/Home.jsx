@@ -1,53 +1,10 @@
 import { useState } from 'react';
-import { DASHBOARD_STATS, APP_CONFIG, getWorkflowInfo, WORKFLOW_STATES_INFO } from '../config';
+import { APP_CONFIG, getWorkflowInfo } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useApiData } from '../hooks/useApiData';
+import { useGanttData } from '../hooks/useGanttData';
 import { EnsayosAPI } from '../services/apiService';
-
-/**
- * Componente de tarjeta de estadística desplegable
- */
-function StatCard({ stat, total, detail, icon }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div className={`stat-card stat-card-expandable ${isExpanded ? 'expanded' : ''}`}>
-      <div className="stat-card-header" onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="stat-content">
-          <span className="stat-label">{stat.label}</span>
-          <div className="stat-value">{total}</div>
-        </div>
-        <div className={`stat-icon stat-icon-${stat.icon}`}>{icon}</div>
-        <div className={`stat-expand-icon ${isExpanded ? 'rotated' : ''}`}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="stat-card-detail">
-          <div className="stat-detail-list">
-            {stat.estados.map(estado => {
-              const info = WORKFLOW_STATES_INFO[estado];
-              const count = detail[estado] || 0;
-              return (
-                <div key={estado} className="stat-detail-item">
-                  <div className="stat-detail-info">
-                    <span className="stat-detail-dot" style={{ backgroundColor: info.color }} />
-                    <span className="stat-detail-code">{estado}</span>
-                    <span className="stat-detail-name">{info.nombre}</span>
-                  </div>
-                  <span className="stat-detail-count">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import GanttProyectos from '../components/gantt/gantt_proyects';
 
 /**
  * Página principal del dashboard
@@ -56,50 +13,24 @@ function StatCard({ stat, total, detail, icon }) {
 function Home({ setActiveModule }) {
   const { user } = useAuth();
 
+  // Estado para filtro de cliente en Gantt
+  const [clienteSeleccionado, setClienteSeleccionado] = useState('');
+
+  // Hook para datos del Gantt
+  const {
+    ganttData,
+    clientes,
+    loading: ganttLoading,
+    totalProyectos,
+    totalPerforaciones,
+  } = useGanttData(clienteSeleccionado || null);
+
   // Usar hook centralizado para fetching de datos
   const {
     data: ensayos,
     loading: isLoading,
     error,
   } = useApiData(EnsayosAPI.list, { initialData: [] });
-
-  // Calcular estadísticas desde los ensayos reales
-  const getStatsData = () => {
-    const details = {
-      pendientes: {},
-      en_proceso: {},
-      en_revision: {},
-      completados: {},
-      otros: {},
-    };
-
-    // Mapear estados a categorías según DASHBOARD_STATS
-    const estadoToCategory = {};
-    DASHBOARD_STATS.forEach(stat => {
-      stat.estados.forEach(estado => {
-        estadoToCategory[estado] = stat.key;
-      });
-    });
-
-    // Contar ensayos por estado
-    ensayos.forEach(ensayo => {
-      const estado = ensayo.workflow_state;
-      const category = estadoToCategory[estado];
-      if (category && details[category]) {
-        details[category][estado] = (details[category][estado] || 0) + 1;
-      }
-    });
-
-    // Calcular totales
-    const totals = {};
-    Object.keys(details).forEach(key => {
-      totals[key] = Object.values(details[key]).reduce((a, b) => a + b, 0);
-    });
-
-    return { totals, details };
-  };
-
-  const { totals, details } = getStatsData();
 
   // Ensayos pendientes (E1, E2)
   const pendientes = ensayos.filter(e => ['E1', 'E2'].includes(e.workflow_state));
@@ -142,51 +73,12 @@ function Home({ setActiveModule }) {
     return simpleLabels[status?.toLowerCase()] || status;
   };
 
-  // Iconos para cada tipo de stat
-  const statIcons = {
-    pending: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-        <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" />
-      </svg>
-    ),
-    process: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-    review: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
-          stroke="currentColor"
-          strokeWidth="2"
-        />
-        <path
-          d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
-          stroke="currentColor"
-          strokeWidth="2"
-        />
-      </svg>
-    ),
-    completed: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="currentColor" strokeWidth="2" />
-        <path d="M22 4L12 14.01l-3-3" stroke="currentColor" strokeWidth="2" />
-      </svg>
-    ),
-    others: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="1" fill="currentColor" />
-        <circle cx="6" cy="12" r="1" fill="currentColor" />
-        <circle cx="18" cy="12" r="1" fill="currentColor" />
-      </svg>
-    ),
+  // Handler para clic en tarea del Gantt
+  const handleGanttTaskClick = _task => {
+    // Navegar a la página de proyectos
+    if (setActiveModule) {
+      setActiveModule('proyectos');
+    }
   };
 
   if (isLoading) {
@@ -227,19 +119,55 @@ function Home({ setActiveModule }) {
         </section>
       )}
 
-      {/* Estadísticas Desplegables */}
-      <section className="stats-section">
+      {/* Cronograma de Proyectos - Gantt */}
+      <section className="gantt-section">
         <div className="container">
-          <div className="stats-grid">
-            {DASHBOARD_STATS.map(stat => (
-              <StatCard
-                key={stat.key}
-                stat={stat}
-                total={totals[stat.key] || 0}
-                detail={details[stat.key] || {}}
-                icon={statIcons[stat.icon]}
+          <div className="content-card">
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h2>Cronograma de Proyectos</h2>
+                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                  {totalProyectos} proyectos, {totalPerforaciones} perforaciones
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Selector de cliente (solo admin) */}
+                {user?.rol === 'admin' && (
+                  <select
+                    value={clienteSeleccionado}
+                    onChange={e => setClienteSeleccionado(e.target.value)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                    }}
+                  >
+                    <option value="">Todos los clientes</option>
+                    {clientes.map(cliente => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  className="btn-link"
+                  onClick={() => setActiveModule && setActiveModule('proyectos')}
+                >
+                  Ver proyectos
+                </button>
+              </div>
+            </div>
+            <div style={{ marginTop: '16px' }}>
+              <GanttProyectos
+                data={ganttData}
+                onTaskClick={handleGanttTaskClick}
+                height={500}
+                loading={ganttLoading}
               />
-            ))}
+            </div>
           </div>
         </div>
       </section>

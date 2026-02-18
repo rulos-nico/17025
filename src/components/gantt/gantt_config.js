@@ -1,0 +1,175 @@
+/**
+ * gantt_config.js - Configuración para DHTMLX Gantt
+ *
+ * Configuración de idioma, columnas, escalas y estilos
+ */
+
+/**
+ * Configuración de columnas del Gantt
+ */
+export const GANTT_COLUMNS = [
+  {
+    name: 'text',
+    label: 'Nombre',
+    width: 280,
+    tree: true, // Mostrar jerarquía
+  },
+  {
+    name: 'start_date',
+    label: 'Inicio',
+    width: 90,
+    align: 'center',
+  },
+  {
+    name: 'duration',
+    label: 'Días',
+    width: 50,
+    align: 'center',
+  },
+  {
+    name: 'progress',
+    label: '%',
+    width: 50,
+    align: 'center',
+    template: task => `${Math.round((task.progress || 0) * 100)}%`,
+  },
+];
+
+/**
+ * Escalas de tiempo disponibles
+ */
+export const GANTT_SCALES = {
+  day: [
+    { unit: 'month', step: 1, format: '%F %Y' },
+    { unit: 'day', step: 1, format: '%d' },
+  ],
+  week: [
+    { unit: 'month', step: 1, format: '%F %Y' },
+    { unit: 'week', step: 1, format: 'Semana %W' },
+  ],
+  month: [
+    { unit: 'year', step: 1, format: '%Y' },
+    { unit: 'month', step: 1, format: '%F' },
+  ],
+};
+
+/**
+ * Colores por estado
+ */
+export const ESTADO_COLORS = {
+  activo: '#3B82F6',
+  en_proceso: '#F59E0B',
+  completado: '#10B981',
+  cancelado: '#EF4444',
+  pendiente: '#6B7280',
+};
+
+/**
+ * Configuración de idioma español
+ */
+export const GANTT_LOCALE = {
+  date: {
+    month_full: [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ],
+    month_short: [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ],
+    day_full: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    day_short: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  },
+  labels: {
+    new_task: 'Nueva tarea',
+    icon_save: 'Guardar',
+    icon_cancel: 'Cancelar',
+    icon_details: 'Detalles',
+    icon_edit: 'Editar',
+    icon_delete: 'Eliminar',
+    confirm_closing: '¿Desea cancelar los cambios?',
+    confirm_deleting: '¿Está seguro de eliminar esta tarea?',
+    section_description: 'Descripción',
+    section_time: 'Periodo',
+    section_type: 'Tipo',
+    column_text: 'Nombre',
+    column_start_date: 'Inicio',
+    column_duration: 'Duración',
+    column_add: '',
+    link: 'Dependencia',
+    confirm_link_deleting: '¿Eliminar dependencia?',
+    link_start: ' (inicio)',
+    link_end: ' (fin)',
+    type_task: 'Tarea',
+    type_project: 'Proyecto',
+    type_milestone: 'Hito',
+    minutes: 'Minutos',
+    hours: 'Horas',
+    days: 'Días',
+    weeks: 'Semanas',
+    months: 'Meses',
+    years: 'Años',
+  },
+};
+
+/**
+ * Opciones de configuración del Gantt
+ */
+export const GANTT_CONFIG = {
+  // Formato de fecha
+  date_format: '%Y-%m-%d',
+
+  // Solo lectura (no editar tareas)
+  readonly: true,
+
+  // Mostrar barra de progreso
+  show_progress: true,
+
+  // Permitir drag & drop (deshabilitado)
+  drag_move: false,
+  drag_resize: false,
+  drag_progress: false,
+
+  // Escala inicial
+  scale_unit: 'day',
+
+  // Ancho mínimo de columna de tiempo
+  min_column_width: 40,
+
+  // Auto ajustar altura de filas
+  row_height: 35,
+
+  // Mostrar fin de semana con otro color
+  work_time: false,
+
+  // Tema
+  theme: 'terrace',
+};
+
+export default {
+  columns: GANTT_COLUMNS,
+  scales: GANTT_SCALES,
+  colors: ESTADO_COLORS,
+  locale: GANTT_LOCALE,
+  config: GANTT_CONFIG,
+};

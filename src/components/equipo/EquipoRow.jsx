@@ -155,8 +155,7 @@ export function EquipoRow({
               {/* Sensores asociados (solo para equipos) */}
               {equipo.tipo === 'equipo' && equipo.sensoresAsociados?.length > 0 && (
                 <SensoresAsociados
-                  sensoresIds={equipo.sensoresAsociados}
-                  todosEquipos={todosEquipos}
+                  sensores={equipo.sensoresAsociados}
                   onSensorClick={onSensorClick}
                 />
               )}

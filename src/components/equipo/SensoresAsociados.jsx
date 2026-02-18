@@ -1,5 +1,6 @@
 /**
  * SensoresAsociados - Lista de sensores asociados a un equipo
+ * Recibe directamente los datos de sensores desde el backend (ya incluidos en el equipo)
  */
 
 import { Badge } from '../ui';
@@ -11,9 +12,7 @@ import {
 } from '../../utils';
 import styles from './SensoresAsociados.module.css';
 
-export function SensoresAsociados({ sensoresIds, todosEquipos, onSensorClick }) {
-  const sensores = todosEquipos.filter(e => sensoresIds.includes(e.id));
-
+export function SensoresAsociados({ sensores = [], onSensorClick }) {
   if (sensores.length === 0) return null;
 
   return (
@@ -30,25 +29,24 @@ export function SensoresAsociados({ sensoresIds, todosEquipos, onSensorClick }) 
           const alertaCal = getAlertaVencimiento(diasCal);
 
           return (
-            <div key={sensor.id} onClick={() => onSensorClick(sensor.id)} className={styles.card}>
+            <div key={sensor.id} onClick={() => onSensorClick?.(sensor.id)} className={styles.card}>
               <div className={styles.cardHeader}>
                 <div>
                   <div className={styles.cardCode}>{sensor.codigo}</div>
-                  <div className={styles.cardPlaca}>{sensor.placa}</div>
+                  <div className={styles.cardPlaca}>{sensor.tipo}</div>
                 </div>
                 <Badge color={estadoInfo.color}>{estadoInfo.label}</Badge>
               </div>
 
-              <div className={styles.cardName}>{sensor.nombre}</div>
+              <div className={styles.cardName}>
+                {sensor.marca} {sensor.modelo}
+              </div>
 
               <div className={styles.cardMeta}>
                 <div className={styles.cardMetaText}>
-                  <span>{sensor.marca}</span>
-                  <span>Rango: {sensor.rango}</span>
+                  <span>S/N: {sensor.numero_serie}</span>
+                  {sensor.rango_medicion && <span>Rango: {sensor.rango_medicion}</span>}
                 </div>
-                {sensor.factor_calibracion && (
-                  <div className={styles.cardFactor}>FC: {sensor.factor_calibracion}</div>
-                )}
               </div>
 
               <div className={styles.cardFooter}>

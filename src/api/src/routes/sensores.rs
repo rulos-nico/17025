@@ -14,6 +14,7 @@ use crate::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_sensores).post(create_sensor))
+        .route("/equipo/{equipo_id}", get(list_sensores_by_equipo))
         .route("/{id}", get(get_sensor).put(update_sensor).delete(delete_sensor))
 }
 
@@ -23,6 +24,16 @@ async fn list_sensores(
 ) -> Result<Json<Vec<Sensor>>, AppError> {
     let repo = SensorRepository::new(state.db_pool.clone());
     let sensores = repo.find_all().await?;
+    Ok(Json(sensores))
+}
+
+/// GET /api/sensores/equipo/:equipo_id
+async fn list_sensores_by_equipo(
+    Path(equipo_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Sensor>>, AppError> {
+    let repo = SensorRepository::new(state.db_pool.clone());
+    let sensores = repo.find_by_equipo_id(&equipo_id).await?;
     Ok(Json(sensores))
 }
 

@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::errors::AppError;
-use crate::models::{CreateEquipo, Equipo, UpdateEquipo};
+use crate::models::{CreateEquipo, Equipo, UpdateEquipo, EquipoConSensores};
 use crate::repositories::EquipoRepository;
 use crate::utils::id::{generate_simple_code, generate_uuid};
 use crate::AppState;
@@ -20,9 +20,9 @@ pub fn routes() -> Router<AppState> {
 /// GET /api/equipos
 async fn list_equipos(
     State(state): State<AppState>,
-) -> Result<Json<Vec<Equipo>>, AppError> {
+) -> Result<Json<Vec<EquipoConSensores>>, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let equipos = repo.find_all().await?;
+    let equipos = repo.find_all_with_sensores().await?;
     Ok(Json(equipos))
 }
 
@@ -30,9 +30,9 @@ async fn list_equipos(
 async fn get_equipo(
     Path(id): Path<String>,
     State(state): State<AppState>,
-) -> Result<Json<Equipo>, AppError> {
+) -> Result<Json<EquipoConSensores>, AppError> {
     let repo = EquipoRepository::new(state.db_pool.clone());
-    let equipo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
+    let equipo = repo.find_by_id_with_sensores(&id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(equipo))
 }
 

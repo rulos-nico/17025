@@ -9,6 +9,7 @@ pub mod personal_interno;
 pub mod proyecto;
 pub mod sensores;
 pub mod workflow;
+pub mod equipos_dtosensor;
 
 pub use calibracion::*;
 pub use cliente::*;
@@ -21,3 +22,4 @@ pub use personal_interno::*;
 pub use proyecto::*;
 pub use sensores::*;
 pub use workflow::*;
+pub use equipos_dtosensor::*;

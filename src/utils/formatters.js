@@ -4,6 +4,8 @@
  * Centraliza todo el formateo de datos para mantener consistencia en la UI.
  */
 
+import { getDiasParaVencimiento } from './helpers';
+
 // ============================================
 // FORMATEO DE FECHAS
 // ============================================
@@ -111,24 +113,14 @@ export const daysBetween = (fechaInicio, fechaFin = new Date()) => {
 };
 
 /**
+ * Alias de getDiasParaVencimiento para compatibilidad.
  * Calcula los días hasta una fecha (positivo = futuro, negativo = pasado)
  * @param {string|Date} fecha - La fecha objetivo
  * @returns {number|null} - Días hasta la fecha o null si es inválida
  * @example daysUntil('2024-12-31') // 350 (si hoy es 15 ene 2024)
+ * @see getDiasParaVencimiento en helpers.js
  */
-export const daysUntil = fecha => {
-  if (!fecha) return null;
-  try {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const target = new Date(fecha);
-    target.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((target - hoy) / (1000 * 60 * 60 * 24));
-    return diff;
-  } catch {
-    return null;
-  }
-};
+export const daysUntil = getDiasParaVencimiento;
 
 /**
  * Verifica si una fecha está vencida

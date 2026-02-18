@@ -1,163 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge, Card, Modal } from '../components/ui';
+import { SolicitarEnsayoModal } from '../components/modals';
 import { useAuth } from '../hooks/useAuth';
-import { TIPOS_ENSAYO, ESTADO_PROYECTO, ESTADO_MUESTRA, getWorkflowInfo } from '../config';
+import { ESTADO_PROYECTO, ESTADO_MUESTRA, getWorkflowInfo, TIPOS_ENSAYO } from '../config';
 import { ProyectosAPI, PerforacionesAPI, EnsayosAPI } from '../services/apiService';
 import styles from './MisProyectos.module.css';
-
-// ============================================
-// MODAL: SOLICITAR ENSAYO
-// ============================================
-
-function SolicitarEnsayoModal({ isOpen, onClose, onCreate, muestra, proyecto, loading }) {
-  const [form, setForm] = useState({
-    tipo: '',
-    norma: '',
-    cantidad: 1,
-    urgente: false,
-    observaciones: '',
-  });
-
-  // Obtener tipos de ensayo disponibles según cotización del proyecto
-  // ensayos_cotizados is a JSONB object like {traccion: 5, compresion: 3}
-  const tiposDisponibles = useMemo(() => {
-    if (!proyecto?.ensayos_cotizados || typeof proyecto.ensayos_cotizados !== 'object')
-      return TIPOS_ENSAYO;
-    const tiposCotizados = Object.keys(proyecto.ensayos_cotizados);
-    return TIPOS_ENSAYO.filter(t => tiposCotizados.includes(t.id));
-  }, [proyecto]);
-
-  const handleSubmit = e => {
-    e.preventDefault();
-    onCreate({
-      ...form,
-      perforacionId: muestra.id,
-      proyectoId: proyecto.id,
-      muestra: muestra.descripcion,
-    });
-    setForm({ tipo: '', norma: '', cantidad: 1, urgente: false, observaciones: '' });
-  };
-
-  const tipoSeleccionado = TIPOS_ENSAYO.find(t => t.id === form.tipo);
-
-  // Verificar disponibilidad según cotización
-  // ensayos_cotizados is a JSONB object like {traccion: 5, compresion: 3}
-  const getCotizacionInfo = tipoId => {
-    if (!proyecto?.ensayos_cotizados || typeof proyecto.ensayos_cotizados !== 'object') return null;
-    const cantidad = proyecto.ensayos_cotizados[tipoId];
-    return cantidad !== undefined ? { tipo: tipoId, cantidad } : null;
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Ensayo" width="550px">
-      <form onSubmit={handleSubmit}>
-        <div className={styles.modalContent}>
-          {/* Info de contexto */}
-          <div className={styles.infoBox}>
-            <div className={styles.infoLabel}>Proyecto</div>
-            <div className={styles.infoValue}>{proyecto?.nombre}</div>
-            <div className={styles.infoMuted}>Muestra</div>
-            <div className={styles.infoValueMuted}>{muestra?.descripcion}</div>
-            {muestra?.ubicacion && <div className={styles.infoLabel}>{muestra.ubicacion}</div>}
-          </div>
-
-          {/* Tipo de ensayo */}
-          <div className={styles.field}>
-            <label className={styles.label}>Tipo de Ensayo *</label>
-            <select
-              value={form.tipo}
-              onChange={e => {
-                const tipo = TIPOS_ENSAYO.find(t => t.id === e.target.value);
-                setForm({ ...form, tipo: e.target.value, norma: tipo?.norma || '' });
-              }}
-              required
-              className={styles.select}
-            >
-              <option value="">Seleccionar tipo de ensayo...</option>
-              {tiposDisponibles.map(tipo => {
-                const cotizacion = getCotizacionInfo(tipo.id);
-                return (
-                  <option key={tipo.id} value={tipo.id}>
-                    {tipo.nombre} {cotizacion ? `(${cotizacion.cantidad} cotizados)` : ''}
-                  </option>
-                );
-              })}
-            </select>
-            {tipoSeleccionado && (
-              <div className={styles.hint}>
-                Categoria: {tipoSeleccionado.categoria} | Norma sugerida: {tipoSeleccionado.norma}
-              </div>
-            )}
-          </div>
-
-          {/* Norma */}
-          <div className={styles.field}>
-            <label className={styles.label}>Norma de Referencia</label>
-            <input
-              type="text"
-              value={form.norma}
-              onChange={e => setForm({ ...form, norma: e.target.value })}
-              placeholder="Ej: ASTM E8, ASTM E18, ISO 6892-1"
-              className={styles.input}
-            />
-          </div>
-
-          {/* Cantidad y Urgente */}
-          <div className={styles.gridTwo}>
-            <div className={styles.field}>
-              <label className={styles.label}>Cantidad de probetas</label>
-              <input
-                type="number"
-                min="1"
-                value={form.cantidad}
-                onChange={e => setForm({ ...form, cantidad: parseInt(e.target.value) || 1 })}
-                className={styles.input}
-              />
-            </div>
-            <div className={styles.checkboxContainer}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={form.urgente}
-                  onChange={e => setForm({ ...form, urgente: e.target.checked })}
-                  className={styles.checkbox}
-                />
-                <span
-                  className={`${styles.checkboxText} ${form.urgente ? styles.checkboxUrgent : ''}`}
-                >
-                  Urgente
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Observaciones */}
-          <div className={styles.field}>
-            <label className={styles.label}>Observaciones / Requerimientos especiales</label>
-            <textarea
-              value={form.observaciones}
-              onChange={e => setForm({ ...form, observaciones: e.target.value })}
-              rows={3}
-              placeholder="Condiciones especiales, temperatura de ensayo, criterios de aceptacion..."
-              className={styles.textarea}
-            />
-          </div>
-
-          {/* Botones */}
-          <div className={styles.actions}>
-            <button type="button" onClick={onClose} className={styles.btnCancel}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading || !form.tipo} className={styles.btnSubmit}>
-              {loading ? 'Enviando...' : 'Solicitar Ensayo'}
-            </button>
-          </div>
-        </div>
-      </form>
-    </Modal>
-  );
-}
 
 // ============================================
 // DETALLE DE ENSAYO (vista cliente)
@@ -322,54 +170,16 @@ export default function MisProyectos() {
   // Filtro de proyectos
   const [filtroEstado, setFiltroEstado] = useState('todos');
 
-  // Cargar datos desde API
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [proyectosRes, perforacionesRes, ensayosRes] = await Promise.all([
-          ProyectosAPI.list(),
-          PerforacionesAPI.list(),
-          EnsayosAPI.list(),
-        ]);
-
-        // Mapear campos snake_case a camelCase
-        setProyectos(
-          (proyectosRes || []).map(p => ({
-            ...p,
-            clienteId: p.cliente_id || p.clienteId,
-            ensayos_cotizados: p.ensayos_cotizados || {},
-          }))
-        );
-        setPerforaciones(
-          (perforacionesRes || []).map(p => ({
-            ...p,
-            proyectoId: p.proyecto_id || p.proyectoId,
-          }))
-        );
-        setEnsayos(
-          (ensayosRes || []).map(e => ({
-            ...e,
-            perforacionId: e.perforacion_id || e.perforacionId,
-            proyectoId: e.proyecto_id || e.proyectoId,
-          }))
-        );
-      } catch (err) {
-        console.error('Error cargando datos:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  // Recargar datos
-  const reloadData = async () => {
+  // Función unificada para cargar/recargar datos desde API
+  const fetchData = async (isInitialLoad = false) => {
     try {
       const [proyectosRes, perforacionesRes, ensayosRes] = await Promise.all([
         ProyectosAPI.list(),
         PerforacionesAPI.list(),
         EnsayosAPI.list(),
       ]);
+
+      // Mapear campos snake_case a camelCase
       setProyectos(
         (proyectosRes || []).map(p => ({
           ...p,
@@ -391,9 +201,21 @@ export default function MisProyectos() {
         }))
       );
     } catch (err) {
-      console.error('Error recargando datos:', err);
+      console.error('Error cargando datos:', err);
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
+
+  // Carga inicial
+  useEffect(() => {
+    fetchData(true);
+  }, []);
+
+  // Alias para recarga (mantiene compatibilidad con código existente)
+  const reloadData = () => fetchData(false);
 
   // Proyectos filtrados
   const proyectosFiltrados = useMemo(() => {
@@ -700,8 +522,11 @@ export default function MisProyectos() {
           isOpen={showSolicitar}
           onClose={() => setShowSolicitar(false)}
           onCreate={handleSolicitarEnsayo}
-          muestra={selectedMuestra}
-          proyecto={selectedProyecto}
+          perforacion={selectedMuestra}
+          proyecto={{
+            ...selectedProyecto,
+            ensayosCotizados: selectedProyecto.ensayos_cotizados || {},
+          }}
           loading={saving}
         />
       )}

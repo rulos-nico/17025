@@ -3,6 +3,13 @@
  *
  * Centraliza la logica de carga de datos y operaciones CRUD
  * para la vista de equipos, utilizando useMultipleApiData.
+ *
+ * NOTA: Los sensores se obtienen de dos fuentes:
+ * - Como items independientes via SensoresAPI.list (para mostrar en tabla)
+ * - Embebidos en equipos via sensores_asociados (para mostrar asociaciones)
+ *
+ * Se usa SensoresAPI.list para obtener la lista completa de sensores
+ * ya que sensores_asociados solo incluye sensores activos asociados a equipos.
  */
 
 import { useMemo, useCallback, useState } from 'react';
@@ -63,7 +70,12 @@ export function useEquiposData() {
   // Combinar equipos y sensores con tipo
   const equipos = useMemo(() => {
     return [
-      ...(data.equiposRaw || []).map(e => ({ ...e, tipo: 'equipo' })),
+      ...(data.equiposRaw || []).map(e => ({
+        ...e,
+        tipo: 'equipo',
+        // Mapear snake_case a camelCase
+        sensoresAsociados: e.sensores_asociados || [],
+      })),
       ...(data.sensoresRaw || []).map(s => ({ ...s, tipo: 'sensor' })),
     ];
   }, [data.equiposRaw, data.sensoresRaw]);
