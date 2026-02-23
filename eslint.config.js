@@ -35,10 +35,7 @@ export default [
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       // Reglas personalizadas
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -48,6 +45,7 @@ export default [
       'react/prop-types': 'off', // No usamos PropTypes, usamos JSDoc
       'react/jsx-uses-react': 'off', // No necesario con React 17+ JSX transform
       'react/react-in-jsx-scope': 'off', // No necesario con React 17+ JSX transform
+      'react-hooks/set-state-in-effect': 'off', // Desactivado: genera falsos positivos en patrones válidos (inicializar form con props)
     },
   },
   // Configuración específica para archivos de test
