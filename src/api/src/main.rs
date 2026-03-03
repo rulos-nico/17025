@@ -8,8 +8,9 @@ mod services;
 mod utils;
 
 use axum::Router;
+use axum::http::{HeaderValue, Method, header};
 use std::net::SocketAddr;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -95,15 +96,23 @@ async fn main() {
         config: config.clone(),
     };
 
-    // Configurar CORS
+    // Configurar CORS usando los orígenes permitidos de la config
+    let origins: Vec<HeaderValue> = config
+        .allowed_origins
+        .iter()
+        .filter_map(|o| o.parse::<HeaderValue>().ok())
+        .collect();
+
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(origins)
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+        .allow_credentials(true);
 
     // Construir router
     let app = Router::new()
-        .nest("/api", routes::api_routes())
+        .nest("/api", routes::public_routes())
+        .nest("/api", routes::protected_routes(state.clone()))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);
@@ -111,6 +120,9 @@ async fn main() {
     // Iniciar servidor
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     tracing::info!("Server running on http://{}", addr);
+    if !config.require_auth {
+        tracing::warn!("Authentication is DISABLED (set REQUIRE_AUTH=true for production)");
+    }
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

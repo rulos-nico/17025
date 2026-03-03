@@ -300,9 +300,21 @@ export const DashboardAPI = {
 
 import type { TipoEnsayo } from '../config';
 
+export interface CreateTipoEnsayoPayload {
+  nombre: string;
+  norma: string;
+  acre: string;
+  categoria?: string;
+}
+
 export const TiposEnsayoAPI = {
   list: () => request<TipoEnsayo[]>(endpoints.tiposEnsayo.list),
   get: (id: string | number) => request<TipoEnsayo>(endpoints.tiposEnsayo.get(id)),
+  create: (data: CreateTipoEnsayoPayload) =>
+    request<TipoEnsayo>(endpoints.tiposEnsayo.create, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ============================================

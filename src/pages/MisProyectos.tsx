@@ -3,8 +3,9 @@ import PageLayout from '../components/PageLayout';
 import { Badge, Card, Modal } from '../components/ui';
 import { SolicitarEnsayoModal } from '../components/modals';
 import { useAuth } from '../hooks/useAuth';
-import { ESTADO_PROYECTO, ESTADO_MUESTRA, getWorkflowInfo, TIPOS_ENSAYO } from '../config';
-import { ProyectosAPI, PerforacionesAPI, EnsayosAPI } from '../services/apiService';
+import { ESTADO_PROYECTO, getWorkflowInfo } from '../config';
+import { useTiposEnsayoData } from '../hooks/useTiposEnsayoData';
+import { ProyectosAPI, PerforacionesAPI, MuestrasAPI, EnsayosAPI } from '../services/apiService';
 import styles from './MisProyectos.module.css';
 
 // ============================================
@@ -48,6 +49,21 @@ interface Perforacion {
   [key: string]: unknown;
 }
 
+interface Muestra {
+  id: string | number;
+  codigo?: string;
+  perforacionId?: string | number;
+  perforacion_id?: string | number;
+  profundidadInicio?: number;
+  profundidad_inicio?: number;
+  profundidadFin?: number;
+  profundidad_fin?: number;
+  tipoMuestra?: string;
+  tipo_muestra?: string;
+  descripcion?: string;
+  [key: string]: unknown;
+}
+
 interface Proyecto {
   id: string | number;
   codigo?: string;
@@ -55,13 +71,30 @@ interface Proyecto {
   estado?: string;
   clienteId?: string | number;
   cliente_id?: string | number;
-  ensayos_cotizados?: Record<string, unknown>;
+  ensayos_cotizados?: Record<string, number>;
   [key: string]: unknown;
 }
+
+/**
+ * Parsea ensayos_cotizados desde la API asegurando que sea Record<string, number>
+ * El backend puede devolver null, undefined, o un objeto JSON
+ */
+const parseEnsayosCotizados = (data: unknown): Record<string, number> => {
+  if (!data || typeof data !== 'object') return {};
+  const result: Record<string, number> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    const num = Number(value);
+    if (!isNaN(num) && num > 0) {
+      result[key] = num;
+    }
+  }
+  return result;
+};
 
 interface SolicitarEnsayoData {
   tipo: string;
   perforacionId: string | number;
+  muestraId?: string | number | null;
   proyectoId: string | number;
   muestra?: string;
   norma?: string;
@@ -80,7 +113,8 @@ interface EnsayoDetalleClienteProps {
 
 function EnsayoDetalleCliente({ ensayo, onClose }: EnsayoDetalleClienteProps) {
   const workflow = getWorkflowInfo(ensayo.workflow_state || '');
-  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+  const { findTipoEnsayo } = useTiposEnsayoData();
+  const tipoEnsayo = findTipoEnsayo(ensayo.tipo || '');
 
   // Determinar progreso visual
   const getProgreso = () => {
@@ -139,7 +173,7 @@ function EnsayoDetalleCliente({ ensayo, onClose }: EnsayoDetalleClienteProps) {
         <div className={styles.infoGrid}>
           <div>
             <div className={styles.infoLabel}>Tipo de Ensayo</div>
-            <div className={styles.infoValue}>{tipoEnsayo?.nombre || ensayo.tipo}</div>
+            <div className={styles.infoValue}>{tipoEnsayo.nombre}</div>
           </div>
           <div>
             <div className={styles.infoLabel}>Norma</div>
@@ -218,17 +252,19 @@ function EnsayoDetalleCliente({ ensayo, onClose }: EnsayoDetalleClienteProps) {
 
 export default function MisProyectos() {
   const { user } = useAuth();
+  const { findTipoEnsayo } = useTiposEnsayoData();
 
   // Estado con datos desde API
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [perforaciones, setPerforaciones] = useState<Perforacion[]>([]);
+  const [muestras, setMuestras] = useState<Muestra[]>([]);
   const [ensayos, setEnsayos] = useState<Ensayo[]>([]);
   const [_loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Seleccion actual
   const [selectedProyecto, setSelectedProyecto] = useState<Proyecto | null>(null);
-  const [selectedMuestra, setSelectedMuestra] = useState<Perforacion | null>(null);
+  const [selectedMuestra, setSelectedMuestra] = useState<Muestra | null>(null);
   const [selectedEnsayo, setSelectedEnsayo] = useState<Ensayo | null>(null);
 
   // Modal
@@ -240,9 +276,10 @@ export default function MisProyectos() {
   // Función unificada para cargar/recargar datos desde API
   const fetchData = async (isInitialLoad = false) => {
     try {
-      const [proyectosRes, perforacionesRes, ensayosRes] = await Promise.all([
+      const [proyectosRes, perforacionesRes, muestrasRes, ensayosRes] = await Promise.all([
         ProyectosAPI.list(),
         PerforacionesAPI.list(),
+        MuestrasAPI.list(),
         EnsayosAPI.list(),
       ]);
 
@@ -251,13 +288,22 @@ export default function MisProyectos() {
         ((proyectosRes || []) as Proyecto[]).map((p: Proyecto) => ({
           ...p,
           clienteId: p.cliente_id || p.clienteId,
-          ensayos_cotizados: p.ensayos_cotizados || {},
+          ensayos_cotizados: parseEnsayosCotizados(p.ensayos_cotizados),
         }))
       );
       setPerforaciones(
         ((perforacionesRes || []) as Perforacion[]).map((p: Perforacion) => ({
           ...p,
           proyectoId: p.proyecto_id || p.proyectoId,
+        }))
+      );
+      setMuestras(
+        ((muestrasRes || []) as Muestra[]).map((m: Muestra) => ({
+          ...m,
+          perforacionId: m.perforacion_id || m.perforacionId,
+          profundidadInicio: m.profundidad_inicio ?? m.profundidadInicio,
+          profundidadFin: m.profundidad_fin ?? m.profundidadFin,
+          tipoMuestra: m.tipo_muestra || m.tipoMuestra,
         }))
       );
       setEnsayos(
@@ -290,46 +336,74 @@ export default function MisProyectos() {
     return proyectos.filter(p => p.estado === filtroEstado);
   }, [proyectos, filtroEstado]);
 
-  // Solicitar ensayo usando API
-  const handleSolicitarEnsayo = async (data: SolicitarEnsayoData) => {
+  // Solicitar ensayos usando API (soporta múltiples ensayos)
+  const handleSolicitarEnsayos = async (items: SolicitarEnsayoData[]) => {
     setSaving(true);
     try {
-      const nuevoEnsayo = {
-        tipo: data.tipo,
-        perforacion_id: data.perforacionId,
-        proyecto_id: data.proyectoId,
-        muestra: data.muestra,
-        norma: data.norma,
-        fecha_solicitud: new Date().toISOString().split('T')[0],
-        urgente: data.urgente,
-        observaciones: data.observaciones,
-      };
+      // Crear todos los ensayos en secuencia
+      for (const data of items) {
+        const nuevoEnsayo = {
+          tipo: data.tipo,
+          perforacion_id: String(data.perforacionId),
+          proyecto_id: String(data.proyectoId),
+          muestra: data.muestra || 'Sin especificar',
+          muestra_id: data.muestraId ? String(data.muestraId) : null,
+          norma: data.norma || 'Sin especificar',
+          fecha_solicitud: new Date().toISOString().split('T')[0],
+          urgente: data.urgente || false,
+          observaciones: data.observaciones || '',
+        };
 
-      await EnsayosAPI.create(nuevoEnsayo);
+        await EnsayosAPI.create(nuevoEnsayo);
+      }
+
       setShowSolicitar(false);
 
       // Actualizar estado de la muestra si es primera solicitud
-      const muestraActual = perforaciones.find(p => p.id === data.perforacionId);
-      if (muestraActual && muestraActual.estado === 'pendiente') {
-        await PerforacionesAPI.update(data.perforacionId, { estado: 'en_proceso' });
+      if (items.length > 0) {
+        const firstItem = items[0];
+        const muestraActual = perforaciones.find(p => p.id === firstItem.perforacionId);
+        if (muestraActual && muestraActual.estado === 'pendiente') {
+          await PerforacionesAPI.update(firstItem.perforacionId, { estado: 'en_proceso' });
+        }
       }
 
       await reloadData();
     } catch (err) {
-      console.error('Error creando ensayo:', err);
+      console.error('Error creando ensayos:', err);
     } finally {
       setSaving(false);
     }
   };
 
   // Datos relacionados
-  const muestrasProyecto = selectedProyecto
-    ? perforaciones.filter(p => p.proyectoId === selectedProyecto.id)
+  // Perforaciones del proyecto seleccionado
+  const perforacionesProyecto = useMemo(() => {
+    if (!selectedProyecto) return [];
+    return perforaciones.filter(p => p.proyectoId === selectedProyecto.id);
+  }, [selectedProyecto, perforaciones]);
+
+  // IDs de perforaciones del proyecto (para filtrar muestras)
+  const perforacionIdsProyecto = useMemo(() => {
+    return new Set(perforacionesProyecto.map(p => String(p.id)));
+  }, [perforacionesProyecto]);
+
+  // Muestras del proyecto seleccionado (a través de perforaciones)
+  const muestrasProyecto = useMemo(() => {
+    if (!selectedProyecto) return [];
+    return muestras.filter(m => perforacionIdsProyecto.has(String(m.perforacionId)));
+  }, [selectedProyecto, muestras, perforacionIdsProyecto]);
+
+  // Ensayos de la muestra seleccionada
+  const ensayosMuestra = selectedMuestra
+    ? ensayos.filter(e => String(e.muestra_id) === String(selectedMuestra.id))
     : [];
 
-  const ensayosMuestra = selectedMuestra
-    ? ensayos.filter(e => e.perforacionId === selectedMuestra.id)
-    : [];
+  // Obtener la perforación de la muestra seleccionada (para el modal)
+  const perforacionDeMuestra = useMemo(() => {
+    if (!selectedMuestra) return null;
+    return perforaciones.find(p => String(p.id) === String(selectedMuestra.perforacionId)) || null;
+  }, [selectedMuestra, perforaciones]);
 
   // Stats generales
   const stats = useMemo(() => {
@@ -468,27 +542,30 @@ export default function MisProyectos() {
                 <div className={styles.emptyCenter}>No hay muestras registradas</div>
               ) : (
                 muestrasProyecto.map(muestra => {
-                  const estado = ESTADO_MUESTRA[muestra.estado || ''] || {
-                    label: muestra.estado,
-                    color: '#6B7280',
-                  };
-                  const numEnsayos = ensayos.filter(e => e.perforacionId === muestra.id).length;
+                  // Contar ensayos de esta muestra
+                  const numEnsayos = ensayos.filter(
+                    e => String(e.muestra_id) === String(muestra.id)
+                  ).length;
+                  // Tipo de muestra para badge
+                  const tipoInfo = muestra.tipoMuestra || 'sin tipo';
 
                   return (
                     <Card
-                      key={muestra.id}
+                      key={String(muestra.id)}
                       onClick={() => setSelectedMuestra(muestra)}
                       selected={selectedMuestra?.id === muestra.id}
                     >
                       <div className={styles.projectCardHeader}>
                         <div style={{ flex: 1 }}>
                           <div className={styles.muestraCode}>{muestra.codigo}</div>
-                          <div className={styles.muestraDesc}>{muestra.descripcion}</div>
-                          {muestra.ubicacion && (
-                            <div className={styles.muestraLocation}>{muestra.ubicacion}</div>
-                          )}
+                          <div className={styles.muestraDesc}>
+                            {muestra.profundidadInicio !== undefined &&
+                            muestra.profundidadFin !== undefined
+                              ? `${muestra.profundidadInicio}m - ${muestra.profundidadFin}m`
+                              : muestra.descripcion || 'Sin descripcion'}
+                          </div>
                         </div>
-                        <Badge color={estado.color}>{estado.label}</Badge>
+                        <Badge color="#6B7280">{tipoInfo}</Badge>
                       </div>
                       <div className={styles.muestraEnsayos}>{numEnsayos} ensayos solicitados</div>
                     </Card>
@@ -539,16 +616,14 @@ export default function MisProyectos() {
               ) : (
                 ensayosMuestra.map(ensayo => {
                   const workflow = getWorkflowInfo(ensayo.workflow_state || '');
-                  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+                  const tipoEnsayo = findTipoEnsayo(ensayo.tipo || '');
 
                   return (
                     <Card key={ensayo.id} onClick={() => setSelectedEnsayo(ensayo)}>
                       <div className={styles.projectCardHeader}>
                         <div style={{ flex: 1 }}>
                           <div className={styles.ensayoCode}>{ensayo.codigo}</div>
-                          <div className={styles.ensayoTipo}>
-                            {tipoEnsayo?.nombre || ensayo.tipo}
-                          </div>
+                          <div className={styles.ensayoTipo}>{tipoEnsayo.nombre}</div>
                           {ensayo.norma && (
                             <div className={styles.ensayoNorma}>Norma: {ensayo.norma}</div>
                           )}
@@ -584,12 +659,13 @@ export default function MisProyectos() {
       </div>
 
       {/* Modal Solicitar Ensayo */}
-      {selectedMuestra && selectedProyecto && (
+      {selectedMuestra && selectedProyecto && perforacionDeMuestra && (
         <SolicitarEnsayoModal
           isOpen={showSolicitar}
           onClose={() => setShowSolicitar(false)}
-          onCreate={handleSolicitarEnsayo}
-          perforacion={selectedMuestra}
+          onCreate={handleSolicitarEnsayos}
+          perforacion={perforacionDeMuestra}
+          muestra={selectedMuestra}
           proyecto={{
             ...selectedProyecto,
             ensayosCotizados: (selectedProyecto.ensayos_cotizados || {}) as Record<string, number>,

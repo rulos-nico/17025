@@ -7,6 +7,9 @@ pub struct Config {
     pub allowed_origins: Vec<String>,
     pub database_url: String,
     pub run_migrations: bool,
+    /// Si es true, el middleware de autenticación valida tokens.
+    /// Si es false (por defecto en dev), las rutas protegidas permiten acceso sin token.
+    pub require_auth: bool,
 }
 
 impl Config {
@@ -30,6 +33,9 @@ impl Config {
             run_migrations: std::env::var("RUN_MIGRATIONS")
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(true),
+            require_auth: std::env::var("REQUIRE_AUTH")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         }
     }
 

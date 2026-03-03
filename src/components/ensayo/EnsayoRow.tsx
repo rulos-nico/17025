@@ -3,7 +3,8 @@
  */
 
 import { Badge } from '../ui';
-import { TIPOS_ENSAYO, getWorkflowInfo } from '../../config';
+import { getWorkflowInfo } from '../../config';
+import { useTiposEnsayoData } from '../../hooks/useTiposEnsayoData';
 import type { Ensayo } from '../../hooks/useEnsayosData';
 import styles from './EnsayoRow.module.css';
 
@@ -17,7 +18,8 @@ interface EnsayoRowProps {
  * Fila de ensayo para la vista jerarquica
  */
 export function EnsayoRow({ ensayo, onClick, indentLevel = 2 }: EnsayoRowProps) {
-  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+  const { findTipoEnsayo } = useTiposEnsayoData();
+  const tipoEnsayo = findTipoEnsayo(ensayo.tipo);
   const workflowState = ensayo.workflow_state || ensayo.workflowState || 'E1';
   const estadoInfo = getWorkflowInfo(workflowState);
   const sheetUrl = (ensayo.sheet_url || ensayo.sheetUrl) as string | undefined;
@@ -41,7 +43,7 @@ export function EnsayoRow({ ensayo, onClick, indentLevel = 2 }: EnsayoRowProps) 
       <span className={styles.codigo}>{ensayo.codigo}</span>
 
       {/* Tipo */}
-      <span className={styles.tipo}>{tipoEnsayo?.nombre || ensayo.tipo}</span>
+      <span className={styles.tipo}>{tipoEnsayo.nombre}</span>
 
       {/* Muestra */}
       <span className={styles.muestra}>{muestra}</span>

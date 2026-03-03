@@ -53,6 +53,36 @@
   color: var(--color-error-800);
 }
 
+/* Nota informativa (sin cotizados pero con opción Otro) */
+.infoNote {
+  padding: var(--spacing-3);
+  background-color: var(--color-primary-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-primary-200);
+  color: var(--color-primary-800);
+  font-size: var(--text-sm);
+}
+
+/* Badge "Otro" en carrito */
+.otroBadge {
+  font-size: var(--text-xs);
+  padding: 1px var(--spacing-1);
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+/* Mensaje de carga */
+.loadingBox {
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  color: var(--color-gray-600);
+  text-align: center;
+  font-style: italic;
+}
+
 /* Campos de formulario */
 .field {
   display: flex;
@@ -131,4 +161,137 @@
 .btnSubmit:disabled {
   background-color: var(--color-gray-400);
   cursor: not-allowed;
+}
+
+/* ============================================
+   SECCIÓN AGREGAR AL CARRITO
+   ============================================ */
+
+.addSection {
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-gray-300);
+}
+
+.addSectionTitle {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.addBtn {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  margin-top: var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-500);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.addBtn:hover:not(:disabled) {
+  background-color: var(--color-primary-100);
+  border-color: var(--color-primary-600);
+}
+
+.addBtn:disabled {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+.warningText {
+  color: var(--color-warning-600);
+  font-weight: var(--font-medium);
+}
+
+/* ============================================
+   CARRITO DE ENSAYOS
+   ============================================ */
+
+.cartSection {
+  padding: var(--spacing-3);
+  background-color: var(--color-success-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-success-200);
+}
+
+.cartTitle {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-success-800);
+  margin-bottom: var(--spacing-2);
+}
+
+.cartList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.cartItem {
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-success-200);
+}
+
+.cartItemHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cartItemNumber {
+  font-weight: var(--font-semibold);
+  color: var(--color-success-600);
+  min-width: 1.5rem;
+}
+
+.cartItemName {
+  font-weight: var(--font-medium);
+  color: var(--color-gray-800);
+  flex: 1;
+}
+
+.cartItemNorma {
+  font-size: var(--text-sm);
+  color: var(--color-gray-500);
+}
+
+.cartItemObs {
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+  margin-top: var(--spacing-1);
+  padding-left: 1.5rem;
+  font-style: italic;
+}
+
+.removeBtn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: var(--color-error-100);
+  color: var(--color-error-600);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: var(--transition-fast);
+}
+
+.removeBtn:hover {
+  background-color: var(--color-error-200);
+  color: var(--color-error-700);
 }

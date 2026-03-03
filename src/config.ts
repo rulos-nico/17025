@@ -62,6 +62,7 @@ interface DashboardEndpoints {
 interface TiposEnsayoEndpoints {
   list: string;
   get: (id: string | number) => string;
+  create: string;
 }
 
 interface ApiEndpoints {
@@ -226,6 +227,7 @@ export const API_CONFIG: ApiConfig = {
     tiposEnsayo: {
       list: '/api/tipos-ensayo',
       get: (id: string | number) => `/api/tipos-ensayo/${id}`,
+      create: '/api/tipos-ensayo',
     },
   },
 };
@@ -415,43 +417,6 @@ export const ESTADO_EQUIPO: Record<string, EstadoInfo> = {
   fuera_servicio: { label: 'Fuera de Servicio', color: '#EF4444' },
   baja: { label: 'Dado de Baja', color: '#6B7280' },
 };
-
-// ============================================
-// TIPOS DE ENSAYOS
-// ============================================
-export const TIPOS_ENSAYO: TipoEnsayo[] = [
-  { id: 'traccion', nombre: 'Ensayo de Tracción', categoria: 'mecanico', norma: 'ASTM E8' },
-  { id: 'dureza', nombre: 'Ensayo de Dureza', categoria: 'mecanico', norma: 'ASTM E18' },
-  { id: 'impacto', nombre: 'Ensayo de Impacto', categoria: 'mecanico', norma: 'ASTM E23' },
-  { id: 'compresion', nombre: 'Ensayo de Compresión', categoria: 'mecanico', norma: 'ASTM E9' },
-  { id: 'quimico_oes', nombre: 'Análisis Químico OES', categoria: 'quimico', norma: 'ASTM E415' },
-  { id: 'quimico_xrf', nombre: 'Análisis XRF', categoria: 'quimico', norma: 'ASTM E1621' },
-  { id: 'ultrasonido', nombre: 'Ultrasonido Industrial', categoria: 'end', norma: 'ASTM E114' },
-  { id: 'radiografia', nombre: 'Radiografía Industrial', categoria: 'end', norma: 'ASTM E94' },
-  {
-    id: 'metalografia',
-    nombre: 'Análisis Metalográfico',
-    categoria: 'metalografia',
-    norma: 'ASTM E3',
-  },
-  {
-    id: 'calibracion',
-    nombre: 'Calibración de Equipos',
-    categoria: 'calibracion',
-    norma: 'ISO 17025',
-  },
-];
-
-/**
- * Helper para obtener info de tipo de ensayo
- */
-export const getTipoEnsayo = (tipoId: string): TipoEnsayo =>
-  TIPOS_ENSAYO.find(t => t.id === tipoId) || {
-    id: tipoId,
-    nombre: tipoId,
-    categoria: 'otro',
-    norma: '',
-  };
 
 // ============================================
 // TIPOS DE MUESTRAS

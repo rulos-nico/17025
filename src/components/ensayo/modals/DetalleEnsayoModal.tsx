@@ -3,7 +3,8 @@
  */
 
 import { Modal, Badge } from '../../ui';
-import { TIPOS_ENSAYO, getWorkflowInfo } from '../../../config';
+import { getWorkflowInfo } from '../../../config';
+import { useTiposEnsayoData } from '../../../hooks/useTiposEnsayoData';
 import type { Tecnico, Cliente } from '../../../hooks/useEnsayosData';
 import type { SelectedEnsayo } from '../../../hooks/useEnsayoModals';
 import styles from './DetalleEnsayoModal.module.css';
@@ -28,7 +29,8 @@ export function DetalleEnsayoModal({
 }: DetalleEnsayoModalProps) {
   if (!ensayo) return null;
 
-  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+  const { findTipoEnsayo } = useTiposEnsayoData();
+  const tipoEnsayo = findTipoEnsayo(ensayo.tipo);
   const tecnicoId = ensayo.tecnicoId || ensayo.tecnico_id;
   const clienteId = ensayo.clienteId || ensayo.cliente_id;
   const tecnico = tecnicos.find(t => t.id === tecnicoId);
@@ -45,7 +47,7 @@ export function DetalleEnsayoModal({
     <Modal isOpen={isOpen} onClose={onClose} title={`Detalle - ${ensayo.codigo}`}>
       <div className={styles.content}>
         <div className={styles.header}>
-          <h3 className={styles.title}>{tipoEnsayo?.nombre || ensayo.tipo}</h3>
+          <h3 className={styles.title}>{tipoEnsayo.nombre}</h3>
           <Badge color={estadoInfo.color}>
             {workflowState} - {estadoInfo.nombre}
           </Badge>

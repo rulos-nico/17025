@@ -9,15 +9,22 @@ pub mod perforacion;
 pub mod personal_interno;
 pub mod proyecto;
 pub mod sensores;
+pub mod tipos_ensayo;
 
-use axum::Router;
+use axum::{middleware, Router};
 use crate::AppState;
 use crate::errors::AppError;
 use crate::services::google_sheets::GoogleSheetsClient;
 
-pub fn api_routes() -> Router<AppState> {
+/// Rutas públicas (no requieren autenticación)
+pub fn public_routes() -> Router<AppState> {
     Router::new()
         .nest("/auth", auth::routes())
+}
+
+/// Rutas protegidas (requieren autenticación)
+pub fn protected_routes(state: AppState) -> Router<AppState> {
+    Router::new()
         .nest("/calibraciones", calibraciones::routes())
         .nest("/clientes", cliente::routes())
         .nest("/comprobaciones", comprobaciones::routes())
@@ -28,6 +35,8 @@ pub fn api_routes() -> Router<AppState> {
         .nest("/personal-interno", personal_interno::routes())
         .nest("/proyectos", proyecto::routes())
         .nest("/sensores", sensores::routes())
+        .nest("/tipos-ensayo", tipos_ensayo::routes())
+        .layer(middleware::from_fn_with_state(state, auth::require_auth))
 }
 
 /// Helper para obtener el cliente de Sheets o retornar error si no está configurado

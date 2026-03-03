@@ -273,12 +273,17 @@ fn extract_bearer_token<B>(req: &Request<B>) -> Result<String, AppError> {
 ///     .route("/protected", get(handler))
 ///     .layer(axum::middleware::from_fn_with_state(state.clone(), require_auth))
 /// ```
-#[allow(dead_code)]
 pub async fn require_auth(
     State(state): State<AppState>,
     req: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    // Si require_auth está deshabilitado (dev mode), dejar pasar sin validar
+    if !state.config.require_auth {
+        tracing::debug!("Auth bypass: REQUIRE_AUTH is disabled");
+        return Ok(next.run(req).await);
+    }
+
     // Extraer token
     let auth_header = req
         .headers()

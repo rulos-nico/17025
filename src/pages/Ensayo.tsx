@@ -11,8 +11,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useEnsayosData } from '../hooks/useEnsayosData';
 import type { Ensayo as EnsayoType } from '../hooks/useEnsayosData';
 import { useEnsayoModals } from '../hooks/useEnsayoModals';
+import { useTiposEnsayoData } from '../hooks/useTiposEnsayoData';
 import { isClienteRole } from '../utils/permissions';
-import { TIPOS_ENSAYO } from '../config';
 import styles from './Ensayo.module.css';
 
 // Componentes de visualización
@@ -76,6 +76,7 @@ export default function Ensayo() {
   const { user } = useAuth();
   const userRole = user?.rol || 'tecnico';
   const userId = user?.id || '';
+  const { tiposEnsayo } = useTiposEnsayoData();
 
   // Hook de datos
   const {
@@ -199,7 +200,7 @@ export default function Ensayo() {
             className={styles.filterSelect}
           >
             <option value="todos">Todos los tipos</option>
-            {TIPOS_ENSAYO.map(tipo => (
+            {tiposEnsayo.map(tipo => (
               <option key={tipo.id} value={tipo.id}>
                 {tipo.nombre}
               </option>

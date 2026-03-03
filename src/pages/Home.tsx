@@ -1,6 +1,7 @@
 import { useState, Suspense, lazy } from 'react';
 import { APP_CONFIG, getWorkflowInfo } from '../config';
 import { useAuth } from '../hooks/useAuth';
+import { useTiposEnsayoData } from '../hooks/useTiposEnsayoData';
 import { useApiData } from '../hooks/useApiData';
 import { useGanttData } from '../hooks/useGanttData';
 import type { GanttTask } from '../components/gantt/gantt_proyects';
@@ -43,6 +44,7 @@ interface ActividadItem {
  */
 function Home({ setActiveModule }: HomeProps) {
   const { user } = useAuth();
+  const { getTipoEnsayoNombre } = useTiposEnsayoData();
 
   // Estado para filtro de cliente en Gantt
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
@@ -276,7 +278,7 @@ function Home({ setActiveModule }: HomeProps) {
                             {getStatusLabel(ensayo.workflow_state || ensayo.estado)}
                           </span>
                         </div>
-                        <h3>{ensayo.tipo}</h3>
+                        <h3>{getTipoEnsayoNombre(ensayo.tipo || '')}</h3>
                         <p className="ensayo-cliente">
                           Cliente: {ensayo.cliente_nombre || ensayo.cliente}
                         </p>

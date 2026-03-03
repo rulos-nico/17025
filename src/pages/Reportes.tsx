@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge } from '../components/ui';
 import { ProyectosAPI, ClientesAPI, EnsayosAPI } from '../services/apiService';
-import { WORKFLOW_STATES_INFO, TIPOS_ENSAYO, getWorkflowInfo } from '../config';
+import { WORKFLOW_STATES_INFO, getWorkflowInfo } from '../config';
+import { useTiposEnsayoData } from '../hooks/useTiposEnsayoData';
 import styles from './Reportes.module.css';
 
 // ============================================
@@ -53,11 +54,6 @@ interface ProyectoConStats extends Proyecto {
 const formatDate = (fecha: string | null | undefined): string => {
   if (!fecha) return '-';
   return new Date(fecha).toLocaleDateString('es-CL');
-};
-
-const getTipoEnsayoNombre = (tipoId: string | undefined): string => {
-  const tipo = TIPOS_ENSAYO.find(t => t.id === tipoId);
-  return tipo?.nombre || tipoId || '';
 };
 
 // ============================================
@@ -140,6 +136,7 @@ interface TipoCount {
 }
 
 function DistribucionPorTipo({ ensayos }: EstadisticasResumenProps) {
+  const { getTipoEnsayoNombre } = useTiposEnsayoData();
   const porTipo = useMemo((): TipoCount[] => {
     const conteo: Record<string, number> = {};
     ensayos.forEach(e => {
@@ -271,6 +268,7 @@ interface TablaProyectosProps {
 
 function TablaProyectos({ proyectos, ensayos, clientes }: TablaProyectosProps) {
   const [expandedProyecto, setExpandedProyecto] = useState<string | number | null>(null);
+  const { getTipoEnsayoNombre } = useTiposEnsayoData();
 
   const proyectosConStats = useMemo((): ProyectoConStats[] => {
     return proyectos.map(proyecto => {
@@ -406,7 +404,7 @@ function TablaProyectos({ proyectos, ensayos, clientes }: TablaProyectosProps) {
                                       <div>
                                         <div className={styles.ensayoCodigo}>{ensayo.codigo}</div>
                                         <div className={styles.ensayoTipo}>
-                                          {getTipoEnsayoNombre(ensayo.tipo)}
+                                          {getTipoEnsayoNombre(ensayo.tipo || '')}
                                         </div>
                                       </div>
                                       <Badge color={workflow.color}>{workflow.nombre}</Badge>
@@ -448,6 +446,7 @@ export default function Reportes() {
   const [ensayos, setEnsayos] = useState<Ensayo[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getTipoEnsayoNombre } = useTiposEnsayoData();
 
   // Filtros
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
@@ -522,7 +521,7 @@ export default function Reportes() {
       const workflow = getWorkflowInfo(e.workflow_state || '');
       return [
         e.codigo,
-        getTipoEnsayoNombre(e.tipo),
+        getTipoEnsayoNombre(e.tipo || ''),
         proyecto?.codigo || 'N/A',
         workflow.nombre,
         e.fecha_solicitud || '',

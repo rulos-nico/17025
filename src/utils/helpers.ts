@@ -11,12 +11,10 @@ import {
   ESTADO_PROYECTO,
   ESTADO_MUESTRA,
   ESTADO_EQUIPO,
-  TIPOS_ENSAYO,
   TIPOS_MUESTRA,
   ROLES,
   type WorkflowStateInfo,
   type EstadoInfo,
-  type TipoEnsayo,
   type TipoMuestra,
   type RolInfo,
 } from '../config';
@@ -126,22 +124,6 @@ export const getAvailableTransitions = (
 // ============================================
 // LOOKUPS PARA TIPOS
 // ============================================
-
-/**
- * Obtiene información de un tipo de ensayo con fallback
- */
-export const getTipoEnsayo = (tipoId: string): TipoEnsayo =>
-  TIPOS_ENSAYO.find(t => t.id === tipoId) || {
-    id: tipoId || 'unknown',
-    nombre: tipoId || 'Desconocido',
-    categoria: 'otro',
-    norma: '',
-  };
-
-/**
- * Obtiene el nombre de un tipo de ensayo
- */
-export const getTipoEnsayoNombre = (tipoId: string): string => getTipoEnsayo(tipoId).nombre;
 
 /**
  * Obtiene información de un tipo de muestra con fallback

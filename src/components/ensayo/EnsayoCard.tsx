@@ -3,7 +3,7 @@
  */
 
 import { Badge } from '../ui';
-import { TIPOS_ENSAYO, getWorkflowInfo, WORKFLOW_TRANSITIONS } from '../../config';
+import { getWorkflowInfo, WORKFLOW_TRANSITIONS } from '../../config';
 import {
   canChangeState,
   canMarkAsNovedad,
@@ -11,6 +11,7 @@ import {
   isClienteRole,
   canEnsayoHaveNovedad,
 } from '../../utils/permissions';
+import { useTiposEnsayoData } from '../../hooks/useTiposEnsayoData';
 import type { Ensayo, Tecnico } from '../../hooks/useEnsayosData';
 import styles from './EnsayoCard.module.css';
 
@@ -38,7 +39,8 @@ export function EnsayoCard({
   userRole,
   isOwnEnsayo,
 }: EnsayoCardProps) {
-  const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+  const { findTipoEnsayo } = useTiposEnsayoData();
+  const tipoEnsayo = findTipoEnsayo(ensayo.tipo);
   const tecnicoId = ensayo.tecnicoId || ensayo.tecnico_id;
   const tecnico = tecnicos.find(t => t.id === tecnicoId);
   const workflowState = ensayo.workflow_state || ensayo.workflowState || 'E1';
@@ -59,7 +61,7 @@ export function EnsayoCard({
         </Badge>
       </div>
 
-      <div className={styles.tipo}>{tipoEnsayo?.nombre || ensayo.tipo}</div>
+      <div className={styles.tipo}>{tipoEnsayo.nombre}</div>
 
       <div className={styles.muestra}>{muestra}</div>
 

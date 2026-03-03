@@ -18,7 +18,8 @@ import {
   MuestrasAPI,
   ProyectosAPI,
 } from '../../../services/apiService';
-import { TIPOS_ENSAYO, getTipoMuestra, getWorkflowInfo } from '../../../config';
+import { getTipoMuestra, getWorkflowInfo } from '../../../config';
+import { useTiposEnsayoData } from '../../../hooks/useTiposEnsayoData';
 
 import {
   NuevoProyectoModal,
@@ -72,6 +73,7 @@ interface RawApiData extends Record<string, unknown> {
 
 export default function Proyectos() {
   const { user: _user } = useAuth();
+  const { findTipoEnsayo } = useTiposEnsayoData();
 
   // Permitir cambiar rol para pruebas en modo demo
   const [devRole, setDevRole] = useState<UserRole>('tecnico');
@@ -367,26 +369,29 @@ export default function Proyectos() {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSolicitarEnsayo = async (data: any) => {
+  const handleSolicitarEnsayo = async (items: any[]) => {
     setError(null);
     try {
-      const ensayoPayload = {
-        tipo: data.tipo,
-        perforacion_id: data.perforacionId,
-        proyecto_id: data.proyectoId,
-        muestra: data.muestra || data.muestraDescripcion || '',
-        norma: data.norma || '',
-        fecha_solicitud: new Date().toISOString().split('T')[0],
-        muestra_id: data.muestraId || null,
-        urgente: data.urgente || false,
-        observaciones: data.observaciones || null,
-      };
+      // El modal ahora envía un array de ensayos (carrito)
+      for (const data of items) {
+        const ensayoPayload = {
+          tipo: data.tipo,
+          perforacion_id: String(data.perforacionId),
+          proyecto_id: String(data.proyectoId),
+          muestra: data.muestra || data.muestraDescripcion || 'Sin especificar',
+          norma: data.norma || 'Sin especificar',
+          fecha_solicitud: new Date().toISOString().split('T')[0],
+          muestra_id: data.muestraId ? String(data.muestraId) : null,
+          urgente: data.urgente || false,
+          observaciones: data.observaciones || '',
+        };
 
-      await crudMutation.mutateAsync({
-        api: EnsayosAPI,
-        method: 'create',
-        data: ensayoPayload,
-      });
+        await crudMutation.mutateAsync({
+          api: EnsayosAPI,
+          method: 'create',
+          data: ensayoPayload,
+        });
+      }
       setShowSolicitarEnsayo(false);
       setSelectedMuestra(null);
     } catch {
@@ -653,8 +658,8 @@ export default function Proyectos() {
                     <strong>Ensayos cotizados:</strong>{' '}
                     {Object.entries(selectedProyecto.ensayosCotizados)
                       .map(([tipo, cant]) => {
-                        const tipoInfo = TIPOS_ENSAYO.find(t => t.id === tipo);
-                        return `${tipoInfo?.nombre || tipo}: ${cant}`;
+                        const tipoInfo = findTipoEnsayo(tipo);
+                        return `${tipoInfo.nombre}: ${cant}`;
                       })
                       .join(', ')}
                   </div>
@@ -858,7 +863,7 @@ export default function Proyectos() {
                           <div className={styles.ensayosExpandible}>
                             {ensayosMuestra.map(ensayo => {
                               const workflow = getWorkflowInfo(ensayo.workflow_state);
-                              const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+                              const tipoEnsayo = findTipoEnsayo(ensayo.tipo);
 
                               return (
                                 <div key={ensayo.id} className={styles.ensayoItemExpanded}>
@@ -868,7 +873,7 @@ export default function Proyectos() {
                                         {ensayo.codigo}
                                       </span>
                                       <span className={styles.ensayoItemTipo}>
-                                        {tipoEnsayo?.nombre || ensayo.tipo}
+                                        {tipoEnsayo.nombre}
                                       </span>
                                     </div>
                                     <Badge color={workflow.color} small>
@@ -911,16 +916,14 @@ export default function Proyectos() {
                     .filter(e => !e.muestraId)
                     .map(ensayo => {
                       const workflow = getWorkflowInfo(ensayo.workflow_state);
-                      const tipoEnsayo = TIPOS_ENSAYO.find(t => t.id === ensayo.tipo);
+                      const tipoEnsayo = findTipoEnsayo(ensayo.tipo);
 
                       return (
                         <Card key={ensayo.id}>
                           <div className={styles.ensayoLegacyCard}>
                             <div>
                               <div className={styles.ensayoLegacyCodigo}>{ensayo.codigo}</div>
-                              <div className={styles.ensayoLegacyTipo}>
-                                {tipoEnsayo?.nombre || ensayo.tipo}
-                              </div>
+                              <div className={styles.ensayoLegacyTipo}>{tipoEnsayo.nombre}</div>
                             </div>
                             <Badge color={workflow.color}>{workflow.nombre}</Badge>
                           </div>

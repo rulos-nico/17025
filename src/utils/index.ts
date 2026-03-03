@@ -74,8 +74,6 @@ export {
   canTransitionTo,
   getAvailableTransitions,
   // Lookups de tipos
-  getTipoEnsayo,
-  getTipoEnsayoNombre,
   getTipoMuestra,
   getRolInfo,
   // Vencimientos y alertas

@@ -30,10 +30,41 @@ pub enum AppError {
     DriveError(String),
 }
 
-// Implementar From<sqlx::Error> para eliminar .map_err() repetidos
+// Implementar From<sqlx::Error> con manejo inteligente de errores de Postgres
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
-        AppError::DatabaseError(err.to_string())
+        // Inspeccionar errores específicos de PostgreSQL
+        if let sqlx::Error::Database(ref db_err) = err {
+            if let Some(code) = db_err.code() {
+                match code.as_ref() {
+                    // 23505 = unique_violation (ej: nombre duplicado)
+                    "23505" => {
+                        return AppError::BadRequest("Ya existe un registro con esos datos".into());
+                    }
+                    // 22P02 = invalid_text_representation (ej: valor inválido para enum)
+                    "22P02" => {
+                        return AppError::BadRequest(
+                            "Valor inválido para uno de los campos".into(),
+                        );
+                    }
+                    // 23503 = foreign_key_violation (ej: referencia a registro inexistente)
+                    "23503" => {
+                        return AppError::BadRequest(
+                            "Referencia inválida: el registro relacionado no existe".into(),
+                        );
+                    }
+                    // 23502 = not_null_violation
+                    "23502" => {
+                        return AppError::BadRequest("Falta un campo requerido".into());
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // Fallback: loguear el error real pero devolver mensaje genérico
+        tracing::error!("Database error: {}", err);
+        AppError::DatabaseError("Error de base de datos".into())
     }
 }
 

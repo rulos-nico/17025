@@ -8,6 +8,7 @@ pub mod perforacion_repo;
 pub mod personal_interno_repo;
 pub mod proyecto_repo;
 pub mod sensor_repo;
+pub mod tipos_ensayos_repo;
 
 pub use calibracion_repo::CalibracionRepository;
 pub use cliente_repo::ClienteRepository;
@@ -19,3 +20,4 @@ pub use perforacion_repo::PerforacionRepository;
 pub use personal_interno_repo::PersonalInternoRepository;
 pub use proyecto_repo::ProyectoRepository;
 pub use sensor_repo::SensorRepository;
+pub use tipos_ensayos_repo::TipoEnsayoRepository;

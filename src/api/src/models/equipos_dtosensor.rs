@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use super::Equipo;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
- 
+
 pub struct SensorResumen {
     pub id: String,
     pub codigo: String,

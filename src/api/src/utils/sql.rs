@@ -27,6 +27,8 @@ pub const PERSONAL_INTERNO_COLUMNS: &str = "id, codigo, nombre, apellido, cargo,
 /// Columns for the `muestras` table
 pub const MUESTRA_COLUMNS: &str = "id, codigo, perforacion_id, profundidad_inicio, profundidad_fin, tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source";
 
+/// Columns for the `tipos_ensayo` table
+pub const TIPO_ENSAYO_COLUMNS: &str = "id, nombre, categoria, vigente_desde, norma, acre::text, activo, orden, precio_base, tiempo_estimado_dias, created_at, updated_at";
 // ============================================================================
 // Query Builder Functions
 // ============================================================================
