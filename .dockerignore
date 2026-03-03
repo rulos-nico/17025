@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+src/api/target/
+
+# Build artifacts
+dist/
+dist-ssr/
+
+# Git
+.git/
+.gitattributes
+
+# Entorno
+.env
+.env.local
+.env.production
+*.local
+
+# Editores
+.vscode/
+.idea/
+*.sw?
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing / docs
+.postman/
+postman/
+docs/
+coverage/
+
+# Docker (evitar recursión)
+docker/docker-compose*.yml

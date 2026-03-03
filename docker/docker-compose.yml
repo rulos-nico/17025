@@ -1,0 +1,73 @@
+# =============================================================================
+# Docker Compose - Desarrollo local
+# =============================================================================
+# Uso:
+#   docker compose -f docker/docker-compose.yml up -d
+#   docker compose -f docker/docker-compose.yml down
+#   docker compose -f docker/docker-compose.yml logs -f api
+# =============================================================================
+
+services:
+  # -------------------------------------------
+  # PostgreSQL
+  # -------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: lab17025-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lab17025
+      POSTGRES_USER: lab17025
+      POSTGRES_PASSWORD: lab17025_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab17025 -d lab17025"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------
+  # Backend API (Rust / Axum)
+  # -------------------------------------------
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: lab17025-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://lab17025:lab17025_dev@db:5432/lab17025
+      API_PORT: "3000"
+      RUN_MIGRATIONS: "true"
+      REQUIRE_AUTH: "false"
+      ALLOWED_ORIGINS: "http://localhost,http://localhost:80"
+    ports:
+      - "3000:3000"
+
+  # -------------------------------------------
+  # Frontend (Nginx + archivos estáticos)
+  # -------------------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: /api
+        VITE_APP_ENV: development
+        VITE_AUTH_BYPASS: "true"
+    container_name: lab17025-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:
+    driver: local
