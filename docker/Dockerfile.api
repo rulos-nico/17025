@@ -1,7 +1,10 @@
 # =============================================================================
 # Stage 1: Chef - preparar receta de dependencias
 # =============================================================================
-FROM lukemathwalker/cargo-chef:latest-rust-1.87-bookworm AS chef
+FROM rust:1.87-bookworm AS chef
+
+RUN cargo install cargo-chef
+
 WORKDIR /app
 
 # =============================================================================
