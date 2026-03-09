@@ -64,6 +64,25 @@ pub struct UpdateEnsayoStatus {
     pub workflow_state: WorkflowState,
 }
 
+/// Request para validar un ensayo (E1 → E2 con asignación automática)
+#[derive(Debug, Deserialize)]
+pub struct ValidarEnsayoRequest {
+    /// Opcional: forzar asignación a un técnico específico
+    pub tecnico_id: Option<String>,
+    /// Opcional: forzar fecha de programación
+    pub fecha_programacion: Option<String>,
+}
+
+/// Respuesta de validación con datos de asignación
+#[derive(Debug, Serialize)]
+pub struct ValidarEnsayoResponse {
+    pub ensayo: Ensayo,
+    pub tecnico_nombre: String,
+    pub fecha_programacion: String,
+    pub equipos_asignados: Vec<String>,
+    pub asignacion_automatica: bool,
+}
+
 impl Ensayo {
     pub fn from_row(row: &[String]) -> Option<Self> {
         if row.len() < 28 {

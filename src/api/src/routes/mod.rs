@@ -13,8 +13,6 @@ pub mod tipos_ensayo;
 
 use axum::{middleware, Router};
 use crate::AppState;
-use crate::errors::AppError;
-use crate::services::google_sheets::GoogleSheetsClient;
 
 /// Rutas públicas (no requieren autenticación)
 pub fn public_routes() -> Router<AppState> {
@@ -37,11 +35,4 @@ pub fn protected_routes(state: AppState) -> Router<AppState> {
         .nest("/sensores", sensores::routes())
         .nest("/tipos-ensayo", tipos_ensayo::routes())
         .layer(middleware::from_fn_with_state(state, auth::require_auth))
-}
-
-/// Helper para obtener el cliente de Sheets o retornar error si no está configurado
-pub fn require_sheets(client: &Option<GoogleSheetsClient>) -> Result<&GoogleSheetsClient, AppError> {
-    client.as_ref().ok_or_else(|| {
-        AppError::BadRequest("Google Sheets not configured. Set GOOGLE_SPREADSHEET_ID to enable.".to_string())
-    })
 }

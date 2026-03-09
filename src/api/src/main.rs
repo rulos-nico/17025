@@ -16,13 +16,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::Config;
 use crate::db::DbPool;
-use crate::services::google_sheets::GoogleSheetsClient;
 use crate::services::google_drive::GoogleDriveClient;
 use crate::services::ensayo_sheets::EnsayoSheetsService;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub sheets_client: Option<GoogleSheetsClient>,
     pub ensayo_sheets_service: Option<EnsayoSheetsService>,
     pub db_pool: DbPool,
     pub config: Config,
@@ -53,23 +51,6 @@ async fn main() {
         tracing::info!("Migrations completed successfully");
     }
 
-    // Inicializar cliente de Google Sheets (opcional)
-    let sheets_client = if config.has_google_sheets() {
-        match GoogleSheetsClient::new(&config).await {
-            Ok(client) => {
-                tracing::info!("Google Sheets client initialized successfully");
-                Some(client)
-            }
-            Err(e) => {
-                tracing::warn!("Google Sheets disabled: {}", e);
-                None
-            }
-        }
-    } else {
-        tracing::info!("Google Sheets not configured - running in database-only mode");
-        None
-    };
-
     // Inicializar EnsayoSheetsService (para plantillas y PDFs)
     let ensayo_sheets_service = if config.has_google_drive() {
         match GoogleDriveClient::new(&config).await {
@@ -90,7 +71,6 @@ async fn main() {
     };
 
     let state = AppState {
-        sheets_client,
         ensayo_sheets_service,
         db_pool,
         config: config.clone(),
