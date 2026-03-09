@@ -48,7 +48,7 @@ services:
       REQUIRE_AUTH: "false"
       ALLOWED_ORIGINS: "http://localhost,http://localhost:80"
     ports:
-      - "3001:3000"
+      - "3000:3000"
 
   # -------------------------------------------
   # Frontend (Nginx + archivos estáticos)
@@ -67,15 +67,6 @@ services:
       - api
     ports:
       - "80:80"
-  # -------------------------------------------
-  # ngrok (exponer frontend a internet)
-  # -------------------------------------------
-  ngrok:
-    image: ngrok/ngrok:latest
-    network_mode: host
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: http 80
 
 volumes:
   pgdata:
