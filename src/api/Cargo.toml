@@ -20,7 +20,6 @@ serde_json = "1"
 dotenvy = "0.15"
 
 # Google APIs
-google-sheets4 = "6"
 google-drive3 = "6"
 yup-oauth2 = "11"
 hyper = "1"

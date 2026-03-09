@@ -17,9 +17,6 @@ pub enum AppError {
     #[error("Solicitud inválida: {0}")]
     BadRequest(String),
 
-    #[error("Google Sheets error: {0}")]
-    SheetsError(String),
-
     #[error("Database error: {0}")]
     DatabaseError(String),
 
@@ -74,7 +71,6 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-            AppError::SheetsError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::DatabaseError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::DriveError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),

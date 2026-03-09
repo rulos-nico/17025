@@ -6,9 +6,10 @@ use axum::{
 };
 
 use crate::errors::AppError;
-use crate::models::{CreateEnsayo, Ensayo, UpdateEnsayo, UpdateEnsayoStatus, WorkflowState};
-use crate::repositories::{EnsayoRepository, PerforacionRepository};
+use crate::models::{CreateEnsayo, Ensayo, UpdateEnsayo, UpdateEnsayoStatus, ValidarEnsayoRequest, ValidarEnsayoResponse, WorkflowState};
+use crate::repositories::{EnsayoRepository, PerforacionRepository, PersonalInternoRepository};
 use crate::services::google_drive::GoogleDriveClient;
+use crate::services::scheduler::SchedulerService;
 use crate::utils::id::{generate_dated_code, generate_uuid};
 use crate::AppState;
 
@@ -17,6 +18,7 @@ pub fn routes() -> Router<AppState> {
         .route("/", get(list_ensayos).post(create_ensayo))
         .route("/{id}", get(get_ensayo).put(update_ensayo).delete(delete_ensayo))
         .route("/{id}/status", put(update_status))
+        .route("/{id}/validar", post(validar_ensayo))
         .route("/{id}/pdf", get(download_pdf))
         .route("/{id}/pdf/generate", post(generate_pdf))
 }
@@ -222,6 +224,86 @@ async fn update_status(
     let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
 
     Ok(Json(ensayo))
+}
+
+/// POST /api/ensayos/:id/validar
+/// Valida un ensayo (E1 → E2) con asignación automática de técnico, fecha y equipos.
+async fn validar_ensayo(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<ValidarEnsayoRequest>,
+) -> Result<Json<ValidarEnsayoResponse>, AppError> {
+    let repo = EnsayoRepository::new(state.db_pool.clone());
+
+    // Obtener ensayo actual
+    let ensayo = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
+
+    // Solo se pueden validar ensayos en E1
+    if ensayo.workflow_state != WorkflowState::E1 {
+        return Err(AppError::BadRequest(format!(
+            "Solo se pueden validar ensayos en estado E1 (Sin programación). Estado actual: {}",
+            ensayo.workflow_state.display_name()
+        )));
+    }
+
+    let scheduler = SchedulerService::new(state.db_pool.clone());
+
+    // Determinar si es asignación automática o manual
+    let (tecnico_id, tecnico_nombre, fecha_programacion, equipos_ids, automatica) =
+        if payload.tecnico_id.is_some() || payload.fecha_programacion.is_some() {
+            // Asignación manual (parcial o total)
+            let personal_repo = PersonalInternoRepository::new(state.db_pool.clone());
+            let tid = payload.tecnico_id.as_deref().unwrap_or("");
+            let tnombre = if !tid.is_empty() {
+                personal_repo.find_by_id(tid).await?
+                    .map(|p| format!("{} {}", p.nombre, p.apellido))
+                    .unwrap_or_default()
+            } else {
+                String::new()
+            };
+            let fecha = payload.fecha_programacion
+                .as_deref()
+                .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+                .unwrap_or_else(|| chrono::Utc::now().date_naive() + chrono::Duration::days(1));
+            (tid.to_string(), tnombre, fecha, vec![], false)
+        } else {
+            // Asignación automática completa
+            let result = scheduler.asignar(&id, &ensayo.tipo).await?;
+            (result.tecnico_id, result.tecnico_nombre, result.fecha_programacion, result.equipos_ids, true)
+        };
+
+    // Actualizar ensayo: asignar técnico, fecha y equipos, cambiar a E2
+    let fecha_str = fecha_programacion.to_string();
+    sqlx::query(
+        r#"
+        UPDATE ensayos
+        SET workflow_state = 'E2',
+            tecnico_id = $2,
+            tecnico_nombre = $3,
+            fecha_programacion = $4,
+            equipos_utilizados = $5,
+            updated_at = NOW()
+        WHERE id = $1
+        "#
+    )
+    .bind(&id)
+    .bind(&tecnico_id)
+    .bind(&tecnico_nombre)
+    .bind(fecha_programacion)
+    .bind(&equipos_ids)
+    .execute(&state.db_pool)
+    .await
+    .map_err(AppError::from)?;
+
+    let ensayo_actualizado = repo.find_by_id(&id).await?.ok_or(AppError::NotFound)?;
+
+    Ok(Json(ValidarEnsayoResponse {
+        ensayo: ensayo_actualizado,
+        tecnico_nombre,
+        fecha_programacion: fecha_str,
+        equipos_asignados: equipos_ids,
+        asignacion_automatica: automatica,
+    }))
 }
 
 /// DELETE /api/ensayos/:id

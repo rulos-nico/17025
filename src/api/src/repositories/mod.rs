@@ -21,3 +21,6 @@ pub use personal_interno_repo::PersonalInternoRepository;
 pub use proyecto_repo::ProyectoRepository;
 pub use sensor_repo::SensorRepository;
 pub use tipos_ensayos_repo::TipoEnsayoRepository;
+
+pub mod usuario_repo;
+pub use usuario_repo::UsuarioRepository;
