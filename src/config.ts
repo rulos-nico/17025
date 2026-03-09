@@ -140,7 +140,7 @@ export interface DashboardStat {
 // CONFIGURACIÓN DE API
 // ============================================
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 // Validación en producción
 if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
@@ -164,70 +164,70 @@ export const API_CONFIG: ApiConfig = {
 
   endpoints: {
     auth: {
-      health: '/api/auth/health',
-      login: '/api/auth/login',
-      logout: '/api/auth/logout',
-      refresh: '/api/auth/refresh',
-      profile: '/api/auth/profile',
+      health: '/auth/health',
+      login: '/auth/login',
+      logout: '/auth/logout',
+      refresh: '/auth/refresh',
+      profile: '/auth/profile',
     },
 
     proyectos: {
-      ...createCrudEndpoints('/api/proyectos'),
-      perforaciones: (id: string | number) => `/api/proyectos/${id}/perforaciones`,
-      ensayos: (id: string | number) => `/api/proyectos/${id}/ensayos`,
+      ...createCrudEndpoints('/proyectos'),
+      perforaciones: (id: string | number) => `/proyectos/${id}/perforaciones`,
+      ensayos: (id: string | number) => `/proyectos/${id}/ensayos`,
     },
 
-    clientes: createCrudEndpoints('/api/clientes'),
+    clientes: createCrudEndpoints('/clientes'),
 
     ensayos: {
-      ...createCrudEndpoints('/api/ensayos'),
-      updateStatus: (id: string | number) => `/api/ensayos/${id}/status`,
+      ...createCrudEndpoints('/ensayos'),
+      updateStatus: (id: string | number) => `/ensayos/${id}/status`,
     },
 
     perforaciones: {
-      ...createCrudEndpoints('/api/perforaciones'),
-      ensayos: (id: string | number) => `/api/perforaciones/${id}/ensayos`,
-      muestras: (id: string | number) => `/api/perforaciones/${id}/muestras`,
+      ...createCrudEndpoints('/perforaciones'),
+      ensayos: (id: string | number) => `/perforaciones/${id}/ensayos`,
+      muestras: (id: string | number) => `/perforaciones/${id}/muestras`,
     },
 
     muestras: {
-      ...createCrudEndpoints('/api/muestras'),
-      ensayos: (id: string | number) => `/api/muestras/${id}/ensayos`,
+      ...createCrudEndpoints('/muestras'),
+      ensayos: (id: string | number) => `/muestras/${id}/ensayos`,
     },
 
-    equipos: createCrudEndpoints('/api/equipos'),
+    equipos: createCrudEndpoints('/equipos'),
 
-    sensores: createCrudEndpoints('/api/sensores'),
+    sensores: createCrudEndpoints('/sensores'),
 
-    personalInterno: createCrudEndpoints('/api/personal-interno'),
+    personalInterno: createCrudEndpoints('/personal-interno'),
 
     comprobaciones: {
-      ...createCrudEndpoints('/api/comprobaciones'),
-      byEquipo: (equipoId: string | number) => `/api/comprobaciones/equipo/${equipoId}`,
+      ...createCrudEndpoints('/comprobaciones'),
+      byEquipo: (equipoId: string | number) => `/comprobaciones/equipo/${equipoId}`,
     },
 
     calibraciones: {
-      ...createCrudEndpoints('/api/calibraciones'),
-      byEquipo: (equipoId: string | number) => `/api/calibraciones/equipo/${equipoId}`,
+      ...createCrudEndpoints('/calibraciones'),
+      byEquipo: (equipoId: string | number) => `/calibraciones/equipo/${equipoId}`,
     },
 
-    usuarios: createCrudEndpoints('/api/usuarios'),
+    usuarios: createCrudEndpoints('/usuarios'),
 
     reportes: {
-      ...createCrudEndpoints('/api/reportes'),
-      download: (id: string | number) => `/api/reportes/${id}/download`,
+      ...createCrudEndpoints('/reportes'),
+      download: (id: string | number) => `/reportes/${id}/download`,
     },
 
     dashboard: {
-      stats: '/api/dashboard/stats',
-      pending: '/api/dashboard/pendientes',
-      recent: '/api/dashboard/recientes',
+      stats: '/dashboard/stats',
+      pending: '/dashboard/pendientes',
+      recent: '/dashboard/recientes',
     },
 
     tiposEnsayo: {
-      list: '/api/tipos-ensayo',
-      get: (id: string | number) => `/api/tipos-ensayo/${id}`,
-      create: '/api/tipos-ensayo',
+      list: '/tipos-ensayo',
+      get: (id: string | number) => `/tipos-ensayo/${id}`,
+      create: '/tipos-ensayo',
     },
   },
 };

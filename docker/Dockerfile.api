@@ -1,0 +1,57 @@
+# =============================================================================
+# Stage 1: Chef - preparar entorno de compilación
+# =============================================================================
+FROM lukemathwalker/cargo-chef:latest-rust-1.88-bookworm AS chef
+
+WORKDIR /app
+
+# =============================================================================
+# Stage 2: Planner - generar receta de dependencias
+# =============================================================================
+FROM chef AS planner
+
+COPY src/api/Cargo.toml src/api/Cargo.lock ./
+COPY src/api/src ./src
+COPY src/api/migrations ./migrations
+
+RUN cargo chef prepare --recipe-path recipe.json
+
+# =============================================================================
+# Stage 3: Builder - compilar dependencias y luego el binario
+# =============================================================================
+FROM chef AS builder
+
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY src/api/Cargo.toml src/api/Cargo.lock ./
+COPY src/api/src ./src
+COPY src/api/migrations ./migrations
+
+RUN cargo build --release --bin lab-17025-api
+
+# =============================================================================
+# Stage 4: Runtime - imagen mínima
+# =============================================================================
+FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --shell /bin/bash appuser
+
+WORKDIR /app
+
+COPY --from=builder /app/target/release/lab-17025-api ./
+COPY src/api/migrations ./migrations
+
+USER appuser
+
+EXPOSE 3000
+
+ENV API_PORT=3000
+ENV RUN_MIGRATIONS=true
+ENV REQUIRE_AUTH=false
+
+CMD ["./lab-17025-api"]
