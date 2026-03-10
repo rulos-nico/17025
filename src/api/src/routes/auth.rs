@@ -27,6 +27,7 @@ pub fn routes() -> Router<AppState> {
 struct HealthResponse {
     status: String,
     version: String,
+    database: String,
 }
 
 /// Request para login con token de Google
@@ -79,11 +80,24 @@ pub struct SuccessResponse {
 // HANDLERS
 // ============================================
 
-/// Health check endpoint
-async fn health_check() -> Json<HealthResponse> {
+/// Health check endpoint - verifica estado del servicio y conexion a DB
+async fn health_check(State(state): State<AppState>) -> Json<HealthResponse> {
+    let db_status = match sqlx::query("SELECT 1")
+        .fetch_one(&state.db_pool)
+        .await
+    {
+        Ok(_) => "connected",
+        Err(_) => "disconnected",
+    };
+
     Json(HealthResponse {
-        status: "ok".to_string(),
+        status: if db_status == "connected" {
+            "ok".to_string()
+        } else {
+            "degraded".to_string()
+        },
         version: env!("CARGO_PKG_VERSION").to_string(),
+        database: db_status.to_string(),
     })
 }
 

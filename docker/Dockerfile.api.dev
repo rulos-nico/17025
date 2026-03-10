@@ -1,0 +1,37 @@
+# =============================================================================
+# Dockerfile.api.dev - Desarrollo con cargo-watch (hot-reload)
+# =============================================================================
+# El codigo fuente se monta como volumen en docker-compose.dev.yml.
+# cargo-watch recompila automaticamente al detectar cambios.
+# =============================================================================
+
+FROM rust:1.88-bookworm
+
+# Instalar cargo-watch para hot-reload
+# NOTA: cargo-watch fue archivado en Ene 2025 pero sigue funcional.
+# Alternativa futura: bacon (cargo install --locked bacon)
+RUN cargo install cargo-watch
+
+WORKDIR /app
+
+# Copiar manifiestos para cachear dependencias
+COPY src/api/Cargo.toml src/api/Cargo.lock ./
+COPY src/api/migrations ./migrations
+
+# Compilar dependencias con un main.rs dummy (cache layer).
+# Esto permite que las dependencias se cacheen en una capa Docker separada.
+# El directorio migrations/ ya esta copiado para satisfacer sqlx::migrate!()
+# en caso de que se invoque, aunque el dummy main.rs no lo hace.
+RUN mkdir src && \
+    echo 'fn main() { println!("placeholder"); }' > src/main.rs && \
+    cargo build && \
+    rm -rf src
+
+EXPOSE 3000
+
+# cargo-watch: recompila y ejecuta al detectar cambios en src/ o migrations/
+# -x run   = ejecutar `cargo run`
+# -w src   = observar directorio src/
+# -w migrations = observar migraciones
+# --why    = mostrar que archivo cambio
+CMD ["cargo", "watch", "-x", "run", "-w", "src", "-w", "migrations", "--why"]

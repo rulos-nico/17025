@@ -32,3 +32,6 @@ dist-ssr
 target/
 **/*.rs.bk
 Cargo.lock
+
+# OpenCode
+.opencode/

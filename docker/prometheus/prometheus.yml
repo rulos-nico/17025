@@ -1,0 +1,19 @@
+# Configuracion de Prometheus para desarrollo
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Metricas del API Rust (endpoint expuesto por axum-prometheus)
+  - job_name: "lab17025-api"
+    metrics_path: "/api/metrics"
+    static_configs:
+      - targets: ["api:3000"]
+        labels:
+          service: "api"
+          environment: "development"
+
+  # Metricas propias de Prometheus
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

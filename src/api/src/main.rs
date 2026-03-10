@@ -9,6 +9,8 @@ mod utils;
 
 use axum::Router;
 use axum::http::{HeaderValue, Method, header};
+use axum::routing::get;
+use axum_prometheus::PrometheusMetricLayer;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -89,10 +91,15 @@ async fn main() {
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
         .allow_credentials(true);
 
+    // Inicializar métricas de Prometheus
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
     // Construir router
     let app = Router::new()
         .nest("/api", routes::public_routes())
         .nest("/api", routes::protected_routes(state.clone()))
+        .route("/api/metrics", get(|| async move { metric_handle.render() }))
+        .layer(prometheus_layer)
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);
