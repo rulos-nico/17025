@@ -221,22 +221,26 @@ export interface ItemToDelete {
 // HELPERS DE PERMISOS
 // ============================================
 
-export const canCreateProject = (rol: UserRole): boolean => ['admin', 'coordinador'].includes(rol);
+export const canCreateProject = (rol: UserRole): boolean =>
+  rol === 'admin' || ['coordinador'].includes(rol);
 
-export const canEditProject = (rol: UserRole): boolean => ['admin', 'coordinador'].includes(rol);
+export const canEditProject = (rol: UserRole): boolean =>
+  rol === 'admin' || ['coordinador'].includes(rol);
 
-export const canDeleteProject = (rol: UserRole): boolean => ['admin', 'coordinador'].includes(rol);
+export const canDeleteProject = (rol: UserRole): boolean =>
+  rol === 'admin' || ['coordinador'].includes(rol);
 
 export const canRelatePhysicalSample = (rol: UserRole): boolean =>
-  ['admin', 'coordinador', 'tecnico'].includes(rol);
+  rol === 'admin' || ['coordinador', 'tecnico'].includes(rol);
 
 export const canAddMuestras = (rol: UserRole): boolean =>
-  ['admin', 'coordinador', 'tecnico'].includes(rol);
+  rol === 'admin' || ['coordinador', 'tecnico'].includes(rol);
 
-export const canRequestTest = (rol: UserRole): boolean => ['cliente'].includes(rol);
+export const canRequestTest = (rol: UserRole): boolean =>
+  rol === 'admin' || ['cliente'].includes(rol);
 
 export const canCreatePerforations = (rol: UserRole): boolean =>
-  ['admin', 'coordinador'].includes(rol);
+  rol === 'admin' || ['coordinador'].includes(rol);
 
 // ============================================
 // HELPERS DE ESTADO

@@ -3,6 +3,8 @@
  *
  * Centraliza la lógica de autorización para evitar duplicación
  * y facilitar el mantenimiento de reglas de negocio.
+ *
+ * REGLA: El rol 'admin' tiene acceso total a todas las funcionalidades.
  */
 
 // ============================================
@@ -21,28 +23,42 @@ export const ESTADOS_SIN_NOVEDAD = ['E3', 'E5', 'E15'];
 export const ESTADOS_APROBACION = ['E10', 'E11', 'E12'];
 
 // ============================================
+// ADMIN BYPASS
+// ============================================
+
+/**
+ * Verifica si el rol es administrador.
+ * El admin tiene acceso total a todas las funcionalidades.
+ */
+export const isAdmin = (rol: string): boolean => rol === 'admin';
+
+// ============================================
 // HELPERS DE VERIFICACIÓN DE PERMISOS
 // ============================================
 
 /**
  * Verifica si el rol puede cambiar estado de ensayos
  */
-export const canChangeState = (rol: string): boolean => ROLES_CON_CAMBIO_ESTADO.includes(rol);
+export const canChangeState = (rol: string): boolean =>
+  isAdmin(rol) || ROLES_CON_CAMBIO_ESTADO.includes(rol);
 
 /**
  * Verifica si el rol puede reasignar técnicos a ensayos
  */
-export const canReassign = (rol: string): boolean => ROLES_CON_REASIGNACION.includes(rol);
+export const canReassign = (rol: string): boolean =>
+  isAdmin(rol) || ROLES_CON_REASIGNACION.includes(rol);
 
 /**
  * Verifica si el rol puede aprobar/rechazar revisiones
  */
-export const canApproveReject = (rol: string): boolean => ROLES_CON_APROBACION.includes(rol);
+export const canApproveReject = (rol: string): boolean =>
+  isAdmin(rol) || ROLES_CON_APROBACION.includes(rol);
 
 /**
  * Verifica si el rol puede marcar ensayos como novedad
  */
-export const canMarkAsNovedad = (rol: string): boolean => ROLES_CON_NOVEDAD.includes(rol);
+export const canMarkAsNovedad = (rol: string): boolean =>
+  isAdmin(rol) || ROLES_CON_NOVEDAD.includes(rol);
 
 /**
  * Verifica si el rol es de tipo cliente
@@ -60,11 +76,14 @@ export const canEnsayoHaveNovedad = (workflowState: string): boolean =>
 // ============================================
 
 /**
- * Filtra las transiciones de workflow disponibles según el rol del usuario
- * Los técnicos no pueden aprobar revisiones (E10, E11, E12)
+ * Filtra las transiciones de workflow disponibles según el rol del usuario.
+ * Admin ve todas las transiciones. Los técnicos no pueden aprobar (E10, E11, E12).
  */
 export const filterTransitionsByRole = (transiciones: string[], userRole: string): string[] => {
   if (!Array.isArray(transiciones)) return [];
+
+  // Admin puede hacer todas las transiciones
+  if (isAdmin(userRole)) return transiciones;
 
   if (userRole === 'tecnico') {
     return transiciones.filter(estado => !ESTADOS_APROBACION.includes(estado));
@@ -82,6 +101,9 @@ export const canPerformTransition = (
   userRole: string,
   allowedTransitions: string[] = []
 ): boolean => {
+  // Admin puede hacer cualquier transición permitida por el workflow
+  if (isAdmin(userRole)) return allowedTransitions.includes(toState);
+
   // Verificar que la transición esté permitida en general
   if (!allowedTransitions.includes(toState)) {
     return false;

@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import PageLayout from '../components/PageLayout';
 import { Badge, Card, Modal } from '../components/ui';
 import { SolicitarEnsayoModal } from '../components/modals';
-import { useAuth } from '../hooks/useAuth';
 import { ESTADO_PROYECTO, getWorkflowInfo } from '../config';
 import { useTiposEnsayoData } from '../hooks/useTiposEnsayoData';
 import { ProyectosAPI, PerforacionesAPI, MuestrasAPI, EnsayosAPI } from '../services/apiService';
@@ -251,7 +250,6 @@ function EnsayoDetalleCliente({ ensayo, onClose }: EnsayoDetalleClienteProps) {
 // ============================================
 
 export default function MisProyectos() {
-  const { user } = useAuth();
   const { findTipoEnsayo } = useTiposEnsayoData();
 
   // Estado con datos desde API
@@ -420,14 +418,6 @@ export default function MisProyectos() {
 
   return (
     <PageLayout title="Mis Proyectos">
-      {/* Mensaje de bienvenida */}
-      <div className={styles.welcomeBanner}>
-        <div className={styles.welcomeTitle}>Bienvenido, {user?.name || 'Cliente'}</div>
-        <div className={styles.welcomeText}>
-          Desde aqui puede ver el estado de sus proyectos, muestras y solicitar nuevos ensayos.
-        </div>
-      </div>
-
       {/* Resumen superior */}
       <div className={styles.statsGrid}>
         <Card>

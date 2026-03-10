@@ -78,40 +78,48 @@ export function useMultipleApiData<T extends Record<string, unknown> = Record<st
       setError(null);
 
       try {
-        // Ejecutar todas las APIs en paralelo
+        // Ejecutar todas las APIs en paralelo con allSettled
+        // para que un fallo parcial no pierda los datos exitosos
         const promises = keys.map(key => config[key].api());
-        const results = await Promise.all(promises);
+        const settled = await Promise.allSettled(promises);
 
         if (!mountedRef.current) return undefined;
 
-        // Transformar y construir objeto de datos
+        // Transformar y construir objeto de datos (solo los exitosos)
         const newData: Record<string, unknown> = {};
+        const errors: string[] = [];
+
         keys.forEach((key, index) => {
-          const result = results[index];
+          const outcome = settled[index];
           const transform = config[key].transform;
           const initialData = config[key].initialData ?? [];
-          newData[key] = transform ? transform(result) : result || initialData;
+
+          if (outcome.status === 'fulfilled') {
+            const result = outcome.value;
+            newData[key] = transform ? transform(result) : result || initialData;
+          } else {
+            // Fallo parcial: mantener initialData y registrar error
+            newData[key] = initialData;
+            const reason =
+              outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
+            errors.push(`${key}: ${reason}`);
+            console.warn(`useMultipleApiData: fallo parcial en "${key}":`, outcome.reason);
+          }
         });
 
         setDataState(newData as T);
 
-        if (onSuccess) {
+        if (errors.length > 0) {
+          const errorMessage = `Error parcial: ${errors.join('; ')}`;
+          setError(errorMessage);
+          if (onError) {
+            onError(new Error(errorMessage));
+          }
+        } else if (onSuccess) {
           onSuccess(newData);
         }
 
         return newData as T;
-      } catch (err) {
-        if (!mountedRef.current) return undefined;
-
-        const errorMessage = err instanceof Error ? err.message : 'Error al cargar los datos';
-        setError(errorMessage);
-        console.error('useMultipleApiData error:', err);
-
-        if (onError) {
-          onError(err instanceof Error ? err : new Error(errorMessage));
-        }
-
-        throw err;
       } finally {
         if (mountedRef.current) {
           setLoading(false);

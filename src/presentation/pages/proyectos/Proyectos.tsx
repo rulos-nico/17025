@@ -72,12 +72,13 @@ interface RawApiData extends Record<string, unknown> {
 // ============================================
 
 export default function Proyectos() {
-  const { user: _user } = useAuth();
+  const { user } = useAuth();
   const { findTipoEnsayo } = useTiposEnsayoData();
 
-  // Permitir cambiar rol para pruebas en modo demo
-  const [devRole, setDevRole] = useState<UserRole>('tecnico');
-  const userRole = devRole;
+  // Rol real del usuario autenticado (dev switcher lo puede sobreescribir)
+  const authRole = (user?.rol as UserRole) || 'tecnico';
+  const [devRole, setDevRole] = useState<UserRole>(authRole);
+  const userRole = import.meta.env.DEV ? devRole : authRole;
 
   // Usar hook centralizado para fetching de datos
   const {
