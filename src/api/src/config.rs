@@ -24,7 +24,9 @@ impl Config {
             spreadsheet_id: std::env::var("GOOGLE_SPREADSHEET_ID").ok(),
             drive_root_folder_id: std::env::var("GOOGLE_DRIVE_ROOT_FOLDER_ID").ok(),
             allowed_origins: std::env::var("ALLOWED_ORIGINS")
-                .unwrap_or_else(|_| "http://localhost:5173".to_string())
+                .unwrap_or_else(|_| {
+                    "http://localhost:5173,https://lab17025.localhost:1355".to_string()
+                })
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .collect(),

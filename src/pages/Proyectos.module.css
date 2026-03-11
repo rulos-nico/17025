@@ -229,6 +229,15 @@
   background-color: var(--color-error-50);
 }
 
+.btnReport {
+  border-color: var(--color-purple-500, #8b5cf6);
+  color: var(--color-purple-500, #8b5cf6);
+}
+
+.btnReport:hover {
+  background-color: var(--color-purple-50, #f5f3ff);
+}
+
 /* Perforacion Card */
 .perforacionCard {
   display: flex;
@@ -325,12 +334,94 @@
   font-weight: var(--font-normal);
 }
 
-.ensayosCotizadosBox {
+/* ---- Ensayos cotizados (trigger + modal) ---- */
+
+.cotizadosTriggerWrapper {
   margin-bottom: var(--spacing-3);
-  padding: var(--spacing-2);
+}
+
+.cotizadosTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
   background-color: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cotizadosTrigger:hover {
+  background-color: var(--color-gray-200);
+  border-color: var(--color-gray-400);
+}
+
+.cotizadosTriggerCount {
+  font-weight: var(--font-bold, 700);
+  color: var(--color-primary-600, #2563eb);
+}
+
+.cotizadosModalBody {
+  padding: var(--spacing-2) 0;
+}
+
+.cotizadosModalSummary {
+  margin-bottom: var(--spacing-3);
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+}
+
+.cotizadosTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.cotizadosTable th {
+  text-align: left;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-weight: var(--font-semibold, 600);
+  color: var(--color-gray-700);
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+.cotizadosTable th:last-child {
+  text-align: center;
+}
+
+.cotizadosTable td {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.cotizadosTable td:last-child {
+  text-align: center;
+  font-weight: var(--font-bold, 700);
+}
+
+/* Fila colores por estado */
+.cotizadosRowFull {
+  background-color: var(--color-success-50);
+  color: var(--color-success-700);
+}
+
+.cotizadosRowPartial {
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-700);
+}
+
+.cotizadosRowEmpty {
+  background-color: var(--color-gray-50, #f9fafb);
+  color: var(--color-gray-600);
+}
+
+.cotizadosRowOver {
+  background-color: var(--color-danger-50, #fef2f2);
+  color: var(--color-danger-700, #b91c1c);
 }
 
 .btnSuccess {

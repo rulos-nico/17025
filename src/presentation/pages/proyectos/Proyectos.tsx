@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from 'react';
 import PageLayout from '../../../components/PageLayout';
-import { Badge, Card } from '../../../components/ui';
+import { Badge, Card, Modal } from '../../../components/ui';
 import { SolicitarEnsayoModal } from '../../../components/modals';
 import { useAuth } from '../../../hooks/useAuth';
 import { useMultipleApiData, useMutation } from '../../../hooks';
@@ -71,7 +71,11 @@ interface RawApiData extends Record<string, unknown> {
 // COMPONENTE PRINCIPAL
 // ============================================
 
-export default function Proyectos() {
+interface ProyectosProps {
+  navigateToModule?: (module: string, params?: Record<string, unknown>) => void;
+}
+
+export default function Proyectos({ navigateToModule }: ProyectosProps) {
   const { user } = useAuth();
   const { findTipoEnsayo } = useTiposEnsayoData();
 
@@ -178,6 +182,7 @@ export default function Proyectos() {
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroCliente, setFiltroCliente] = useState('todos');
+  const [showCotizadosModal, setShowCotizadosModal] = useState(false);
 
   // Estados para operaciones CRUD
   const [error, setError] = useState<string | null>(null);
@@ -597,31 +602,45 @@ export default function Proyectos() {
                       </div>
                       <div className={styles.projectBadgeActions}>
                         <Badge color={estado.color}>{estado.label}</Badge>
-                        {canEditProject(userRole) && (
-                          <div className={styles.projectActions}>
+                        <div className={styles.projectActions}>
+                          {navigateToModule && (
                             <button
                               onClick={e => {
                                 e.stopPropagation();
-                                setEditingProyecto(proyecto);
-                                setShowEditarProyecto(true);
+                                navigateToModule('reporteProyecto', { proyectoId: proyecto.id });
                               }}
-                              className={`${styles.btnSmall} ${styles.btnEdit}`}
+                              className={`${styles.btnSmall} ${styles.btnReport}`}
+                              title="Ver reporte de este proyecto"
                             >
-                              Editar
+                              Ver reporte
                             </button>
-                            {canDeleteProject(userRole) && (
+                          )}
+                          {canEditProject(userRole) && (
+                            <>
                               <button
                                 onClick={e => {
                                   e.stopPropagation();
-                                  handleDeleteClick('proyecto', proyecto);
+                                  setEditingProyecto(proyecto);
+                                  setShowEditarProyecto(true);
                                 }}
-                                className={`${styles.btnSmall} ${styles.btnDanger}`}
+                                className={`${styles.btnSmall} ${styles.btnEdit}`}
                               >
-                                Eliminar
+                                Editar
                               </button>
-                            )}
-                          </div>
-                        )}
+                              {canDeleteProject(userRole) && (
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleDeleteClick('proyecto', proyecto);
+                                  }}
+                                  className={`${styles.btnSmall} ${styles.btnDanger}`}
+                                >
+                                  Eliminar
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className={styles.projectStats}>
@@ -652,19 +671,39 @@ export default function Proyectos() {
             <div className={styles.emptyState}>Selecciona un proyecto</div>
           ) : (
             <>
-              {/* Resumen de ensayos cotizados */}
+              {/* Botón para ver ensayos cotizados en modal */}
               {selectedProyecto.ensayosCotizados &&
-                Object.keys(selectedProyecto.ensayosCotizados).length > 0 && (
-                  <div className={styles.ensayosCotizadosBox}>
-                    <strong>Ensayos cotizados:</strong>{' '}
-                    {Object.entries(selectedProyecto.ensayosCotizados)
-                      .map(([tipo, cant]) => {
-                        const tipoInfo = findTipoEnsayo(tipo);
-                        return `${tipoInfo.nombre}: ${cant}`;
-                      })
-                      .join(', ')}
-                  </div>
-                )}
+                Object.keys(selectedProyecto.ensayosCotizados).length > 0 &&
+                (() => {
+                  const cotizadosEntries = Object.entries(selectedProyecto.ensayosCotizados);
+                  const ensayosDelProyecto = ensayos.filter(
+                    e => e.proyectoId === selectedProyecto.id
+                  );
+                  const solicitadosPorTipo: Record<string, number> = {};
+                  ensayosDelProyecto.forEach(e => {
+                    solicitadosPorTipo[e.tipo] = (solicitadosPorTipo[e.tipo] || 0) + 1;
+                  });
+                  const totalCotizadosSum = cotizadosEntries.reduce((s, [, c]) => s + c, 0);
+                  const totalSolicitadosSum = cotizadosEntries.reduce(
+                    (s, [t]) => s + (solicitadosPorTipo[t] || 0),
+                    0
+                  );
+
+                  return (
+                    <div className={styles.cotizadosTriggerWrapper}>
+                      <button
+                        type="button"
+                        className={styles.cotizadosTrigger}
+                        onClick={() => setShowCotizadosModal(true)}
+                      >
+                        Ensayos cotizados{' '}
+                        <span className={styles.cotizadosTriggerCount}>
+                          {totalSolicitadosSum}/{totalCotizadosSum}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })()}
 
               <div className={styles.cardList}>
                 {perforacionesProyecto.length === 0 ? (
@@ -1040,6 +1079,71 @@ export default function Proyectos() {
         itemToDelete={itemToDelete}
         loading={saving}
       />
+
+      {/* Modal de ensayos cotizados */}
+      {selectedProyecto?.ensayosCotizados &&
+        Object.keys(selectedProyecto.ensayosCotizados).length > 0 && (
+          <Modal
+            isOpen={showCotizadosModal}
+            onClose={() => setShowCotizadosModal(false)}
+            title="Ensayos cotizados"
+            width="700px"
+          >
+            <div className={styles.cotizadosModalBody}>
+              {(() => {
+                const cotizadosEntries = Object.entries(selectedProyecto.ensayosCotizados);
+                const ensayosDelProyecto = ensayos.filter(
+                  e => e.proyectoId === selectedProyecto.id
+                );
+                const solicitadosPorTipo: Record<string, number> = {};
+                ensayosDelProyecto.forEach(e => {
+                  solicitadosPorTipo[e.tipo] = (solicitadosPorTipo[e.tipo] || 0) + 1;
+                });
+                const totalCotizadosSum = cotizadosEntries.reduce((s, [, c]) => s + c, 0);
+                const totalSolicitadosSum = cotizadosEntries.reduce(
+                  (s, [t]) => s + (solicitadosPorTipo[t] || 0),
+                  0
+                );
+
+                return (
+                  <>
+                    <div className={styles.cotizadosModalSummary}>
+                      Total solicitados: <strong>{totalSolicitadosSum}</strong> de{' '}
+                      <strong>{totalCotizadosSum}</strong> cotizados
+                    </div>
+                    <table className={styles.cotizadosTable}>
+                      <thead>
+                        <tr>
+                          <th>Tipo de ensayo</th>
+                          <th>Solicitados / Cotizados</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cotizadosEntries.map(([tipo, cotizados]) => {
+                          const tipoInfo = findTipoEnsayo(tipo);
+                          const solicitados = solicitadosPorTipo[tipo] || 0;
+                          let rowClass = styles.cotizadosRowEmpty;
+                          if (solicitados > cotizados) rowClass = styles.cotizadosRowOver;
+                          else if (solicitados >= cotizados) rowClass = styles.cotizadosRowFull;
+                          else if (solicitados > 0) rowClass = styles.cotizadosRowPartial;
+
+                          return (
+                            <tr key={tipo} className={rowClass}>
+                              <td>{tipoInfo.nombre}</td>
+                              <td>
+                                {solicitados} / {cotizados}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                );
+              })()}
+            </div>
+          </Modal>
+        )}
     </PageLayout>
   );
 }

@@ -31,7 +31,7 @@ services:
     environment:
       POSTGRES_DB: lab17025
       POSTGRES_USER: lab17025
-      POSTGRES_PASSWORD: lab17025_dev
+      POSTGRES_PASSWORD: "Kimposible14@"
     ports:
       # Puerto 5434 para evitar conflicto con docker-compose.yml que usa 5433
       - "5434:5432"
@@ -49,6 +49,7 @@ services:
   # Backend API (Rust/Axum + cargo-watch)
   # -------------------------------------------
   api:
+    image: lab17025-dev-api:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.api.dev
@@ -58,11 +59,11 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://lab17025:lab17025_dev@db:5432/lab17025
+      DATABASE_URL: postgres://lab17025:Kimposible14%40@db:5432/lab17025
       API_PORT: "3000"
       RUN_MIGRATIONS: "true"
       REQUIRE_AUTH: "false"
-      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost,http://localhost:80"
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost,http://localhost:80,https://lab17025.localhost:1355"
       RUST_LOG: "lab_17025_api=debug,tower_http=debug"
       RUST_BACKTRACE: "1"
     ports:
@@ -88,6 +89,7 @@ services:
   # Frontend (Vite dev server con HMR)
   # -------------------------------------------
   frontend:
+    image: lab17025-dev-frontend:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend.dev
@@ -96,7 +98,7 @@ services:
     depends_on:
       - api
     environment:
-      VITE_API_URL: http://localhost:3000
+      VITE_API_URL: http://localhost:3000/api
       VITE_APP_ENV: development
       VITE_AUTH_BYPASS: "true"
     ports:
@@ -114,7 +116,7 @@ services:
       # Excluir el backend Rust del frontend
       - /app/src/api
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5173 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5173 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

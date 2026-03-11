@@ -11,10 +11,11 @@ YELLOW = \033[0;33m
 RED    = \033[0;31m
 NC     = \033[0m # No Color
 
-.PHONY: help dev dev-full dev-monitoring dev-db down down-clean \
-        logs logs-api logs-frontend logs-db \
+.PHONY: help dev dev-build dev-full dev-monitoring dev-db down down-clean \
+        logs logs-api logs-frontend logs-front logs-db \
         restart-api restart-frontend rebuild-api rebuild-frontend \
-        db-shell db-dump status health build prod
+        db-shell db-dump status health build prod \
+        portless-start portless-stop dev-portless dev-local
 
 # -------------------------------------------
 # Ayuda
@@ -29,14 +30,18 @@ help: ## Mostrar esta ayuda
 # Desarrollo
 # -------------------------------------------
 dev: ## Levantar servicios core (DB + API + Frontend)
-	$(COMPOSE_DEV) up -d
+	$(COMPOSE_DEV) up -d --build
 	@echo "$(GREEN)Stack de desarrollo levantado$(NC)"
 	@echo "  Frontend: http://localhost:5173"
 	@echo "  API:      http://localhost:3000"
 	@echo "  DB:       localhost:5434"
 
+dev-build: ## Forzar rebuild completo de imagenes y levantar
+	$(COMPOSE_DEV) up -d --build --force-recreate
+	@echo "$(GREEN)Stack reconstruido y levantado$(NC)"
+
 dev-full: ## Levantar todo (core + monitoreo + admin DB)
-	$(COMPOSE_DEV) --profile monitoring --profile dbadmin up -d
+	$(COMPOSE_DEV) --profile monitoring --profile dbadmin up -d --build
 	@echo "$(GREEN)Stack completo levantado$(NC)"
 	@echo "  Frontend:   http://localhost:5173"
 	@echo "  API:        http://localhost:3000"
@@ -46,10 +51,10 @@ dev-full: ## Levantar todo (core + monitoreo + admin DB)
 	@echo "  Prometheus: http://localhost:9090"
 
 dev-monitoring: ## Levantar core + monitoreo (Prometheus, Grafana, Loki)
-	$(COMPOSE_DEV) --profile monitoring up -d
+	$(COMPOSE_DEV) --profile monitoring up -d --build
 
 dev-db: ## Levantar core + Adminer (panel de DB)
-	$(COMPOSE_DEV) --profile dbadmin up -d
+	$(COMPOSE_DEV) --profile dbadmin up -d --build
 
 # -------------------------------------------
 # Detener
@@ -72,6 +77,8 @@ logs-api: ## Ver logs del API
 
 logs-frontend: ## Ver logs del frontend
 	$(COMPOSE_DEV) logs -f frontend
+
+logs-front: logs-frontend ## Alias de logs-frontend
 
 logs-db: ## Ver logs de PostgreSQL
 	$(COMPOSE_DEV) logs -f db
@@ -121,3 +128,44 @@ build: ## Build imagenes de produccion
 
 prod: ## Levantar stack de produccion
 	$(COMPOSE_PROD) up -d
+
+# -------------------------------------------
+# Portless (HTTPS local con URLs bonitas)
+# -------------------------------------------
+# Setup inicial (una sola vez):
+#   portless trust          # Agrega CA al trust store del sistema
+#   make portless-start     # Inicia el proxy HTTPS
+# -------------------------------------------
+
+portless-start: ## Iniciar proxy portless con HTTPS y registrar aliases
+	@portless proxy start --https 2>/dev/null || echo "$(YELLOW)Proxy ya esta corriendo$(NC)"
+	@portless alias lab17025 5173
+	@portless alias api.lab17025 3000
+	@echo "$(GREEN)Portless HTTPS proxy activo$(NC)"
+	@echo "  Frontend: https://lab17025.localhost:1355"
+	@echo "  API:      https://api.lab17025.localhost:1355"
+
+portless-stop: ## Detener proxy portless y limpiar aliases
+	@portless alias --remove lab17025 2>/dev/null || true
+	@portless alias --remove api.lab17025 2>/dev/null || true
+	@portless proxy stop 2>/dev/null || true
+	@echo "$(YELLOW)Portless proxy detenido$(NC)"
+
+dev-portless: ## Levantar Docker dev + portless HTTPS
+	$(COMPOSE_DEV) up -d --build
+	@$(MAKE) portless-start
+	@echo ""
+	@echo "$(GREEN)Stack Docker + Portless HTTPS levantado$(NC)"
+	@echo "  Frontend: https://lab17025.localhost:1355"
+	@echo "  API:      https://api.lab17025.localhost:1355"
+	@echo "  DB:       localhost:5434"
+
+dev-local: ## Registrar aliases portless para desarrollo local (sin Docker)
+	@$(MAKE) portless-start
+	@echo ""
+	@echo "$(GREEN)Aliases registrados. Ahora inicia tus servicios:$(NC)"
+	@echo "  Terminal 1: cd src/api && cargo watch -x run"
+	@echo "  Terminal 2: npx vite dev --mode portless"
+	@echo ""
+	@echo "  Frontend: https://lab17025.localhost:1355"
+	@echo "  API:      https://api.lab17025.localhost:1355"

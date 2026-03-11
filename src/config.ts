@@ -508,6 +508,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['admin', 'coordinador', 'tecnico'],
   },
   { label: 'Personal', path: '/usuarios', icon: 'users', roles: ['admin', 'coordinador'] },
+  {
+    label: 'Reportes',
+    path: '/reportes',
+    icon: 'reports',
+    roles: ['admin', 'coordinador', 'tecnico'],
+  },
 ];
 
 // ============================================

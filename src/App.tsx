@@ -1,4 +1,4 @@
-import { useState, MouseEvent, ReactElement } from 'react';
+import { useState, useCallback, MouseEvent, ReactElement } from 'react';
 import { NAV_ITEMS } from './config';
 import { useAuth } from './hooks/useAuth';
 // Pages - used dynamically in renderModule switch statement
@@ -9,6 +9,7 @@ import Personal from './pages/Personal';
 import Ensayo from './pages/Ensayo';
 import Proyectos from './presentation/pages/proyectos/Proyectos';
 import MisProyectos from './pages/MisProyectos';
+import ReporteProyecto from './pages/ReporteProyecto';
 import './App.css';
 
 interface AppUser {
@@ -24,6 +25,7 @@ type ModuleKey =
   | 'mis-proyectos'
   | 'ensayos'
   | 'reportes'
+  | 'reporteProyecto'
   | 'equipos'
   | 'usuarios';
 
@@ -31,7 +33,13 @@ type IconName = 'dashboard' | 'folder' | 'test' | 'clients' | 'reports' | 'equip
 
 function App() {
   const [activeModule, setActiveModule] = useState<string>('dashboard');
+  const [moduleParams, setModuleParams] = useState<Record<string, unknown> | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const navigateToModule = useCallback((module: string, params?: Record<string, unknown>) => {
+    setActiveModule(module);
+    setModuleParams(params || null);
+  }, []);
 
   // Use authentication
   const { isAuthenticated, isLoading, user: authUser, login, logout } = useAuth();
@@ -120,13 +128,15 @@ function App() {
       case 'dashboard':
         return <Home setActiveModule={setActive} />;
       case 'proyectos':
-        return <Proyectos />;
+        return <Proyectos navigateToModule={navigateToModule} />;
       case 'mis-proyectos':
         return <MisProyectos />;
       case 'ensayos':
         return <Ensayo />;
       case 'reportes':
-        return <Reports />;
+        return <Reports moduleParams={moduleParams} />;
+      case 'reporteProyecto':
+        return <ReporteProyecto moduleParams={moduleParams} navigateToModule={navigateToModule} />;
       case 'equipos':
         return <Equipos />;
       case 'usuarios':
@@ -159,7 +169,7 @@ function App() {
                   <button
                     className={`nav-link ${activeModule === item.path.slice(1) ? 'active' : ''}`}
                     onClick={() => {
-                      setActiveModule(item.path.slice(1));
+                      navigateToModule(item.path.slice(1));
                       setIsMenuOpen(false);
                     }}
                   >

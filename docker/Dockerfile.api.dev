@@ -7,6 +7,9 @@
 
 FROM rust:1.88-bookworm
 
+# Instalar curl para healthcheck (no siempre presente en bookworm)
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 # Instalar cargo-watch para hot-reload
 # NOTA: cargo-watch fue archivado en Ene 2025 pero sigue funcional.
 # Alternativa futura: bacon (cargo install --locked bacon)
@@ -29,9 +32,11 @@ RUN mkdir src && \
 
 EXPOSE 3000
 
-# cargo-watch: recompila y ejecuta al detectar cambios en src/ o migrations/
-# -x run   = ejecutar `cargo run`
-# -w src   = observar directorio src/
-# -w migrations = observar migraciones
-# --why    = mostrar que archivo cambio
-CMD ["cargo", "watch", "-x", "run", "-w", "src", "-w", "migrations", "--why"]
+# Entrypoint: invalidar la compilacion del dummy para forzar recompilacion
+# con el codigo fuente real montado via bind mount. Eliminar binario y los
+# fingerprints incrementales, luego arrancar cargo-watch.
+CMD rm -rf target/debug/.fingerprint/lab-17025-api-* \
+           target/debug/deps/lab_17025_api-* \
+           target/debug/lab-17025-api* \
+           target/debug/lab_17025_api* && \
+    cargo watch -x run -w src -w migrations --why

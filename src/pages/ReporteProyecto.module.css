@@ -1,0 +1,270 @@
+/**
+ * ReporteProyecto.module.css
+ * Estilos para la vista dedicada de reporte de un proyecto
+ */
+
+/* Loading / Empty */
+.loading {
+  text-align: center;
+  padding: var(--spacing-12);
+}
+
+.noProject {
+  text-align: center;
+  padding: var(--spacing-12);
+}
+
+.noProject p {
+  margin-bottom: var(--spacing-4);
+  color: var(--color-gray-500);
+}
+
+/* Project Header */
+.projectHeader {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+}
+
+.projectHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.projectTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: var(--font-bold);
+  color: var(--color-gray-900);
+}
+
+.projectMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+  flex-wrap: wrap;
+}
+
+/* Back button */
+.btnBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+  background-color: white;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+  align-self: flex-start;
+}
+
+.btnBack:hover {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.statCard {
+  padding: var(--spacing-4);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.statLabel {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--spacing-1);
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: var(--font-bold);
+}
+
+.statPending {
+  color: var(--color-warning-500);
+}
+.statProcess {
+  color: var(--color-primary-500);
+}
+.statReview {
+  color: var(--color-purple-500);
+}
+.statComplete {
+  color: var(--color-success-500);
+}
+
+/* Chart Layout */
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+@media (max-width: 768px) {
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartSection {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+}
+
+.chartSection h3 {
+  margin: 0 0 var(--spacing-4) 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+}
+
+.chartGrid .chartSection {
+  margin-bottom: 0;
+}
+
+.chartEmpty {
+  text-align: center;
+  padding: var(--spacing-8);
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+}
+
+/* Table Section (ensayos agrupados por muestra) */
+.tableSection {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+}
+
+.tableSection h3 {
+  margin: 0 0 var(--spacing-4) 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+}
+
+.muestraList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.muestraGroup {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.muestraHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: var(--transition-fast);
+  text-align: left;
+}
+
+.muestraHeader:hover {
+  background-color: var(--color-gray-100);
+}
+
+.muestraHeaderExpanded {
+  background-color: var(--color-gray-100);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.muestraInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.muestraLabel {
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-800);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: var(--color-gray-500);
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.ensayosTable {
+  padding: var(--spacing-3);
+  overflow-x: auto;
+}
+
+.ensayosTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.ensayosTable thead tr {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.ensayosTable th {
+  padding: var(--spacing-2) var(--spacing-3);
+  text-align: left;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+}
+
+.ensayosTable td {
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.ensayosTable tbody tr {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.ensayosTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.codCell {
+  font-weight: var(--font-semibold);
+  font-family: monospace;
+  font-size: var(--text-xs);
+}
