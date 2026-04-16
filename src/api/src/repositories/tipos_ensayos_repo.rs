@@ -1,6 +1,5 @@
 use sqlx::FromRow;
 use chrono::{DateTime, Utc, NaiveDate};
-use rust_decimal::Decimal;
 
 use crate::db::DbPool;
 use crate::models::{CreateTipoEnsayo, UpdateTipoEnsayo, TipoEnsayo};
@@ -16,7 +15,6 @@ pub struct TipoEnsayoRow {
     pub acre: String,
     pub activo: bool,
     pub orden: i32,
-    pub precio_base: Option<Decimal>,
     pub tiempo_estimado_dias: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -33,7 +31,6 @@ impl From<TipoEnsayoRow> for TipoEnsayo {
             acre: row.acre,
             activo: row.activo,
             orden: row.orden,
-            precio_base: row.precio_base.map(|d| d.to_string().parse().unwrap_or(0.0)),
             tiempo_estimado_dias: row.tiempo_estimado_dias,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
@@ -93,8 +90,8 @@ impl TipoEnsayoRepository {
 
         let row = sqlx::query_as::<_, TipoEnsayoRow>(&format!(
             r#"
-            INSERT INTO tipos_ensayo (id, nombre, categoria, vigente_desde, norma, acre, orden, precio_base, tiempo_estimado_dias)
-            VALUES ($1, $2, $3, $4, $5, $6::acreditacion, $7, $8, $9)
+            INSERT INTO tipos_ensayo (id, nombre, categoria, vigente_desde, norma, acre, orden, tiempo_estimado_dias)
+            VALUES ($1, $2, $3, $4, $5, $6::acreditacion, $7, $8)
             RETURNING {}
             "#,
             TIPO_ENSAYO_COLUMNS
@@ -106,7 +103,6 @@ impl TipoEnsayoRepository {
         .bind(&dto.norma)
         .bind(&dto.acre)
         .bind(dto.orden.unwrap_or(0))
-        .bind(dto.precio_base.map(Decimal::from_f64_retain).flatten())
         .bind(dto.tiempo_estimado_dias)
         .fetch_one(&self.pool)
         .await?;
@@ -130,8 +126,7 @@ impl TipoEnsayoRepository {
                 acre = COALESCE($6::acreditacion, acre),
                 activo = COALESCE($7, activo),
                 orden = COALESCE($8, orden),
-                precio_base = COALESCE($9, precio_base),
-                tiempo_estimado_dias = COALESCE($10, tiempo_estimado_dias),
+                tiempo_estimado_dias = COALESCE($9, tiempo_estimado_dias),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING {}
@@ -146,7 +141,6 @@ impl TipoEnsayoRepository {
         .bind(&dto.acre)
         .bind(dto.activo)
         .bind(dto.orden)
-        .bind(dto.precio_base.map(Decimal::from_f64_retain).flatten())
         .bind(dto.tiempo_estimado_dias)
         .fetch_optional(&self.pool)
         .await?;

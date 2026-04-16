@@ -22,5 +22,8 @@ pub use proyecto_repo::ProyectoRepository;
 pub use sensor_repo::SensorRepository;
 pub use tipos_ensayos_repo::TipoEnsayoRepository;
 
+pub mod tipo_ensayo_sheet_repo;
+pub use tipo_ensayo_sheet_repo::TipoEnsayoSheetRepository;
+
 pub mod usuario_repo;
 pub use usuario_repo::UsuarioRepository;

@@ -11,6 +11,7 @@ pub mod proyecto;
 pub mod sensores;
 pub mod tipos_ensayo;
 pub mod workflow;
+pub mod tipo_ensayo_sheet;
 
 pub use calibracion::*;
 pub use cliente::*;
@@ -25,3 +26,5 @@ pub use proyecto::*;
 pub use sensores::*;
 pub use tipos_ensayo::*;
 pub use workflow::*;
+pub use tipo_ensayo_sheet::*;
+

@@ -70,7 +70,7 @@ async fn create_ensayo(
 
     // Crear Sheet desde plantilla si existe y la perforación tiene folder
     if let Some(ref sheets_service) = state.ensayo_sheets_service {
-        if sheets_service.has_template(&ensayo.tipo) {
+        if sheets_service.has_template(&ensayo.tipo).await {
             if let Some(ref folder_id) = perforacion.drive_folder_id {
                 match sheets_service
                     .create_ensayo_sheet(&ensayo.tipo, &codigo, folder_id)

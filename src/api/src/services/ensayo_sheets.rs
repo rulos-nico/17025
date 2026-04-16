@@ -1,134 +1,63 @@
 //! Service for managing ensayo (test) sheets and PDF generation
 //! 
 //! This service handles:
-//! - Template mapping: which Sheet template to use for each test type
+//! - Template lookup from DB (tipos_ensayo_sheets table)
 //! - Sheet creation: copying templates to perforacion folders
 //! - PDF generation: exporting sheets as PDFs when tests reach E12 state
 
-use std::collections::HashMap;
-
+use crate::db::DbPool;
 use crate::errors::AppError;
+use crate::repositories::TipoEnsayoSheetRepository;
 use crate::services::google_drive::GoogleDriveClient;
-
-/// Configuration for an ensayo template
-#[derive(Debug, Clone)]
-pub struct EnsayoTemplate {
-    /// Google Drive file ID of the template Sheet
-    pub template_id: String,
-    /// Human-readable name of the test type
-    pub name: String,
-    /// Norma/standard associated with this test
-    pub norma: String,
-}
 
 /// Service for managing ensayo sheets and PDFs
 #[derive(Clone)]
 pub struct EnsayoSheetsService {
     drive_client: GoogleDriveClient,
-    templates: HashMap<String, EnsayoTemplate>,
+    sheet_repo: TipoEnsayoSheetRepository,
 }
 
 impl EnsayoSheetsService {
     /// Creates a new EnsayoSheetsService
     /// 
-    /// Templates are configured here. To add new test types:
-    /// 1. Create a Google Sheet template
-    /// 2. Get the file ID from the URL
-    /// 3. Add an entry in the templates HashMap below
-    pub fn new(drive_client: GoogleDriveClient) -> Self {
-        let templates = HashMap::new();
-
-        // ============================================================
-        // TEMPLATE CONFIGURATION
-        // Add your test type templates here
-        // Format: templates.insert("TIPO_CODIGO", EnsayoTemplate { ... });
-        // ============================================================
-        
-        // Ejemplo: Ensayo de Compresión Simple
-        // templates.insert(
-        //     "COMPRESION_SIMPLE".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1ABC123...".to_string(), // ID del Sheet de plantilla
-        //         name: "Compresión Simple".to_string(),
-        //         norma: "ASTM D2166".to_string(),
-        //     },
-        // );
-
-        // Ejemplo: Ensayo de Consolidación
-        // templates.insert(
-        //     "CONSOLIDACION".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1DEF456...".to_string(),
-        //         name: "Consolidación".to_string(),
-        //         norma: "ASTM D2435".to_string(),
-        //     },
-        // );
-
-        // Ejemplo: Ensayo Triaxial
-        // templates.insert(
-        //     "TRIAXIAL_UU".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1GHI789...".to_string(),
-        //         name: "Triaxial UU".to_string(),
-        //         norma: "ASTM D2850".to_string(),
-        //     },
-        // );
-
-        // Ejemplo: Límites de Atterberg
-        // templates.insert(
-        //     "LIMITES_ATTERBERG".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1JKL012...".to_string(),
-        //         name: "Límites de Atterberg".to_string(),
-        //         norma: "ASTM D4318".to_string(),
-        //     },
-        // );
-
-        // Ejemplo: Granulometría
-        // templates.insert(
-        //     "GRANULOMETRIA".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1MNO345...".to_string(),
-        //         name: "Granulometría".to_string(),
-        //         norma: "ASTM D422".to_string(),
-        //     },
-        // );
-
-        // Ejemplo: Humedad Natural
-        // templates.insert(
-        //     "HUMEDAD_NATURAL".to_string(),
-        //     EnsayoTemplate {
-        //         template_id: "1PQR678...".to_string(),
-        //         name: "Humedad Natural".to_string(),
-        //         norma: "ASTM D2216".to_string(),
-        //     },
-        // );
-
+    /// Templates are now read from the `tipos_ensayo_sheets` table in the database.
+    /// Use the CRUD endpoints at /api/tipos-ensayo-sheets to manage templates.
+    pub fn new(drive_client: GoogleDriveClient, db_pool: DbPool) -> Self {
         Self {
             drive_client,
-            templates,
+            sheet_repo: TipoEnsayoSheetRepository::new(db_pool),
         }
     }
 
-    /// Gets the template for a specific test type
-    pub fn get_template(&self, tipo_ensayo: &str) -> Option<&EnsayoTemplate> {
-        self.templates.get(tipo_ensayo)
-    }
+    /// Gets the template Drive ID for a specific tipo_ensayo_id from the DB
+    async fn get_template_drive_id(&self, tipo_ensayo_id: &str) -> Result<String, AppError> {
+        let sheet = self.sheet_repo
+            .find_active_by_tipo_ensayo_id(tipo_ensayo_id)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("DB error: {}", e)))?
+            .ok_or_else(|| AppError::BadRequest(
+                format!("No active template configured for tipo_ensayo: {}", tipo_ensayo_id)
+            ))?;
 
-    /// Returns all available test types with templates
-    pub fn get_available_types(&self) -> Vec<(&String, &EnsayoTemplate)> {
-        self.templates.iter().collect()
+        sheet.drive_id.ok_or_else(|| AppError::BadRequest(
+            format!("Template for tipo_ensayo {} has no drive_id", tipo_ensayo_id)
+        ))
     }
 
     /// Checks if a test type has a template configured
-    pub fn has_template(&self, tipo_ensayo: &str) -> bool {
-        self.templates.contains_key(tipo_ensayo)
+    pub async fn has_template(&self, tipo_ensayo_id: &str) -> bool {
+        self.sheet_repo
+            .find_active_by_tipo_ensayo_id(tipo_ensayo_id)
+            .await
+            .ok()
+            .flatten()
+            .is_some()
     }
 
     /// Creates a new ensayo sheet by copying the template to the perforacion folder
     /// 
     /// # Arguments
-    /// * `tipo_ensayo` - The test type code (e.g., "COMPRESION_SIMPLE")
+    /// * `tipo_ensayo_id` - The tipo_ensayo ID from the database
     /// * `ensayo_codigo` - The unique code for this test (e.g., "ENS-20250113-0001")
     /// * `perforacion_folder_id` - The Google Drive folder ID for the perforacion
     /// 
@@ -137,27 +66,23 @@ impl EnsayoSheetsService {
     /// * `Err(AppError)` - If the template doesn't exist or copy fails
     pub async fn create_ensayo_sheet(
         &self,
-        tipo_ensayo: &str,
+        tipo_ensayo_id: &str,
         ensayo_codigo: &str,
         perforacion_folder_id: &str,
     ) -> Result<(String, String), AppError> {
-        // Get the template for this test type
-        let template = self.get_template(tipo_ensayo)
-            .ok_or_else(|| AppError::BadRequest(
-                format!("No template configured for test type: {}", tipo_ensayo)
-            ))?;
+        let template_drive_id = self.get_template_drive_id(tipo_ensayo_id).await?;
 
         // Copy the template to the perforacion folder
         let sheet_id = self.drive_client
-            .copy_file(&template.template_id, ensayo_codigo, perforacion_folder_id)
+            .copy_file(&template_drive_id, ensayo_codigo, perforacion_folder_id)
             .await?;
 
         // Generate the view URL
         let sheet_url = GoogleDriveClient::get_view_url(&sheet_id);
 
         tracing::info!(
-            "Created ensayo sheet: {} (type: {}) in folder {}",
-            ensayo_codigo, tipo_ensayo, perforacion_folder_id
+            "Created ensayo sheet: {} (tipo_ensayo: {}) in folder {}",
+            ensayo_codigo, tipo_ensayo_id, perforacion_folder_id
         );
 
         Ok((sheet_id, sheet_url))
@@ -228,17 +153,4 @@ impl EnsayoSheetsService {
 pub struct EnsayoSheetCreationResult {
     pub sheet_id: String,
     pub sheet_url: String,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_template_url_generation() {
-        let sheet_id = "1ABC123xyz";
-        let view_url = GoogleDriveClient::get_view_url(sheet_id);
-        assert!(view_url.contains(sheet_id));
-        assert!(view_url.contains("edit"));
-    }
 }

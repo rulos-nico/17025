@@ -58,7 +58,7 @@ async fn main() {
         match GoogleDriveClient::new(&config).await {
             Ok(drive_client) => {
                 tracing::info!("Google Drive client initialized successfully");
-                let service = EnsayoSheetsService::new(drive_client);
+                let service = EnsayoSheetsService::new(drive_client, db_pool.clone());
                 tracing::info!("EnsayoSheetsService initialized - PDF generation enabled");
                 Some(service)
             }

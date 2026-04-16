@@ -22,13 +22,16 @@ pub struct Equipo {
     pub activo: bool,
     pub created_at: String,
     pub updated_at: String,
+    pub Calibraciones: Option<Vec<Calibracion>>,
+    pub Ensayos: Optio Option<Vec<Ensayo>>,
+    pub Comprobaciones: Option<Vec<Comprobacion>>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CreateEquipo {
+
     pub nombre: String,
     pub serie: String,
-
     pub placa: Option<String>,
     pub descripcion: Option<String>,
     pub marca: Option<String>,

@@ -10,7 +10,6 @@ pub struct TipoEnsayo {
     pub acre: String,
     pub activo: bool,
     pub orden: i32,
-    pub precio_base: Option<f64>,
     pub tiempo_estimado_dias: Option<i32>,
     pub created_at: String,
     pub updated_at: String,
@@ -24,7 +23,6 @@ pub struct CreateTipoEnsayo {
     pub norma: String,
     pub acre: String,
     pub orden: Option<i32>,
-    pub precio_base: Option<f64>,
     pub tiempo_estimado_dias: Option<i32>,
 }
 
@@ -37,7 +35,6 @@ pub struct UpdateTipoEnsayo {
     pub acre: Option<String>,
     pub activo: Option<bool>,
     pub orden: Option<i32>,
-    pub precio_base: Option<f64>,
     pub tiempo_estimado_dias: Option<i32>,
 }
 
@@ -49,7 +46,6 @@ pub struct TipoEnsayoInfo {
     pub norma: String,
     pub acre: String,
     pub orden: i32,
-    pub precio_base: Option<f64>,
     pub tiempo_estimado_dias: Option<i32>,
 }
 
@@ -62,7 +58,6 @@ impl From<TipoEnsayo> for TipoEnsayoInfo {
             norma: tipo.norma,
             acre: tipo.acre,
             orden: tipo.orden,
-            precio_base: tipo.precio_base,
             tiempo_estimado_dias: tipo.tiempo_estimado_dias,
         }
     }
