@@ -499,7 +499,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'folder',
     roles: ['admin', 'coordinador', 'tecnico'],
   },
-  { label: 'Mis Proyectos', path: '/mis-proyectos', icon: 'folder', roles: ['admin', 'cliente'] },
+  //{ label: 'Mis Proyectos', path: '/mis-proyectos', icon: 'folder', roles: ['admin', 'cliente'] },
   { label: 'Ensayos', path: '/ensayos', icon: 'test', roles: ['admin', 'coordinador', 'tecnico'] },
   {
     label: 'Equipos',

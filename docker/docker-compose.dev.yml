@@ -29,8 +29,8 @@ services:
     container_name: lab17025-dev-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: lab17025
-      POSTGRES_USER: lab17025
+      POSTGRES_DB: "17025"
+      POSTGRES_USER: rulos
       POSTGRES_PASSWORD: "Kimposible14@"
     ports:
       # Puerto 5434 para evitar conflicto con docker-compose.yml que usa 5433
@@ -38,7 +38,7 @@ services:
     volumes:
       - pgdata-dev:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lab17025 -d lab17025"]
+      test: ["CMD-SHELL", "pg_isready -U rulos -d 17025"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -59,7 +59,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://lab17025:Kimposible14%40@db:5432/lab17025
+      DATABASE_URL: postgres://rulos:Kimposible14%40@db:5432/17025
       API_PORT: "3000"
       RUN_MIGRATIONS: "true"
       REQUIRE_AUTH: "false"

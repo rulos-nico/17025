@@ -7,6 +7,7 @@
 .loading {
   text-align: center;
   padding: var(--spacing-12);
+  color: var(--color-gray-500);
 }
 
 .noProject {
@@ -19,19 +20,65 @@
   color: var(--color-gray-500);
 }
 
-/* Project Header */
+/* ============================================
+   SECTION HEADERS
+   ============================================ */
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-5);
+}
+
+.sectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-500);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sectionTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-900);
+}
+
+.sectionSubtitle {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  font-weight: var(--font-normal);
+}
+
+/* ============================================
+   PROJECT HEADER
+   ============================================ */
 .projectHeader {
   background-color: white;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  padding: var(--spacing-5);
-  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
+  border: 1px solid var(--color-gray-100);
 }
 
 .projectHeaderLeft {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
+  gap: var(--spacing-4);
 }
 
 .projectInfo {
@@ -62,13 +109,14 @@
   align-items: center;
   gap: 6px;
   padding: var(--spacing-2) var(--spacing-3);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
   background-color: white;
   color: var(--color-gray-700);
   cursor: pointer;
   font-size: var(--text-sm);
-  transition: var(--transition-fast);
+  font-weight: var(--font-medium);
+  transition: all var(--transition-fast);
   align-self: flex-start;
 }
 
@@ -77,52 +125,148 @@
   border-color: var(--color-gray-400);
 }
 
-/* Stats Grid */
+/* ============================================
+   STATS GRID
+   ============================================ */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .statCard {
-  padding: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-5);
   background-color: white;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   text-align: center;
+  border-left: 4px solid var(--color-gray-300);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  transition:
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
+}
+
+.statCard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.statCardTotal {
+  border-left-color: var(--color-gray-500);
+  background: linear-gradient(135deg, var(--color-gray-50), white);
+}
+
+.statCardPending {
+  border-left-color: var(--color-warning-500);
+  background: linear-gradient(135deg, var(--color-warning-50), white);
+}
+
+.statCardProcess {
+  border-left-color: var(--color-primary-500);
+  background: linear-gradient(135deg, var(--color-primary-50), white);
+}
+
+.statCardReview {
+  border-left-color: var(--color-purple-500);
+  background: linear-gradient(135deg, var(--color-purple-50), white);
+}
+
+.statCardComplete {
+  border-left-color: var(--color-success-500);
+  background: linear-gradient(135deg, var(--color-success-50), white);
+}
+
+.statCardProgress {
+  border-left-color: var(--color-cyan-500);
+  background: linear-gradient(135deg, var(--color-cyan-50), white);
+}
+
+.statIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.statIconTotal {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+.statIconPending {
+  background-color: var(--color-warning-100);
+  color: var(--color-warning-600);
+}
+
+.statIconProcess {
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.statIconReview {
+  background-color: var(--color-purple-100);
+  color: var(--color-purple-600);
+}
+
+.statIconComplete {
+  background-color: var(--color-success-100);
+  color: var(--color-success-600);
+}
+
+.statIconProgress {
+  background-color: var(--color-cyan-100);
+  color: var(--color-cyan-600);
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .statLabel {
   font-size: var(--text-xs);
   color: var(--color-gray-500);
-  margin-bottom: var(--spacing-1);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: var(--font-medium);
 }
 
 .statValue {
   font-size: 1.5rem;
   font-weight: var(--font-bold);
+  line-height: var(--leading-none);
 }
 
 .statPending {
-  color: var(--color-warning-500);
+  color: var(--color-warning-600);
 }
 .statProcess {
-  color: var(--color-primary-500);
+  color: var(--color-primary-600);
 }
 .statReview {
-  color: var(--color-purple-500);
+  color: var(--color-purple-600);
 }
 .statComplete {
-  color: var(--color-success-500);
+  color: var(--color-success-600);
 }
 
-/* Chart Layout */
+/* ============================================
+   CHART LAYOUT
+   ============================================ */
 .chartGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-6);
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 @media (max-width: 768px) {
@@ -133,16 +277,29 @@
 
 .chartSection {
   background-color: white;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  padding: var(--spacing-5);
-  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
+  border: 1px solid var(--color-gray-100);
+  transition: box-shadow var(--transition-normal);
+}
+
+.chartSection:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .chartSection h3 {
-  margin: 0 0 var(--spacing-4) 0;
+  margin: 0 0 var(--spacing-1) 0;
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
+  color: var(--color-gray-800);
+}
+
+.chartSectionSub {
+  margin: 0 0 var(--spacing-4) 0;
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
 }
 
 .chartGrid .chartSection {
@@ -151,24 +308,64 @@
 
 .chartEmpty {
   text-align: center;
-  padding: var(--spacing-8);
-  color: var(--color-gray-500);
+  padding: var(--spacing-10);
+  color: var(--color-gray-400);
   font-size: var(--text-sm);
 }
 
-/* Table Section (ensayos agrupados por muestra) */
+/* Custom Recharts Tooltip */
+.customTooltip {
+  background-color: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--text-sm);
+}
+
+.tooltipLabel {
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-800);
+  margin-bottom: var(--spacing-1);
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 2px 0;
+}
+
+.tooltipDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.tooltipValue {
+  font-weight: var(--font-semibold);
+  margin-left: auto;
+  padding-left: var(--spacing-3);
+}
+
+/* ============================================
+   TABLE SECTION (ensayos agrupados por muestra)
+   ============================================ */
 .tableSection {
   background-color: white;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  padding: var(--spacing-5);
-  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
+  border: 1px solid var(--color-gray-100);
 }
 
 .tableSection h3 {
   margin: 0 0 var(--spacing-4) 0;
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
+  color: var(--color-gray-800);
 }
 
 .muestraList {
@@ -179,8 +376,13 @@
 
 .muestraGroup {
   border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.muestraGroup:hover {
+  border-color: var(--color-gray-300);
 }
 
 .muestraHeader {
@@ -193,7 +395,7 @@
   border: none;
   cursor: pointer;
   font-size: var(--text-sm);
-  transition: var(--transition-fast);
+  transition: background-color var(--transition-fast);
   text-align: left;
 }
 
@@ -249,6 +451,7 @@
   font-size: var(--text-xs);
   color: var(--color-gray-500);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .ensayosTable td {
@@ -257,6 +460,11 @@
 
 .ensayosTable tbody tr {
   border-bottom: 1px solid var(--color-gray-100);
+  transition: background-color var(--transition-fast);
+}
+
+.ensayosTable tbody tr:hover {
+  background-color: var(--color-primary-50);
 }
 
 .ensayosTable tbody tr:last-child {
@@ -267,4 +475,14 @@
   font-weight: var(--font-semibold);
   font-family: monospace;
   font-size: var(--text-xs);
+  color: var(--color-gray-800);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

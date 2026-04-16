@@ -9,8 +9,8 @@ import {
   Pie,
   Cell,
   Treemap,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -72,7 +72,7 @@ interface ReporteProyectoProps {
 // ============================================
 
 const COLORS = [
-  '#4f46e5',
+  '#6366f1',
   '#0ea5e9',
   '#10b981',
   '#f59e0b',
@@ -81,7 +81,7 @@ const COLORS = [
   '#ec4899',
   '#14b8a6',
   '#f97316',
-  '#6366f1',
+  '#3b82f6',
   '#84cc16',
   '#06b6d4',
 ];
@@ -109,6 +109,212 @@ function classifyWorkflowState(ws: string): string {
   if (['E9', 'E10', 'E11'].includes(ws)) return 'en_revision';
   if (['E12', 'E13', 'E14', 'E15'].includes(ws)) return 'completados';
   return 'otros';
+}
+
+// ============================================
+// SVG ICON COMPONENTS
+// ============================================
+
+function IconChart({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
+function IconClock({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function IconGear({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  );
+}
+
+function IconEye({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
+}
+
+function IconPercent({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  );
+}
+
+function IconGrid({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  );
+}
+
+function IconTrendingUp({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  );
+}
+
+function IconTable({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+    </svg>
+  );
+}
+
+// ============================================
+// CUSTOM TOOLTIP COMPONENT
+// ============================================
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    color?: string;
+    payload?: Record<string, unknown>;
+  }>;
+  label?: string;
+  suffix?: string;
+}
+
+function CustomChartTooltip({ active, payload, label, suffix = 'ensayos' }: CustomTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className={styles.customTooltip}>
+      {label && <div className={styles.tooltipLabel}>{label}</div>}
+      {payload.map((entry, i) => (
+        <div key={i} className={styles.tooltipRow}>
+          <span className={styles.tooltipDot} style={{ backgroundColor: entry.color }} />
+          <span>{entry.name}</span>
+          <span className={styles.tooltipValue}>
+            {entry.value} {suffix}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ============================================
@@ -145,11 +351,12 @@ function TreemapCustomContent({
         y={y}
         width={width}
         height={height}
-        rx={4}
+        rx={6}
         fill={color}
         stroke="#fff"
         strokeWidth={2}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'pointer', transition: 'opacity 0.15s ease' }}
+        opacity={0.9}
       />
       <text
         x={x + width / 2}
@@ -200,10 +407,13 @@ function DonutPorTipo({ ensayos }: { ensayos: Ensayo[] }) {
       .sort((a, b) => b.value - a.value);
   }, [ensayos, getTipoEnsayoNombre]);
 
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
   if (data.length === 0) {
     return (
       <div className={styles.chartSection}>
         <h3>Distribucion por Tipo de Ensayo</h3>
+        <p className={styles.chartSectionSub}>Porcentaje de ensayos agrupados por tipo</p>
         <div className={styles.chartEmpty}>No hay ensayos registrados</div>
       </div>
     );
@@ -212,6 +422,7 @@ function DonutPorTipo({ ensayos }: { ensayos: Ensayo[] }) {
   return (
     <div className={styles.chartSection}>
       <h3>Distribucion por Tipo de Ensayo</h3>
+      <p className={styles.chartSectionSub}>Porcentaje de ensayos agrupados por tipo</p>
       <ResponsiveContainer width="100%" height={280}>
         <PieChart>
           <Pie
@@ -222,16 +433,46 @@ function DonutPorTipo({ ensayos }: { ensayos: Ensayo[] }) {
             outerRadius={100}
             dataKey="value"
             paddingAngle={2}
-            label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+            stroke="none"
           >
             {data.map((_entry, index) => (
               <Cell key={`tipo-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value: number | undefined) => [`${value ?? 0} ensayos`, 'Cantidad']}
+          {/* Center label */}
+          <text
+            x="50%"
+            y="46%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ fontSize: '1.5rem', fontWeight: 700, fill: '#1f2937' }}
+          >
+            {total}
+          </text>
+          <text
+            x="50%"
+            y="55%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ fontSize: '0.7rem', fill: '#9ca3af' }}
+          >
+            total
+          </text>
+          <Tooltip content={<CustomChartTooltip />} />
+          <Legend
+            formatter={(value: string, entry) => {
+              const pct =
+                total > 0
+                  ? (
+                      ((((entry.payload as Record<string, unknown>)?.value as number) || 0) /
+                        total) *
+                      100
+                    ).toFixed(0)
+                  : '0';
+              return `${value} (${pct}%)`;
+            }}
+            wrapperStyle={{ fontSize: '0.75rem' }}
           />
-          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -279,10 +520,13 @@ function DonutPorEstado({ ensayos }: { ensayos: Ensayo[] }) {
       .map(([name, value]) => ({ name, value, fill: fills[name] }));
   }, [ensayos]);
 
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
   if (data.length === 0) {
     return (
       <div className={styles.chartSection}>
         <h3>Distribucion por Estado</h3>
+        <p className={styles.chartSectionSub}>Estado del flujo de trabajo</p>
         <div className={styles.chartEmpty}>No hay ensayos registrados</div>
       </div>
     );
@@ -291,6 +535,7 @@ function DonutPorEstado({ ensayos }: { ensayos: Ensayo[] }) {
   return (
     <div className={styles.chartSection}>
       <h3>Distribucion por Estado</h3>
+      <p className={styles.chartSectionSub}>Estado del flujo de trabajo</p>
       <ResponsiveContainer width="100%" height={280}>
         <PieChart>
           <Pie
@@ -301,16 +546,46 @@ function DonutPorEstado({ ensayos }: { ensayos: Ensayo[] }) {
             outerRadius={100}
             dataKey="value"
             paddingAngle={2}
-            label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+            stroke="none"
           >
             {data.map((entry, index) => (
               <Cell key={`estado-${index}`} fill={entry.fill} />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value: number | undefined) => [`${value ?? 0} ensayos`, 'Cantidad']}
+          {/* Center label */}
+          <text
+            x="50%"
+            y="46%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ fontSize: '1.5rem', fontWeight: 700, fill: '#1f2937' }}
+          >
+            {total}
+          </text>
+          <text
+            x="50%"
+            y="55%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ fontSize: '0.7rem', fill: '#9ca3af' }}
+          >
+            total
+          </text>
+          <Tooltip content={<CustomChartTooltip />} />
+          <Legend
+            formatter={(value: string, entry) => {
+              const pct =
+                total > 0
+                  ? (
+                      ((((entry.payload as Record<string, unknown>)?.value as number) || 0) /
+                        total) *
+                      100
+                    ).toFixed(0)
+                  : '0';
+              return `${value} (${pct}%)`;
+            }}
+            wrapperStyle={{ fontSize: '0.75rem' }}
           />
-          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -361,7 +636,17 @@ function TreemapMuestras({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: M
   if (data.length === 0) {
     return (
       <div className={styles.chartSection}>
-        <h3>Ensayos por Muestra</h3>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionIcon}>
+            <IconGrid />
+          </div>
+          <div className={styles.sectionTitleGroup}>
+            <h3 className={styles.sectionTitle}>Ensayos por Muestra</h3>
+            <p className={styles.sectionSubtitle}>
+              Distribucion proporcional de ensayos por muestra
+            </p>
+          </div>
+        </div>
         <div className={styles.chartEmpty}>No hay ensayos registrados</div>
       </div>
     );
@@ -369,12 +654,18 @@ function TreemapMuestras({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: M
 
   return (
     <div className={styles.chartSection}>
-      <h3>Ensayos por Muestra ({data.length} muestras)</h3>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionIcon}>
+          <IconGrid />
+        </div>
+        <div className={styles.sectionTitleGroup}>
+          <h3 className={styles.sectionTitle}>Ensayos por Muestra ({data.length} muestras)</h3>
+          <p className={styles.sectionSubtitle}>Distribucion proporcional de ensayos por muestra</p>
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={320}>
         <Treemap data={data} dataKey="value" nameKey="name" content={<TreemapCustomContent />}>
-          <Tooltip
-            formatter={(value: number | undefined) => [`${value ?? 0} ensayos`, 'Cantidad']}
-          />
+          <Tooltip content={<CustomChartTooltip />} />
         </Treemap>
       </ResponsiveContainer>
     </div>
@@ -382,7 +673,7 @@ function TreemapMuestras({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: M
 }
 
 // ============================================
-// COMPONENTE: TENDENCIA TEMPORAL
+// COMPONENTE: TENDENCIA TEMPORAL (AREA CHART)
 // ============================================
 
 function TendenciaTemporalChart({ ensayos }: { ensayos: Ensayo[] }) {
@@ -402,7 +693,15 @@ function TendenciaTemporalChart({ ensayos }: { ensayos: Ensayo[] }) {
   if (data.length === 0) {
     return (
       <div className={styles.chartSection}>
-        <h3>Tendencia Temporal</h3>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionIcon}>
+            <IconTrendingUp />
+          </div>
+          <div className={styles.sectionTitleGroup}>
+            <h3 className={styles.sectionTitle}>Tendencia Temporal</h3>
+            <p className={styles.sectionSubtitle}>Ensayos solicitados por mes</p>
+          </div>
+        </div>
         <div className={styles.chartEmpty}>No hay datos temporales</div>
       </div>
     );
@@ -410,16 +709,37 @@ function TendenciaTemporalChart({ ensayos }: { ensayos: Ensayo[] }) {
 
   return (
     <div className={styles.chartSection}>
-      <h3>Tendencia Temporal de Ensayos</h3>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionIcon}>
+          <IconTrendingUp />
+        </div>
+        <div className={styles.sectionTitleGroup}>
+          <h3 className={styles.sectionTitle}>Tendencia Temporal de Ensayos</h3>
+          <p className={styles.sectionSubtitle}>Ensayos solicitados por mes</p>
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={data} margin={{ left: 0, right: 20, top: 5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
+        <AreaChart data={data} margin={{ left: 0, right: 20, top: 5, bottom: 5 }}>
+          <defs>
+            <linearGradient id="colorEnsayosProy" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="Ensayos" stroke="#4f46e5" strokeWidth={2} dot={{ r: 4 }} />
-        </LineChart>
+          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+          <Tooltip content={<CustomChartTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="Ensayos"
+            stroke="#6366f1"
+            strokeWidth={2.5}
+            fill="url(#colorEnsayosProy)"
+            dot={{ r: 4, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -468,7 +788,15 @@ function TablaEnsayos({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: Mues
   if (ensayos.length === 0) {
     return (
       <div className={styles.tableSection}>
-        <h3>Detalle de Ensayos</h3>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionIcon}>
+            <IconTable />
+          </div>
+          <div className={styles.sectionTitleGroup}>
+            <h3 className={styles.sectionTitle}>Detalle de Ensayos</h3>
+            <p className={styles.sectionSubtitle}>Ensayos agrupados por muestra</p>
+          </div>
+        </div>
         <div className={styles.chartEmpty}>No hay ensayos para este proyecto</div>
       </div>
     );
@@ -476,7 +804,17 @@ function TablaEnsayos({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: Mues
 
   return (
     <div className={styles.tableSection}>
-      <h3>Detalle de Ensayos ({ensayos.length} total)</h3>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionIcon}>
+          <IconTable />
+        </div>
+        <div className={styles.sectionTitleGroup}>
+          <h3 className={styles.sectionTitle}>Detalle de Ensayos ({ensayos.length} total)</h3>
+          <p className={styles.sectionSubtitle}>
+            Ensayos agrupados por muestra con detalle expandible
+          </p>
+        </div>
+      </div>
       <div className={styles.muestraList}>
         {grouped.map((group, gi) => {
           const key = group.muestra ? String(group.muestra.id) : '__sin_muestra__';
@@ -490,7 +828,7 @@ function TablaEnsayos({ ensayos, muestras }: { ensayos: Ensayo[]; muestras: Mues
               >
                 <div className={styles.muestraInfo}>
                   <span className={styles.muestraLabel}>{group.label}</span>
-                  <Badge color={group.muestra ? '#4f46e5' : '#9CA3AF'}>
+                  <Badge color={group.muestra ? '#6366f1' : '#9CA3AF'}>
                     {group.ensayos.length} ensayo{group.ensayos.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
@@ -565,32 +903,68 @@ function StatsResumen({ ensayos }: { ensayos: Ensayo[] }) {
     return { total: ensayos.length, pendientes, enProceso, enRevision, completados, progreso };
   }, [ensayos]);
 
+  const cards = [
+    {
+      label: 'Total',
+      value: stats.total,
+      cardClass: styles.statCardTotal,
+      iconClass: styles.statIconTotal,
+      valueClass: '',
+      icon: <IconChart size={18} />,
+    },
+    {
+      label: 'Pendientes',
+      value: stats.pendientes,
+      cardClass: styles.statCardPending,
+      iconClass: styles.statIconPending,
+      valueClass: styles.statPending,
+      icon: <IconClock size={18} />,
+    },
+    {
+      label: 'En Proceso',
+      value: stats.enProceso,
+      cardClass: styles.statCardProcess,
+      iconClass: styles.statIconProcess,
+      valueClass: styles.statProcess,
+      icon: <IconGear size={18} />,
+    },
+    {
+      label: 'En Revision',
+      value: stats.enRevision,
+      cardClass: styles.statCardReview,
+      iconClass: styles.statIconReview,
+      valueClass: styles.statReview,
+      icon: <IconEye size={18} />,
+    },
+    {
+      label: 'Completados',
+      value: stats.completados,
+      cardClass: styles.statCardComplete,
+      iconClass: styles.statIconComplete,
+      valueClass: styles.statComplete,
+      icon: <IconCheck size={18} />,
+    },
+    {
+      label: 'Progreso',
+      value: `${stats.progreso}%`,
+      cardClass: styles.statCardProgress,
+      iconClass: styles.statIconProgress,
+      valueClass: '',
+      icon: <IconPercent size={18} />,
+    },
+  ];
+
   return (
     <div className={styles.statsGrid}>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>Total</div>
-        <div className={styles.statValue}>{stats.total}</div>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>Pendientes</div>
-        <div className={`${styles.statValue} ${styles.statPending}`}>{stats.pendientes}</div>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>En Proceso</div>
-        <div className={`${styles.statValue} ${styles.statProcess}`}>{stats.enProceso}</div>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>En Revision</div>
-        <div className={`${styles.statValue} ${styles.statReview}`}>{stats.enRevision}</div>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>Completados</div>
-        <div className={`${styles.statValue} ${styles.statComplete}`}>{stats.completados}</div>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statLabel}>Progreso</div>
-        <div className={styles.statValue}>{stats.progreso}%</div>
-      </div>
+      {cards.map(card => (
+        <div key={card.label} className={`${styles.statCard} ${card.cardClass}`}>
+          <div className={`${styles.statIconWrap} ${card.iconClass}`}>{card.icon}</div>
+          <div className={styles.statContent}>
+            <div className={styles.statLabel}>{card.label}</div>
+            <div className={`${styles.statValue} ${card.valueClass}`}>{card.value}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
