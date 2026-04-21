@@ -30,6 +30,11 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
+    // Instalar CryptoProvider de rustls (requerido por hyper-rustls/reqwest)
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls CryptoProvider");
+
     // Inicializar logging
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
@@ -58,7 +63,7 @@ async fn main() {
         match GoogleDriveClient::new(&config).await {
             Ok(drive_client) => {
                 tracing::info!("Google Drive client initialized successfully");
-                let service = EnsayoSheetsService::new(drive_client, db_pool.clone());
+                let service = EnsayoSheetsService::new(drive_client, db_pool.clone(), config.drive_root_folder_id.clone());
                 tracing::info!("EnsayoSheetsService initialized - PDF generation enabled");
                 Some(service)
             }

@@ -7,7 +7,7 @@ use axum::{
 
 use crate::errors::AppError;
 use crate::models::{CreateEnsayo, Ensayo, UpdateEnsayo, UpdateEnsayoStatus, ValidarEnsayoRequest, ValidarEnsayoResponse, WorkflowState};
-use crate::repositories::{EnsayoRepository, PerforacionRepository, PersonalInternoRepository};
+use crate::repositories::{EnsayoRepository, MuestraRepository, PerforacionRepository, PersonalInternoRepository, ProyectoRepository};
 use crate::services::google_drive::GoogleDriveClient;
 use crate::services::scheduler::SchedulerService;
 use crate::utils::id::{generate_dated_code, generate_uuid};
@@ -16,6 +16,7 @@ use crate::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_ensayos).post(create_ensayo))
+        .route("/drive-cleanup", post(drive_cleanup))
         .route("/{id}", get(get_ensayo).put(update_ensayo).delete(delete_ensayo))
         .route("/{id}/status", put(update_status))
         .route("/{id}/validar", post(validar_ensayo))
@@ -44,21 +45,42 @@ async fn get_ensayo(
 
 /// POST /api/ensayos
 /// Creates a new ensayo in PostgreSQL.
-/// If a Sheet template exists for the test type AND the perforación has a Drive folder,
-/// it will also create a copy of the template Sheet in that folder.
+/// If a Sheet template exists for the test type, it ensures the full Drive folder
+/// hierarchy (Proyecto → Perforación → Muestra) and creates a copy of the template Sheet.
 async fn create_ensayo(
     State(state): State<AppState>,
     Json(payload): Json<CreateEnsayo>,
 ) -> Result<(StatusCode, Json<Ensayo>), AppError> {
     let ensayo_repo = EnsayoRepository::new(state.db_pool.clone());
     let perforacion_repo = PerforacionRepository::new(state.db_pool.clone());
+    let proyecto_repo = ProyectoRepository::new(state.db_pool.clone());
+    let muestra_repo = MuestraRepository::new(state.db_pool.clone());
 
-    // Verify the perforación exists
+    // muestra_id is required
+    let muestra_id = payload.muestra_id.as_deref().ok_or_else(|| {
+        AppError::BadRequest("muestra_id es requerido para crear un ensayo".to_string())
+    })?;
+
+    // Fetch related entities
+    let proyecto = proyecto_repo
+        .find_by_id(&payload.proyecto_id)
+        .await?
+        .ok_or_else(|| {
+            AppError::BadRequest(format!("Proyecto not found: {}", payload.proyecto_id))
+        })?;
+
     let perforacion = perforacion_repo
         .find_by_id(&payload.perforacion_id)
         .await?
         .ok_or_else(|| {
             AppError::BadRequest(format!("Perforación not found: {}", payload.perforacion_id))
+        })?;
+
+    let muestra = muestra_repo
+        .find_by_id(muestra_id)
+        .await?
+        .ok_or_else(|| {
+            AppError::BadRequest(format!("Muestra not found: {}", muestra_id))
         })?;
 
     // Generate ID and code
@@ -68,45 +90,81 @@ async fn create_ensayo(
     // Create the ensayo in database
     let mut ensayo = ensayo_repo.create(&id, &codigo, payload).await?;
 
-    // Crear Sheet desde plantilla si existe y la perforación tiene folder
+    // Create Sheet from template if one exists, ensuring the full folder hierarchy
     if let Some(ref sheets_service) = state.ensayo_sheets_service {
         if sheets_service.has_template(&ensayo.tipo).await {
-            if let Some(ref folder_id) = perforacion.drive_folder_id {
-                match sheets_service
-                    .create_ensayo_sheet(&ensayo.tipo, &codigo, folder_id)
-                    .await
-                {
-                    Ok((sheet_id, sheet_url)) => {
-                        ensayo_repo
-                            .update_sheet_info(&id, &sheet_id, &sheet_url)
-                            .await
-                            .ok();
-                        tracing::info!("Created Sheet for ensayo {}: {}", codigo, sheet_id);
-                        ensayo.sheet_id = Some(sheet_id);
-                        ensayo.sheet_url = Some(sheet_url);
+            // Ensure Proyecto → Perforación → Muestra folder hierarchy in Drive
+            match sheets_service
+                .ensure_folder_hierarchy(&proyecto, &perforacion, &muestra)
+                .await
+            {
+                Ok(muestra_folder_id) => {
+                    // Create the Sheet copy in the muestra folder
+                    match sheets_service
+                        .create_ensayo_sheet(&ensayo.tipo, &codigo, &muestra_folder_id)
+                        .await
+                    {
+                        Ok((sheet_id, sheet_url)) => {
+                            ensayo_repo
+                                .update_sheet_info(&id, &sheet_id, &sheet_url)
+                                .await
+                                .ok();
+                            // Also store the folder_id for later PDF generation
+                            ensayo_repo
+                                .update_perforacion_folder_id(&id, &muestra_folder_id)
+                                .await
+                                .ok();
+                            tracing::info!("Created Sheet for ensayo {} in muestra folder: {}", codigo, sheet_id);
+                            ensayo.sheet_id = Some(sheet_id);
+                            ensayo.sheet_url = Some(sheet_url);
+                            ensayo.perforacion_folder_id = Some(muestra_folder_id);
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to create Sheet for ensayo {}: {}", codigo, e);
+                        }
                     }
-                    Err(e) => {
-                        tracing::warn!("Failed to create Sheet for ensayo {}: {}", codigo, e);
-                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to create folder hierarchy for ensayo {}: {}", codigo, e);
                 }
             }
         }
-    }
-
-    // Cache the perforacion folder_id if available
-    if let Some(ref folder_id) = perforacion.drive_folder_id {
-        ensayo_repo
-            .update_perforacion_folder_id(&id, folder_id)
-            .await
-            .ok();
-        ensayo.perforacion_folder_id = Some(folder_id.clone());
     }
 
     tracing::info!("Created ensayo: {} ({})", ensayo.codigo, ensayo.id);
     Ok((StatusCode::CREATED, Json(ensayo)))
 }
 
-/// PUT /api/ensayos/:id
+/// POST /api/ensayos/drive-cleanup
+/// Limpia carpetas de prueba en la carpeta raíz de Drive de la service account
+async fn drive_cleanup(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let sheets_service = state.ensayo_sheets_service.as_ref()
+        .ok_or_else(|| AppError::BadRequest("Drive not configured".to_string()))?;
+    
+    let drive_client = &sheets_service.drive_client();
+    let root_id = state.config.drive_root_folder_id.as_deref()
+        .ok_or_else(|| AppError::BadRequest("No root folder configured".to_string()))?;
+    
+    let files = drive_client.list_files(root_id).await?;
+    let mut deleted = Vec::new();
+    
+    for file in &files {
+        if let (Some(id), Some(name)) = (&file.id, &file.name) {
+            tracing::info!("Deleting Drive file/folder: {} ({})", name, id);
+            match drive_client.delete_file(id).await {
+                Ok(_) => deleted.push(name.clone()),
+                Err(e) => tracing::warn!("Failed to delete {}: {}", name, e),
+            }
+        }
+    }
+    
+    Ok(Json(serde_json::json!({
+        "deleted": deleted,
+        "count": deleted.len()
+    })))
+}
 async fn update_ensayo(
     Path(id): Path<String>,
     State(state): State<AppState>,

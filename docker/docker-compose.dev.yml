@@ -66,12 +66,16 @@ services:
       ALLOWED_ORIGINS: "http://localhost:5173,http://localhost,http://localhost:80,https://lab17025.localhost:1355"
       RUST_LOG: "lab_17025_api=debug,tower_http=debug"
       RUST_BACKTRACE: "1"
+      GOOGLE_CREDENTIALS_PATH: /app/credentials.json
+      GOOGLE_DRIVE_ROOT_FOLDER_ID: "1CmBiajsP2CRTVze7wyyQwkv_UzyUZBhD"
     ports:
       - "3000:3000"
     volumes:
       # Montar codigo fuente para hot-reload
       - ../src/api/src:/app/src
       - ../src/api/migrations:/app/migrations
+      # Credenciales de Google Service Account
+      - ../sustained-truck-493518-b7-d4b4e336bdd1.json:/app/credentials.json:ro
       # Volumen nombrado para cache de compilacion (persiste entre reinicios)
       - cargo-target-dev:/app/target
       - cargo-registry-dev:/usr/local/cargo/registry

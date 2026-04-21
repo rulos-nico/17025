@@ -17,6 +17,7 @@ pub struct MuestraRow {
     pub profundidad_fin: Decimal,
     pub tipo_muestra: String,
     pub descripcion: Option<String>,
+    pub drive_folder_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub synced_at: Option<DateTime<Utc>>,
@@ -33,6 +34,7 @@ impl From<MuestraRow> for Muestra {
             profundidad_fin: row.profundidad_fin.to_string().parse().unwrap_or(0.0),
             tipo_muestra: row.tipo_muestra,
             descripcion: row.descripcion,
+            drive_folder_id: row.drive_folder_id,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
         }
@@ -254,5 +256,24 @@ impl MuestraRepository {
             .fetch_one(&self.pool)
             .await?;
         Ok(row.0)
+    }
+
+    /// Actualiza el drive_folder_id de una muestra
+    pub async fn update_drive_folder_id(&self, id: &str, drive_folder_id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE muestras
+            SET drive_folder_id = $2,
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(drive_folder_id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
     }
 }

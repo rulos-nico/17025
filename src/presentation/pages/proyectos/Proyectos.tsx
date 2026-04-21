@@ -161,7 +161,8 @@ export default function Proyectos({ navigateToModule }: ProyectosProps) {
       muestraId: e.muestra_id || e.muestraId ? String(e.muestra_id || e.muestraId) : undefined,
       proyectoId: String(e.proyecto_id || e.proyectoId || ''),
       workflow_state: String(e.workflow_state || 'E1'),
-      spreadsheet_url: e.spreadsheet_url ? String(e.spreadsheet_url) : undefined,
+      spreadsheet_url:
+        e.sheet_url || e.spreadsheet_url ? String(e.sheet_url || e.spreadsheet_url) : undefined,
     }));
   }, [ensayosRaw]);
 
@@ -921,23 +922,24 @@ export default function Proyectos({ navigateToModule }: ProyectosProps) {
                                     </Badge>
                                   </div>
                                   <div className={styles.ensayoItemLinks}>
-                                    {ensayo.spreadsheet_url && (
+                                    {ensayo.spreadsheet_url ? (
                                       <a
                                         href={ensayo.spreadsheet_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={styles.btnSheetLink}
+                                        className={styles.btnVerLink}
                                         onClick={e => e.stopPropagation()}
                                       >
-                                        Sheet
+                                        Ver
+                                      </a>
+                                    ) : (
+                                      <a
+                                        href={`/ensayos?id=${ensayo.id}`}
+                                        className={styles.btnVerLink}
+                                      >
+                                        Ver
                                       </a>
                                     )}
-                                    <a
-                                      href={`/ensayos?id=${ensayo.id}`}
-                                      className={styles.btnVerLink}
-                                    >
-                                      Ver
-                                    </a>
                                   </div>
                                 </div>
                               );

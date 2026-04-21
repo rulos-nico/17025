@@ -222,6 +222,17 @@ impl GoogleDriveClient {
         Ok(bytes)
     }
 
+    /// Elimina un archivo o carpeta de Drive
+    pub async fn delete_file(&self, file_id: &str) -> Result<(), AppError> {
+        self.hub
+            .files()
+            .delete(file_id)
+            .doit()
+            .await
+            .map_err(|e| AppError::DriveError(format!("Failed to delete file: {}", e)))?;
+        Ok(())
+    }
+
     /// Genera la URL pública de visualización de un archivo
     pub fn get_view_url(file_id: &str) -> String {
         format!("https://docs.google.com/spreadsheets/d/{}/edit", file_id)

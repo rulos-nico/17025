@@ -310,4 +310,23 @@ impl ProyectoRepository {
 
         Ok(result.rows_affected() > 0)
     }
+
+    /// Actualiza el drive_folder_id de un proyecto
+    pub async fn update_drive_folder_id(&self, id: &str, drive_folder_id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE proyectos
+            SET drive_folder_id = $2,
+                updated_at = NOW(),
+                sync_source = 'db'
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(drive_folder_id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
 }

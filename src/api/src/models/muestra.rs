@@ -13,6 +13,7 @@ pub struct Muestra {
     pub profundidad_fin: f64,
     pub tipo_muestra: String,
     pub descripcion: Option<String>,
+    pub drive_folder_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -63,7 +64,7 @@ impl From<Muestra> for MuestraInfo {
 impl Muestra {
     /// Convierte una fila de Sheets a una Muestra
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 9 {
+        if row.len() < 10 {
             return None;
         }
         Some(Muestra {
@@ -74,8 +75,9 @@ impl Muestra {
             profundidad_fin: row.get(4).and_then(|s| s.parse().ok()).unwrap_or(0.0),
             tipo_muestra: row.get(5)?.clone(),
             descripcion: row.get(6).cloned().filter(|s| !s.is_empty()),
-            created_at: row.get(7)?.clone(),
-            updated_at: row.get(8)?.clone(),
+            drive_folder_id: row.get(7).cloned().filter(|s| !s.is_empty()),
+            created_at: row.get(8)?.clone(),
+            updated_at: row.get(9)?.clone(),
         })
     }
 
@@ -89,6 +91,7 @@ impl Muestra {
             self.profundidad_fin.to_string(),
             self.tipo_muestra.clone(),
             self.descripcion.clone().unwrap_or_default(),
+            self.drive_folder_id.clone().unwrap_or_default(),
             self.created_at.clone(),
             self.updated_at.clone(),
         ]

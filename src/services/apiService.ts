@@ -318,6 +318,50 @@ export const TiposEnsayoAPI = {
 };
 
 // ============================================
+// TIPOS ENSAYO SHEETS API
+// ============================================
+
+export interface TipoEnsayoSheet {
+  id: string;
+  tipo_ensayo_id: string;
+  url: string;
+  drive_id: string | null;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTipoEnsayoSheetPayload {
+  url: string;
+  drive_id?: string;
+}
+
+export interface UpdateTipoEnsayoSheetPayload {
+  url?: string;
+  drive_id?: string;
+  activo?: boolean;
+}
+
+export const TiposEnsayoSheetsAPI = {
+  list: () => request<TipoEnsayoSheet[]>(endpoints.tiposEnsayoSheets.list),
+  get: (id: string | number) => request<TipoEnsayoSheet>(endpoints.tiposEnsayoSheets.detail(id)),
+  create: (tipoEnsayoId: string, data: CreateTipoEnsayoSheetPayload) =>
+    request<TipoEnsayoSheet>(`/tipos-ensayo/${tipoEnsayoId}/sheets`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string | number, data: UpdateTipoEnsayoSheetPayload) =>
+    request<TipoEnsayoSheet>(endpoints.tiposEnsayoSheets.update(id), {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string | number) =>
+    request<void>(endpoints.tiposEnsayoSheets.delete(id), {
+      method: 'DELETE',
+    }),
+};
+
+// ============================================
 // HOOK DE USO
 // ============================================
 
