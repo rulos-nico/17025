@@ -1,21 +1,26 @@
+use chrono::{DateTime, NaiveDate, Utc};
+use rust_decimal::Decimal;
 use sqlx::FromRow;
-use chrono::{DateTime, Utc};
 
 use crate::db::DbPool;
 use crate::models::{Calibracion, CreateCalibracion, UpdateCalibracion};
 
-/// Modelo de base de datos para Calibracion
+const CALIBRACION_COLUMNS: &str = r#"id, sensor_id, fecha_calibracion, proxima_calibracion,
+    rango_medicion, "precision", error_maximo, certificado_id, estado, factor,
+    created_at, updated_at"#;
+
 #[derive(Debug, Clone, FromRow)]
 pub struct CalibracionRow {
     pub id: String,
-    pub equipo_id: String,
-    pub fecha: DateTime<Utc>,
-    pub laboratorio: String,
-    pub certificado: Option<String>,
-    pub factor: Option<f64>,
-    pub incertidumbre: Option<String>,
-    pub proxima_calibracion: Option<DateTime<Utc>>,
-    pub observaciones: Option<String>,
+    pub sensor_id: String,
+    pub fecha_calibracion: NaiveDate,
+    pub proxima_calibracion: NaiveDate,
+    pub rango_medicion: Option<String>,
+    pub precision: Option<String>,
+    pub error_maximo: Option<String>,
+    pub certificado_id: Option<String>,
+    pub estado: String,
+    pub factor: Decimal,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -24,14 +29,15 @@ impl From<CalibracionRow> for Calibracion {
     fn from(row: CalibracionRow) -> Self {
         Calibracion {
             id: row.id,
-            equipo_id: row.equipo_id,
-            fecha: row.fecha.to_rfc3339(),
-            laboratorio: row.laboratorio,
-            certificado: row.certificado,
+            sensor_id: row.sensor_id,
+            fecha_calibracion: row.fecha_calibracion.to_string(),
+            proxima_calibracion: row.proxima_calibracion.to_string(),
+            rango_medicion: row.rango_medicion,
+            precision: row.precision,
+            error_maximo: row.error_maximo,
+            certificado_id: row.certificado_id,
+            estado: row.estado,
             factor: row.factor,
-            incertidumbre: row.incertidumbre,
-            proxima_calibracion: row.proxima_calibracion.map(|d| d.to_rfc3339()),
-            observaciones: row.observaciones,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
         }
@@ -48,151 +54,151 @@ impl CalibracionRepository {
         Self { pool }
     }
 
-    /// Obtiene todas las calibraciones
     pub async fn find_all(&self) -> Result<Vec<Calibracion>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, CalibracionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                   proxima_calibracion, observaciones, created_at, updated_at
-            FROM calibraciones
-            ORDER BY fecha DESC
-            "#,
-        )
+        let rows = sqlx::query_as::<_, CalibracionRow>(&format!(
+            "SELECT {} FROM calibracion ORDER BY fecha_calibracion DESC",
+            CALIBRACION_COLUMNS
+        ))
         .fetch_all(&self.pool)
         .await?;
-
         Ok(rows.into_iter().map(Calibracion::from).collect())
     }
 
-    /// Obtiene calibraciones por equipo_id
-    pub async fn find_by_equipo(&self, equipo_id: &str) -> Result<Vec<Calibracion>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, CalibracionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                   proxima_calibracion, observaciones, created_at, updated_at
-            FROM calibraciones
-            WHERE equipo_id = $1
-            ORDER BY fecha DESC
-            "#,
-        )
-        .bind(equipo_id)
+    pub async fn find_by_sensor(&self, sensor_id: &str) -> Result<Vec<Calibracion>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, CalibracionRow>(&format!(
+            "SELECT {} FROM calibracion WHERE sensor_id = $1 ORDER BY fecha_calibracion DESC",
+            CALIBRACION_COLUMNS
+        ))
+        .bind(sensor_id)
         .fetch_all(&self.pool)
         .await?;
-
         Ok(rows.into_iter().map(Calibracion::from).collect())
     }
 
-    /// Busca calibración por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Calibracion>, sqlx::Error> {
-        let row = sqlx::query_as::<_, CalibracionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                   proxima_calibracion, observaciones, created_at, updated_at
-            FROM calibraciones
-            WHERE id = $1
-            "#,
-        )
+        let row = sqlx::query_as::<_, CalibracionRow>(&format!(
+            "SELECT {} FROM calibracion WHERE id = $1",
+            CALIBRACION_COLUMNS
+        ))
         .bind(id)
         .fetch_optional(&self.pool)
         .await?;
-
         Ok(row.map(Calibracion::from))
     }
 
-    /// Crea una nueva calibración
-    pub async fn create(&self, id: &str, dto: CreateCalibracion) -> Result<Calibracion, sqlx::Error> {
-        let row = sqlx::query_as::<_, CalibracionRow>(
+    pub async fn create(
+        &self,
+        id: &str,
+        dto: CreateCalibracion,
+    ) -> Result<Calibracion, sqlx::Error> {
+        let fecha = NaiveDate::parse_from_str(&dto.fecha_calibracion, "%Y-%m-%d")
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        let proxima = NaiveDate::parse_from_str(&dto.proxima_calibracion, "%Y-%m-%d")
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+        let row = sqlx::query_as::<_, CalibracionRow>(&format!(
             r#"
-            INSERT INTO calibraciones (id, equipo_id, fecha, laboratorio, certificado, factor,
-                                       incertidumbre, proxima_calibracion, observaciones)
-            VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7, $8::timestamptz, $9)
-            RETURNING id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                      proxima_calibracion, observaciones, created_at, updated_at
+            INSERT INTO calibracion (id, sensor_id, fecha_calibracion, proxima_calibracion,
+                                     rango_medicion, "precision", error_maximo, certificado_id,
+                                     estado, factor)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING {}
             "#,
-        )
+            CALIBRACION_COLUMNS
+        ))
         .bind(id)
-        .bind(&dto.equipo_id)
-        .bind(&dto.fecha)
-        .bind(&dto.laboratorio)
-        .bind(&dto.certificado)
-        .bind(&dto.factor)
-        .bind(&dto.incertidumbre)
-        .bind(&dto.proxima_calibracion)
-        .bind(&dto.observaciones)
+        .bind(&dto.sensor_id)
+        .bind(fecha)
+        .bind(proxima)
+        .bind(&dto.rango_medicion)
+        .bind(&dto.precision)
+        .bind(&dto.error_maximo)
+        .bind(&dto.certificado_id)
+        .bind(&dto.estado)
+        .bind(dto.factor)
         .fetch_one(&self.pool)
         .await?;
 
         Ok(Calibracion::from(row))
     }
 
-    /// Actualiza una calibración existente
-    pub async fn update(&self, id: &str, dto: UpdateCalibracion) -> Result<Option<Calibracion>, sqlx::Error> {
-        let row = sqlx::query_as::<_, CalibracionRow>(
+    pub async fn update(
+        &self,
+        id: &str,
+        dto: UpdateCalibracion,
+    ) -> Result<Option<Calibracion>, sqlx::Error> {
+        let fecha = dto
+            .fecha_calibracion
+            .as_ref()
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+        let proxima = dto
+            .proxima_calibracion
+            .as_ref()
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+        let row = sqlx::query_as::<_, CalibracionRow>(&format!(
             r#"
-            UPDATE calibraciones
-            SET fecha = COALESCE($2::timestamptz, fecha),
-                laboratorio = COALESCE($3, laboratorio),
-                certificado = COALESCE($4, certificado),
-                factor = COALESCE($5, factor),
-                incertidumbre = COALESCE($6, incertidumbre),
-                proxima_calibracion = COALESCE($7::timestamptz, proxima_calibracion),
-                observaciones = COALESCE($8, observaciones),
+            UPDATE calibracion
+            SET fecha_calibracion = COALESCE($2, fecha_calibracion),
+                proxima_calibracion = COALESCE($3, proxima_calibracion),
+                rango_medicion = COALESCE($4, rango_medicion),
+                "precision" = COALESCE($5, "precision"),
+                error_maximo = COALESCE($6, error_maximo),
+                certificado_id = COALESCE($7, certificado_id),
+                estado = COALESCE($8, estado),
+                factor = COALESCE($9, factor),
                 updated_at = NOW()
             WHERE id = $1
-            RETURNING id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                      proxima_calibracion, observaciones, created_at, updated_at
+            RETURNING {}
             "#,
-        )
+            CALIBRACION_COLUMNS
+        ))
         .bind(id)
-        .bind(&dto.fecha)
-        .bind(&dto.laboratorio)
-        .bind(&dto.certificado)
-        .bind(&dto.factor)
-        .bind(&dto.incertidumbre)
-        .bind(&dto.proxima_calibracion)
-        .bind(&dto.observaciones)
+        .bind(fecha)
+        .bind(proxima)
+        .bind(&dto.rango_medicion)
+        .bind(&dto.precision)
+        .bind(&dto.error_maximo)
+        .bind(&dto.certificado_id)
+        .bind(&dto.estado)
+        .bind(dto.factor)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(Calibracion::from))
     }
 
-    /// Elimina una calibración
     pub async fn delete(&self, id: &str) -> Result<bool, sqlx::Error> {
-        let result = sqlx::query("DELETE FROM calibraciones WHERE id = $1")
+        let result = sqlx::query("DELETE FROM calibracion WHERE id = $1")
             .bind(id)
             .execute(&self.pool)
             .await?;
-
         Ok(result.rows_affected() > 0)
     }
 
-    /// Cuenta calibraciones por equipo
-    pub async fn count_by_equipo(&self, equipo_id: &str) -> Result<i64, sqlx::Error> {
-        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM calibraciones WHERE equipo_id = $1")
-            .bind(equipo_id)
-            .fetch_one(&self.pool)
-            .await?;
+    pub async fn count_by_sensor(&self, sensor_id: &str) -> Result<i64, sqlx::Error> {
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM calibracion WHERE sensor_id = $1")
+                .bind(sensor_id)
+                .fetch_one(&self.pool)
+                .await?;
         Ok(row.0)
     }
 
-    /// Obtiene calibraciones que vencen pronto
     pub async fn find_expiring_soon(&self, days: i32) -> Result<Vec<Calibracion>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, CalibracionRow>(
+        let rows = sqlx::query_as::<_, CalibracionRow>(&format!(
             r#"
-            SELECT id, equipo_id, fecha, laboratorio, certificado, factor, incertidumbre,
-                   proxima_calibracion, observaciones, created_at, updated_at
-            FROM calibraciones
-            WHERE proxima_calibracion IS NOT NULL
-              AND proxima_calibracion <= NOW() + ($1 || ' days')::interval
-              AND proxima_calibracion >= NOW()
+            SELECT {}
+            FROM calibracion
+            WHERE proxima_calibracion <= CURRENT_DATE + ($1 || ' days')::interval
+              AND proxima_calibracion >= CURRENT_DATE
             ORDER BY proxima_calibracion ASC
             "#,
-        )
+            CALIBRACION_COLUMNS
+        ))
         .bind(days)
         .fetch_all(&self.pool)
         .await?;
-
         Ok(rows.into_iter().map(Calibracion::from).collect())
     }
 }

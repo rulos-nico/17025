@@ -1,3 +1,4 @@
+use crate::models::{Comprobacion, Ensayo};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,14 +23,12 @@ pub struct Equipo {
     pub activo: bool,
     pub created_at: String,
     pub updated_at: String,
-    pub Calibraciones: Option<Vec<Calibracion>>,
-    pub Ensayos: Optio Option<Vec<Ensayo>>,
-    pub Comprobaciones: Option<Vec<Comprobacion>>,
+    pub ensayos: Option<Vec<Ensayo>>,
+    pub comprobaciones: Option<Vec<Comprobacion>>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CreateEquipo {
-
     pub nombre: String,
     pub serie: String,
     pub placa: Option<String>,
@@ -81,6 +80,8 @@ impl Equipo {
             activo: row.get(17).map(|s| s == "true" || s == "1").unwrap_or(true),
             created_at: row.get(18)?.clone(),
             updated_at: row.get(19)?.clone(),
+            ensayos: None,
+            comprobaciones: None,
         })
     }
 

@@ -19,13 +19,26 @@ pub const ENSAYO_COLUMNS: &str = "id, codigo, tipo, perforacion_id, proyecto_id,
 pub const EQUIPO_COLUMNS: &str = "id, codigo, nombre, serie, placa, descripcion, marca, modelo, ubicacion, estado, fecha_calibracion, proxima_calibracion, incertidumbre, error_maximo, certificado_id, responsable, observaciones, activo, created_at, updated_at, synced_at, sync_source";
 
 /// Columns for the `sensores` table
-pub const SENSOR_COLUMNS: &str = "id, codigo, tipo, marca, modelo, numero_serie, rango_medicion, precision, ubicacion, estado, fecha_calibracion, proxima_calibracion, error_maximo, certificado_id, responsable, observaciones, activo, created_at, updated_at, synced_at, sync_source, equipo_id";
+pub const SENSOR_COLUMNS: &str = "id, codigo, tipo, marca, modelo, numero_serie, ubicacion, estado, responsable, observaciones, activo, created_at, updated_at, synced_at, sync_source, equipo_id";
+
+/// Sensor columns with derived fields from the latest calibration (via LATERAL JOIN alias `c`).
+/// The caller must alias the sensores table as `s` and LEFT JOIN LATERAL the latest calibracion as `c`.
+pub const SENSOR_COLUMNS_WITH_CAL: &str = r#"s.id, s.codigo, s.tipo, s.marca, s.modelo, s.numero_serie, s.ubicacion, s.estado, s.responsable, s.observaciones, s.activo, s.created_at, s.updated_at, s.synced_at, s.sync_source, s.equipo_id, c.rango_medicion AS rango_medicion, c."precision" AS precision, c.fecha_calibracion AS fecha_calibracion, c.proxima_calibracion AS proxima_calibracion, c.error_maximo AS error_maximo, c.certificado_id AS certificado_id"#;
+
+/// SQL snippet for the LATERAL JOIN that fetches the latest calibration per sensor.
+pub const SENSOR_LATEST_CAL_JOIN: &str = r#"LEFT JOIN LATERAL (
+    SELECT rango_medicion, "precision", fecha_calibracion, proxima_calibracion, error_maximo, certificado_id
+    FROM calibracion
+    WHERE sensor_id = s.id
+    ORDER BY fecha_calibracion DESC
+    LIMIT 1
+) c ON true"#;
 
 /// Columns for the `personal_interno` table
 pub const PERSONAL_INTERNO_COLUMNS: &str = "id, codigo, nombre, apellido, cargo, email, telefono, activo, created_at, updated_at, synced_at, sync_source";
 
 /// Columns for the `muestras` table
-pub const MUESTRA_COLUMNS: &str = "id, codigo, perforacion_id, profundidad_inicio, profundidad_fin, tipo_muestra, descripcion, created_at, updated_at, synced_at, sync_source";
+pub const MUESTRA_COLUMNS: &str = "id, codigo, perforacion_id, profundidad_inicio, profundidad_fin, tipo_muestra, descripcion, drive_folder_id, created_at, updated_at, synced_at, sync_source";
 
 /// Columns for the `tipos_ensayo` table
 pub const TIPO_ENSAYO_COLUMNS: &str = "id, nombre, categoria, vigente_desde, norma, acre::text, activo, orden, tiempo_estimado_dias, created_at, updated_at";

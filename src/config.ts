@@ -81,6 +81,7 @@ interface ApiEndpoints {
   reportes: ReportesEndpoints;
   dashboard: DashboardEndpoints;
   tiposEnsayo: TiposEnsayoEndpoints;
+  tiposEnsayoSheets: CrudEndpoints;
 }
 
 interface ApiConfig {
@@ -127,6 +128,7 @@ export interface NavItem {
   path: string;
   icon: string;
   roles: string[];
+  children?: NavItem[];
 }
 
 export interface DashboardStat {
@@ -229,6 +231,8 @@ export const API_CONFIG: ApiConfig = {
       get: (id: string | number) => `/tipos-ensayo/${id}`,
       create: '/tipos-ensayo',
     },
+
+    tiposEnsayoSheets: createCrudEndpoints('/tipos-ensayo-sheets'),
   },
 };
 
@@ -503,9 +507,35 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Ensayos', path: '/ensayos', icon: 'test', roles: ['admin', 'coordinador', 'tecnico'] },
   {
     label: 'Equipos',
-    path: '/equipos',
+    path: '#equipos-group',
     icon: 'equipment',
     roles: ['admin', 'coordinador', 'tecnico'],
+    children: [
+      {
+        label: 'Inventario',
+        path: '/equipos',
+        icon: 'equipment',
+        roles: ['admin', 'coordinador', 'tecnico'],
+      },
+      {
+        label: 'Calibraciones',
+        path: '/calibraciones',
+        icon: 'calibration',
+        roles: ['admin', 'coordinador', 'tecnico'],
+      },
+      {
+        label: 'Comprobaciones',
+        path: '/comprobaciones',
+        icon: 'check',
+        roles: ['admin', 'coordinador', 'tecnico'],
+      },
+      {
+        label: 'Gráficos de control',
+        path: '/graficos-control',
+        icon: 'chart',
+        roles: ['admin', 'coordinador', 'tecnico'],
+      },
+    ],
   },
   { label: 'Personal', path: '/usuarios', icon: 'users', roles: ['admin', 'coordinador'] },
   {

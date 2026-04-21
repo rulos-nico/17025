@@ -55,6 +55,8 @@ impl From<EquipoRow> for Equipo {
             activo: row.activo,
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
+            ensayos: None,
+            comprobaciones: None,
         }
     }
 }
@@ -111,6 +113,8 @@ impl From<EquipoConSensoresRow> for EquipoConSensores {
                 activo: row.activo,
                 created_at: row.created_at.to_rfc3339(),
                 updated_at: row.updated_at.to_rfc3339(),
+                ensayos: None,
+                comprobaciones: None,
             },
             sensores_asociados: row.sensores_asociados.0,
         }
@@ -412,9 +416,17 @@ impl EquipoRepository {
                         'marca', s.marca,
                         'modelo', s.modelo,
                         'numero_serie', s.numero_serie,
-                        'rango_medicion', s.rango_medicion,
+                        'rango_medicion', (
+                            SELECT c.rango_medicion FROM calibracion c
+                            WHERE c.sensor_id = s.id
+                            ORDER BY c.fecha_calibracion DESC LIMIT 1
+                        ),
                         'estado', s.estado,
-                        'proxima_calibracion', s.proxima_calibracion
+                        'proxima_calibracion', (
+                            SELECT c.proxima_calibracion FROM calibracion c
+                            WHERE c.sensor_id = s.id
+                            ORDER BY c.fecha_calibracion DESC LIMIT 1
+                        )
                     )
                 ) FILTER (WHERE s.id IS NOT NULL),
                 '[]'::json
@@ -451,9 +463,17 @@ impl EquipoRepository {
                         'marca', s.marca,
                         'modelo', s.modelo,
                         'numero_serie', s.numero_serie,
-                        'rango_medicion', s.rango_medicion,
+                        'rango_medicion', (
+                            SELECT c.rango_medicion FROM calibracion c
+                            WHERE c.sensor_id = s.id
+                            ORDER BY c.fecha_calibracion DESC LIMIT 1
+                        ),
                         'estado', s.estado,
-                        'proxima_calibracion', s.proxima_calibracion
+                        'proxima_calibracion', (
+                            SELECT c.proxima_calibracion FROM calibracion c
+                            WHERE c.sensor_id = s.id
+                            ORDER BY c.fecha_calibracion DESC LIMIT 1
+                        )
                     )
                 ) FILTER (WHERE s.id IS NOT NULL),
                 '[]'::json

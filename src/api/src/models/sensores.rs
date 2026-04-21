@@ -8,13 +8,19 @@ pub struct Sensor {
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub numero_serie: String,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
     pub rango_medicion: Option<String>,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
     pub precision: Option<String>,
     pub ubicacion: Option<String>,
     pub estado: String,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
     pub fecha_calibracion: Option<String>,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
     pub proxima_calibracion: Option<String>,
-    pub error_maximo: Option<f64>,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
+    pub error_maximo: Option<String>,
+    /// Proviene de la última calibración asociada (tabla `calibracion`).
     pub certificado_id: Option<String>,
     pub responsable: Option<String>,
     pub observaciones: Option<String>,
@@ -31,8 +37,6 @@ pub struct CreateSensor {
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub numero_serie: String,
-    pub rango_medicion: Option<String>,
-    pub precision: Option<String>,
     pub ubicacion: Option<String>,
     /// ID del equipo al que pertenece este sensor (opcional)
     pub equipo_id: Option<String>,
@@ -43,14 +47,8 @@ pub struct UpdateSensor {
     pub tipo: Option<String>,
     pub marca: Option<String>,
     pub modelo: Option<String>,
-    pub rango_medicion: Option<String>,
-    pub precision: Option<String>,
     pub ubicacion: Option<String>,
     pub estado: Option<String>,
-    pub fecha_calibracion: Option<String>,
-    pub proxima_calibracion: Option<String>,
-    pub error_maximo: Option<f64>,
-    pub certificado_id: Option<String>,
     pub responsable: Option<String>,
     pub observaciones: Option<String>,
     pub activo: Option<bool>,
@@ -59,8 +57,11 @@ pub struct UpdateSensor {
 }
 
 impl Sensor {
+    /// Reconstruye un sensor a partir de una fila plana (p. ej. de Google Sheets).
+    /// Las columnas calibración-dependientes se dejan en `None` porque ya no se
+    /// persisten en la tabla `sensores`; el flujo de Sheets no las maneja.
     pub fn from_row(row: &[String]) -> Option<Self> {
-        if row.len() < 18 {
+        if row.len() < 13 {
             return None;
         }
         Some(Sensor {
@@ -70,20 +71,19 @@ impl Sensor {
             marca: row.get(3).cloned().filter(|s| !s.is_empty()),
             modelo: row.get(4).cloned().filter(|s| !s.is_empty()),
             numero_serie: row.get(5)?.clone(),
-            rango_medicion: row.get(6).cloned().filter(|s| !s.is_empty()),
-            precision: row.get(7).cloned().filter(|s| !s.is_empty()),
-            ubicacion: row.get(8).cloned().filter(|s| !s.is_empty()),
-            estado: row.get(9)?.clone(),
-            fecha_calibracion: row.get(10).cloned().filter(|s| !s.is_empty()),
-            proxima_calibracion: row.get(11).cloned().filter(|s| !s.is_empty()),
-            error_maximo: row.get(12).and_then(|s| s.parse().ok()),
-            certificado_id: row.get(13).cloned().filter(|s| !s.is_empty()),
-            responsable: row.get(14).cloned().filter(|s| !s.is_empty()),
-            observaciones: row.get(15).cloned().filter(|s| !s.is_empty()),
-            activo: row.get(16).map(|s| s == "true" || s == "1").unwrap_or(true),
-            created_at: row.get(17)?.clone(),
-            updated_at: row.get(18).cloned().unwrap_or_default(),
-            // equipo_id no viene de Sheets, siempre None al sincronizar
+            rango_medicion: None,
+            precision: None,
+            ubicacion: row.get(6).cloned().filter(|s| !s.is_empty()),
+            estado: row.get(7)?.clone(),
+            fecha_calibracion: None,
+            proxima_calibracion: None,
+            error_maximo: None,
+            certificado_id: None,
+            responsable: row.get(8).cloned().filter(|s| !s.is_empty()),
+            observaciones: row.get(9).cloned().filter(|s| !s.is_empty()),
+            activo: row.get(10).map(|s| s == "true" || s == "1").unwrap_or(true),
+            created_at: row.get(11)?.clone(),
+            updated_at: row.get(12).cloned().unwrap_or_default(),
             equipo_id: None,
         })
     }
@@ -96,14 +96,8 @@ impl Sensor {
             self.marca.clone().unwrap_or_default(),
             self.modelo.clone().unwrap_or_default(),
             self.numero_serie.clone(),
-            self.rango_medicion.clone().unwrap_or_default(),
-            self.precision.clone().unwrap_or_default(),
             self.ubicacion.clone().unwrap_or_default(),
             self.estado.clone(),
-            self.fecha_calibracion.clone().unwrap_or_default(),
-            self.proxima_calibracion.clone().unwrap_or_default(),
-            self.error_maximo.map(|v| v.to_string()).unwrap_or_default(),
-            self.certificado_id.clone().unwrap_or_default(),
             self.responsable.clone().unwrap_or_default(),
             self.observaciones.clone().unwrap_or_default(),
             self.activo.to_string(),
