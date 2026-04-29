@@ -6,7 +6,7 @@ use crate::db::DbPool;
 use crate::models::{Calibracion, CreateCalibracion, UpdateCalibracion};
 
 const CALIBRACION_COLUMNS: &str = r#"id, sensor_id, fecha_calibracion, proxima_calibracion,
-    rango_medicion, "precision", error_maximo, certificado_id, estado, factor,
+    rango_medicion, "precision", error_maximo, incertidumbre, certificado_id, estado, factor,
     created_at, updated_at"#;
 
 #[derive(Debug, Clone, FromRow)]
@@ -18,6 +18,7 @@ pub struct CalibracionRow {
     pub rango_medicion: Option<String>,
     pub precision: Option<String>,
     pub error_maximo: Option<String>,
+    pub incertidumbre: Option<String>,
     pub certificado_id: Option<String>,
     pub estado: String,
     pub factor: Decimal,
@@ -35,6 +36,7 @@ impl From<CalibracionRow> for Calibracion {
             rango_medicion: row.rango_medicion,
             precision: row.precision,
             error_maximo: row.error_maximo,
+            incertidumbre: row.incertidumbre,
             certificado_id: row.certificado_id,
             estado: row.estado,
             factor: row.factor,
@@ -99,9 +101,9 @@ impl CalibracionRepository {
         let row = sqlx::query_as::<_, CalibracionRow>(&format!(
             r#"
             INSERT INTO calibracion (id, sensor_id, fecha_calibracion, proxima_calibracion,
-                                     rango_medicion, "precision", error_maximo, certificado_id,
-                                     estado, factor)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                                     rango_medicion, "precision", error_maximo, incertidumbre,
+                                     certificado_id, estado, factor)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING {}
             "#,
             CALIBRACION_COLUMNS
@@ -113,6 +115,7 @@ impl CalibracionRepository {
         .bind(&dto.rango_medicion)
         .bind(&dto.precision)
         .bind(&dto.error_maximo)
+        .bind(&dto.incertidumbre)
         .bind(&dto.certificado_id)
         .bind(&dto.estado)
         .bind(dto.factor)
@@ -144,9 +147,10 @@ impl CalibracionRepository {
                 rango_medicion = COALESCE($4, rango_medicion),
                 "precision" = COALESCE($5, "precision"),
                 error_maximo = COALESCE($6, error_maximo),
-                certificado_id = COALESCE($7, certificado_id),
-                estado = COALESCE($8, estado),
-                factor = COALESCE($9, factor),
+                incertidumbre = COALESCE($7, incertidumbre),
+                certificado_id = COALESCE($8, certificado_id),
+                estado = COALESCE($9, estado),
+                factor = COALESCE($10, factor),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING {}
@@ -159,6 +163,7 @@ impl CalibracionRepository {
         .bind(&dto.rango_medicion)
         .bind(&dto.precision)
         .bind(&dto.error_maximo)
+        .bind(&dto.incertidumbre)
         .bind(&dto.certificado_id)
         .bind(&dto.estado)
         .bind(dto.factor)

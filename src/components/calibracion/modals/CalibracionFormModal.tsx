@@ -16,6 +16,7 @@ export interface CalibracionFormData {
   rango_medicion: string;
   precision: string;
   error_maximo: string;
+  incertidumbre: string;
   certificado_id: string;
   [key: string]: unknown;
 }
@@ -30,6 +31,7 @@ export interface CalibracionForModal {
   rangoMedicion?: string;
   precision?: string;
   errorMaximo?: string;
+  incertidumbre?: string;
   certificadoId?: string;
 }
 
@@ -70,6 +72,7 @@ export function CalibracionFormModal({
     rango_medicion: calibracion?.rangoMedicion || '',
     precision: calibracion?.precision || '',
     error_maximo: calibracion?.errorMaximo || '',
+    incertidumbre: calibracion?.incertidumbre || '',
     certificado_id: calibracion?.certificadoId || '',
   }));
 
@@ -230,17 +233,31 @@ export function CalibracionFormModal({
           </div>
         </div>
 
-        <div className={formStyles.field}>
-          <label className={formStyles.label}>Error máximo</label>
-          <input
-            type="text"
-            value={form.error_maximo}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              handleChange('error_maximo', e.target.value)
-            }
-            className={formStyles.input}
-            placeholder="Ej: ±0.5%"
-          />
+        <div className={formStyles.row}>
+          <div className={formStyles.field}>
+            <label className={formStyles.label}>Error máximo</label>
+            <input
+              type="text"
+              value={form.error_maximo}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleChange('error_maximo', e.target.value)
+              }
+              className={formStyles.input}
+              placeholder="Ej: ± 0.5"
+            />
+          </div>
+          <div className={formStyles.field}>
+            <label className={formStyles.label}>Incertidumbre (U)</label>
+            <input
+              type="text"
+              value={form.incertidumbre}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleChange('incertidumbre', e.target.value)
+              }
+              className={formStyles.input}
+              placeholder="Ej: ± 0.0001 g (k=2)"
+            />
+          </div>
         </div>
 
         <div className={formStyles.buttons}>

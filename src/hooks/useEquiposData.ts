@@ -108,6 +108,7 @@ interface CalibracionRaw {
   rango_medicion?: string;
   precision?: string;
   error_maximo?: string;
+  incertidumbre?: string;
   certificado_id?: string;
 }
 
@@ -121,6 +122,7 @@ export interface Calibracion {
   rango_medicion?: string;
   precision?: string;
   error_maximo?: string;
+  incertidumbre?: string;
   certificado_id?: string;
 }
 
@@ -195,6 +197,7 @@ const mapCalibraciones = (raw: CalibracionRaw[] = []): Calibracion[] =>
     rango_medicion: c.rango_medicion,
     precision: c.precision,
     error_maximo: c.error_maximo,
+    incertidumbre: c.incertidumbre,
     certificado_id: c.certificado_id,
   }));
 
