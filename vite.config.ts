@@ -12,7 +12,6 @@ export default defineConfig({
     },
   },
   build: {
-    // Aumentar límite del warning ya que dhtmlx-gantt es inherentemente grande
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
@@ -26,10 +25,6 @@ export default defineConfig({
             // Recharts y sus dependencias (d3, etc)
             if (id.includes('/recharts/') || id.includes('/d3-')) {
               return 'vendor-charts';
-            }
-            // Gantt
-            if (id.includes('/@dhtmlx/') || id.includes('/dhtmlx-gantt/')) {
-              return 'vendor-gantt';
             }
           }
         },
