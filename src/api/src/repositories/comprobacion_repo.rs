@@ -1,5 +1,6 @@
 use sqlx::FromRow;
 use chrono::{DateTime, Utc};
+use serde_json::Value as JsonValue;
 
 use crate::db::DbPool;
 use crate::models::{Comprobacion, CreateComprobacion, UpdateComprobacion};
@@ -8,11 +9,11 @@ use crate::models::{Comprobacion, CreateComprobacion, UpdateComprobacion};
 #[derive(Debug, Clone, FromRow)]
 pub struct ComprobacionRow {
     pub id: String,
-    pub equipo_id: String,
+    pub sensor_id: String,
     pub fecha: DateTime<Utc>,
-    pub tipo: String,
+    pub data: JsonValue,
     pub resultado: String,
-    pub responsable: Option<String>,
+    pub responsable: String,
     pub observaciones: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -22,9 +23,9 @@ impl From<ComprobacionRow> for Comprobacion {
     fn from(row: ComprobacionRow) -> Self {
         Comprobacion {
             id: row.id,
-            equipo_id: row.equipo_id,
+            sensor_id: row.sensor_id,
             fecha: row.fecha.to_rfc3339(),
-            tipo: row.tipo,
+            data: row.data,
             resultado: row.resultado,
             responsable: row.responsable,
             observaciones: row.observaciones,
@@ -33,6 +34,9 @@ impl From<ComprobacionRow> for Comprobacion {
         }
     }
 }
+
+const COMPROBACION_COLUMNS: &str =
+    "id, sensor_id, fecha, data, resultado, responsable, observaciones, created_at, updated_at";
 
 #[derive(Clone)]
 pub struct ComprobacionRepository {
@@ -46,32 +50,23 @@ impl ComprobacionRepository {
 
     /// Obtiene todas las comprobaciones
     pub async fn find_all(&self) -> Result<Vec<Comprobacion>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, ComprobacionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, tipo, resultado, responsable, observaciones,
-                   created_at, updated_at
-            FROM comprobaciones
-            ORDER BY fecha DESC
-            "#,
-        )
+        let rows = sqlx::query_as::<_, ComprobacionRow>(&format!(
+            "SELECT {} FROM comprobacion ORDER BY fecha DESC",
+            COMPROBACION_COLUMNS
+        ))
         .fetch_all(&self.pool)
         .await?;
 
         Ok(rows.into_iter().map(Comprobacion::from).collect())
     }
 
-    /// Obtiene comprobaciones por equipo_id
-    pub async fn find_by_equipo(&self, equipo_id: &str) -> Result<Vec<Comprobacion>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, ComprobacionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, tipo, resultado, responsable, observaciones,
-                   created_at, updated_at
-            FROM comprobaciones
-            WHERE equipo_id = $1
-            ORDER BY fecha DESC
-            "#,
-        )
-        .bind(equipo_id)
+    /// Obtiene comprobaciones por sensor_id
+    pub async fn find_by_sensor(&self, sensor_id: &str) -> Result<Vec<Comprobacion>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, ComprobacionRow>(&format!(
+            "SELECT {} FROM comprobacion WHERE sensor_id = $1 ORDER BY fecha DESC",
+            COMPROBACION_COLUMNS
+        ))
+        .bind(sensor_id)
         .fetch_all(&self.pool)
         .await?;
 
@@ -80,14 +75,10 @@ impl ComprobacionRepository {
 
     /// Busca comprobación por ID
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Comprobacion>, sqlx::Error> {
-        let row = sqlx::query_as::<_, ComprobacionRow>(
-            r#"
-            SELECT id, equipo_id, fecha, tipo, resultado, responsable, observaciones,
-                   created_at, updated_at
-            FROM comprobaciones
-            WHERE id = $1
-            "#,
-        )
+        let row = sqlx::query_as::<_, ComprobacionRow>(&format!(
+            "SELECT {} FROM comprobacion WHERE id = $1",
+            COMPROBACION_COLUMNS
+        ))
         .bind(id)
         .fetch_optional(&self.pool)
         .await?;
@@ -97,18 +88,18 @@ impl ComprobacionRepository {
 
     /// Crea una nueva comprobación
     pub async fn create(&self, id: &str, dto: CreateComprobacion) -> Result<Comprobacion, sqlx::Error> {
-        let row = sqlx::query_as::<_, ComprobacionRow>(
+        let row = sqlx::query_as::<_, ComprobacionRow>(&format!(
             r#"
-            INSERT INTO comprobaciones (id, equipo_id, fecha, tipo, resultado, responsable, observaciones)
+            INSERT INTO comprobacion (id, sensor_id, fecha, data, resultado, responsable, observaciones)
             VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7)
-            RETURNING id, equipo_id, fecha, tipo, resultado, responsable, observaciones,
-                      created_at, updated_at
+            RETURNING {}
             "#,
-        )
+            COMPROBACION_COLUMNS
+        ))
         .bind(id)
-        .bind(&dto.equipo_id)
+        .bind(&dto.sensor_id)
         .bind(&dto.fecha)
-        .bind(&dto.tipo)
+        .bind(&dto.data)
         .bind(&dto.resultado)
         .bind(&dto.responsable)
         .bind(&dto.observaciones)
@@ -120,23 +111,23 @@ impl ComprobacionRepository {
 
     /// Actualiza una comprobación existente
     pub async fn update(&self, id: &str, dto: UpdateComprobacion) -> Result<Option<Comprobacion>, sqlx::Error> {
-        let row = sqlx::query_as::<_, ComprobacionRow>(
+        let row = sqlx::query_as::<_, ComprobacionRow>(&format!(
             r#"
-            UPDATE comprobaciones
+            UPDATE comprobacion
             SET fecha = COALESCE($2::timestamptz, fecha),
-                tipo = COALESCE($3, tipo),
+                data = COALESCE($3, data),
                 resultado = COALESCE($4, resultado),
                 responsable = COALESCE($5, responsable),
                 observaciones = COALESCE($6, observaciones),
                 updated_at = NOW()
             WHERE id = $1
-            RETURNING id, equipo_id, fecha, tipo, resultado, responsable, observaciones,
-                      created_at, updated_at
+            RETURNING {}
             "#,
-        )
+            COMPROBACION_COLUMNS
+        ))
         .bind(id)
         .bind(&dto.fecha)
-        .bind(&dto.tipo)
+        .bind(&dto.data)
         .bind(&dto.resultado)
         .bind(&dto.responsable)
         .bind(&dto.observaciones)
@@ -148,7 +139,7 @@ impl ComprobacionRepository {
 
     /// Elimina una comprobación
     pub async fn delete(&self, id: &str) -> Result<bool, sqlx::Error> {
-        let result = sqlx::query("DELETE FROM comprobaciones WHERE id = $1")
+        let result = sqlx::query("DELETE FROM comprobacion WHERE id = $1")
             .bind(id)
             .execute(&self.pool)
             .await?;
@@ -156,10 +147,10 @@ impl ComprobacionRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    /// Cuenta comprobaciones por equipo
-    pub async fn count_by_equipo(&self, equipo_id: &str) -> Result<i64, sqlx::Error> {
-        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM comprobaciones WHERE equipo_id = $1")
-            .bind(equipo_id)
+    /// Cuenta comprobaciones por sensor
+    pub async fn count_by_sensor(&self, sensor_id: &str) -> Result<i64, sqlx::Error> {
+        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM comprobacion WHERE sensor_id = $1")
+            .bind(sensor_id)
             .fetch_one(&self.pool)
             .await?;
         Ok(row.0)

@@ -1,4 +1,4 @@
-use crate::models::{Comprobacion, Ensayo};
+use crate::models::Ensayo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,7 +24,6 @@ pub struct Equipo {
     pub created_at: String,
     pub updated_at: String,
     pub ensayos: Option<Vec<Ensayo>>,
-    pub comprobaciones: Option<Vec<Comprobacion>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,7 +80,6 @@ impl Equipo {
             created_at: row.get(18)?.clone(),
             updated_at: row.get(19)?.clone(),
             ensayos: None,
-            comprobaciones: None,
         })
     }
 

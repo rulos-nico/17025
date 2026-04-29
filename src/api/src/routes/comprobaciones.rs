@@ -15,7 +15,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_comprobaciones).post(create_comprobacion))
         .route("/{id}", get(get_comprobacion).put(update_comprobacion).delete(delete_comprobacion))
-        .route("/equipo/{equipo_id}", get(list_by_equipo))
+        .route("/sensor/{sensor_id}", get(list_by_sensor))
 }
 
 /// GET /api/comprobaciones
@@ -28,13 +28,13 @@ async fn list_comprobaciones(
     Ok(Json(comprobaciones))
 }
 
-/// GET /api/comprobaciones/equipo/:equipo_id
-async fn list_by_equipo(
-    Path(equipo_id): Path<String>,
+/// GET /api/comprobaciones/sensor/:sensor_id
+async fn list_by_sensor(
+    Path(sensor_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Comprobacion>>, AppError> {
     let repo = ComprobacionRepository::new(state.db_pool.clone());
-    let comprobaciones = repo.find_by_equipo(&equipo_id).await
+    let comprobaciones = repo.find_by_sensor(&sensor_id).await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(comprobaciones))
 }

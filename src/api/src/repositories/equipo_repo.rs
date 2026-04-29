@@ -56,7 +56,6 @@ impl From<EquipoRow> for Equipo {
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
             ensayos: None,
-            comprobaciones: None,
         }
     }
 }
@@ -114,7 +113,6 @@ impl From<EquipoConSensoresRow> for EquipoConSensores {
                 created_at: row.created_at.to_rfc3339(),
                 updated_at: row.updated_at.to_rfc3339(),
                 ensayos: None,
-                comprobaciones: None,
             },
             sensores_asociados: row.sensores_asociados.0,
         }
