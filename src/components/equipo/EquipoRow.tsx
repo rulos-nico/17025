@@ -43,8 +43,11 @@ export function EquipoRow({
   const diasComprob = getDiasParaVencimiento(proximaComprobacion);
   const alertaComprob = getAlertaVencimiento(diasComprob);
 
-  const comprobacionesEquipo = comprobaciones.filter(c => c.equipoId === equipo.id);
-  const calibracionesEquipo = calibraciones.filter(c => c.equipoId === equipo.id);
+  const sensorIds = new Set<string | number>(
+    equipo.tipo === 'sensor' ? [equipo.id] : (equipo.sensoresAsociados || []).map(s => s.id)
+  );
+  const comprobacionesEquipo = comprobaciones.filter(c => sensorIds.has(c.sensorId));
+  const calibracionesEquipo = calibraciones.filter(c => sensorIds.has(c.sensorId));
 
   const numSensores = equipo.sensoresAsociados?.length || 0;
 
@@ -197,16 +200,15 @@ export function EquipoRow({
                         <thead className={styles.historyTableHead}>
                           <tr>
                             <th className={styles.historyTh}>Fecha</th>
-                            <th className={styles.historyTh}>Tipo</th>
                             <th className={styles.historyTh}>Resultado</th>
                             <th className={styles.historyTh}>Responsable</th>
+                            <th className={styles.historyTh}>Observaciones</th>
                           </tr>
                         </thead>
                         <tbody>
                           {comprobacionesEquipo.slice(0, 5).map(comp => (
                             <tr key={comp.id as string}>
                               <td className={styles.historyTd}>{formatDate(comp.fecha)}</td>
-                              <td className={styles.historyTd}>{comp.tipo}</td>
                               <td className={styles.historyTd}>
                                 <span
                                   className={
@@ -219,6 +221,7 @@ export function EquipoRow({
                                 </span>
                               </td>
                               <td className={styles.historyTdMuted}>{comp.responsable}</td>
+                              <td className={styles.historyTdMuted}>{comp.observaciones || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -247,26 +250,32 @@ export function EquipoRow({
                         <thead className={styles.historyTableHead}>
                           <tr>
                             <th className={styles.historyTh}>Fecha</th>
-                            <th className={styles.historyTh}>Laboratorio</th>
+                            <th className={styles.historyTh}>Próxima</th>
                             <th className={styles.historyTh}>Certificado</th>
                             <th className={styles.historyTh}>Factor</th>
-                            <th className={styles.historyTh}>Incert.</th>
+                            <th className={styles.historyTh}>Estado</th>
                           </tr>
                         </thead>
                         <tbody>
                           {calibracionesEquipo.map(cal => (
                             <tr key={cal.id as string}>
                               <td className={styles.historyTd}>{formatDate(cal.fecha)}</td>
-                              <td className={styles.historyTd}>{cal.laboratorio}</td>
                               <td className={styles.historyTd}>
-                                <span className={styles.certLink}>{cal.certificado}</span>
+                                {formatDate(cal.proxima_calibracion)}
                               </td>
                               <td className={styles.historyTd}>
-                                <span className={cal.factor ? styles.factorValue : styles.factorNA}>
-                                  {cal.factor || 'N/A'}
+                                <span className={styles.certLink}>{cal.certificado_id || '-'}</span>
+                              </td>
+                              <td className={styles.historyTd}>
+                                <span
+                                  className={
+                                    cal.factor != null ? styles.factorValue : styles.factorNA
+                                  }
+                                >
+                                  {cal.factor != null ? String(cal.factor) : 'N/A'}
                                 </span>
                               </td>
-                              <td className={styles.historyTdSmall}>{cal.incertidumbre}</td>
+                              <td className={styles.historyTdSmall}>{cal.estado || '-'}</td>
                             </tr>
                           ))}
                         </tbody>

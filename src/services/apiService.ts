@@ -257,7 +257,7 @@ export const PersonalInternoAPI = createCrudAPI(endpoints.personalInterno);
 
 export const ComprobacionesAPI = {
   ...createCrudAPI(endpoints.comprobaciones),
-  listByEquipo: (equipoId: string | number) => request(endpoints.comprobaciones.byEquipo(equipoId)),
+  listBySensor: (sensorId: string | number) => request(endpoints.comprobaciones.bySensor(sensorId)),
 };
 
 // ============================================
@@ -266,7 +266,7 @@ export const ComprobacionesAPI = {
 
 export const CalibracionesAPI = {
   ...createCrudAPI(endpoints.calibraciones),
-  listByEquipo: (equipoId: string | number) => request(endpoints.calibraciones.byEquipo(equipoId)),
+  listBySensor: (sensorId: string | number) => request(endpoints.calibraciones.bySensor(sensorId)),
 };
 
 // ============================================

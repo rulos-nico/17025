@@ -80,9 +80,9 @@ export interface Equipo {
 
 interface ComprobacionRaw {
   id: string | number;
-  equipo_id: string | number;
+  sensor_id: string | number;
   fecha: string;
-  tipo: string;
+  data?: unknown;
   resultado: string;
   responsable: string;
   observaciones?: string;
@@ -90,9 +90,9 @@ interface ComprobacionRaw {
 
 export interface Comprobacion {
   id: string | number;
-  equipoId: string | number;
+  sensorId: string | number;
   fecha: string;
-  tipo: string;
+  data?: unknown;
   resultado: string;
   responsable: string;
   observaciones?: string;
@@ -100,24 +100,28 @@ export interface Comprobacion {
 
 interface CalibracionRaw {
   id: string | number;
-  equipo_id: string | number;
-  fecha: string;
-  laboratorio: string;
-  certificado: string;
-  factor?: number;
-  incertidumbre?: number;
-  proxima_calibracion?: string;
+  sensor_id: string | number;
+  fecha_calibracion: string;
+  proxima_calibracion: string;
+  estado?: string;
+  factor?: number | string;
+  rango_medicion?: string;
+  precision?: string;
+  error_maximo?: string;
+  certificado_id?: string;
 }
 
 export interface Calibracion {
   id: string | number;
-  equipoId: string | number;
+  sensorId: string | number;
   fecha: string;
-  laboratorio: string;
-  certificado: string;
-  factor?: number;
-  incertidumbre?: number;
-  proxima_calibracion?: string;
+  proxima_calibracion: string;
+  estado?: string;
+  factor?: number | string;
+  rango_medicion?: string;
+  precision?: string;
+  error_maximo?: string;
+  certificado_id?: string;
 }
 
 interface EquiposDataState {
@@ -169,9 +173,9 @@ export interface UseEquiposDataResult {
 const mapComprobaciones = (raw: ComprobacionRaw[] = []): Comprobacion[] =>
   raw.map(c => ({
     id: c.id,
-    equipoId: c.equipo_id,
+    sensorId: c.sensor_id,
     fecha: c.fecha,
-    tipo: c.tipo,
+    data: c.data,
     resultado: c.resultado,
     responsable: c.responsable,
     observaciones: c.observaciones,
@@ -183,13 +187,15 @@ const mapComprobaciones = (raw: ComprobacionRaw[] = []): Comprobacion[] =>
 const mapCalibraciones = (raw: CalibracionRaw[] = []): Calibracion[] =>
   raw.map(c => ({
     id: c.id,
-    equipoId: c.equipo_id,
-    fecha: c.fecha,
-    laboratorio: c.laboratorio,
-    certificado: c.certificado,
-    factor: c.factor,
-    incertidumbre: c.incertidumbre,
+    sensorId: c.sensor_id,
+    fecha: c.fecha_calibracion,
     proxima_calibracion: c.proxima_calibracion,
+    estado: c.estado,
+    factor: c.factor,
+    rango_medicion: c.rango_medicion,
+    precision: c.precision,
+    error_maximo: c.error_maximo,
+    certificado_id: c.certificado_id,
   }));
 
 // ============================================

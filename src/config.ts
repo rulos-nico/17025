@@ -42,11 +42,11 @@ interface MuestrasEndpoints extends CrudEndpoints {
 }
 
 interface ComprobacionesEndpoints extends CrudEndpoints {
-  byEquipo: (equipoId: string | number) => string;
+  bySensor: (sensorId: string | number) => string;
 }
 
 interface CalibracionesEndpoints extends CrudEndpoints {
-  byEquipo: (equipoId: string | number) => string;
+  bySensor: (sensorId: string | number) => string;
 }
 
 interface ReportesEndpoints extends CrudEndpoints {
@@ -205,12 +205,12 @@ export const API_CONFIG: ApiConfig = {
 
     comprobaciones: {
       ...createCrudEndpoints('/comprobaciones'),
-      byEquipo: (equipoId: string | number) => `/comprobaciones/equipo/${equipoId}`,
+      bySensor: (sensorId: string | number) => `/comprobaciones/sensor/${sensorId}`,
     },
 
     calibraciones: {
       ...createCrudEndpoints('/calibraciones'),
-      byEquipo: (equipoId: string | number) => `/calibraciones/equipo/${equipoId}`,
+      bySensor: (sensorId: string | number) => `/calibraciones/sensor/${sensorId}`,
     },
 
     usuarios: createCrudEndpoints('/usuarios'),
