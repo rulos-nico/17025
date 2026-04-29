@@ -10,7 +10,7 @@ import type { ComprobacionForModal } from '../components/comprobacion';
 import { useComprobacionesData } from '../hooks/useComprobacionesData';
 import type { Comprobacion } from '../hooks/useComprobacionesData';
 import { useAuth } from '../hooks/useAuth';
-import { formatDate } from '../utils';
+import { formatDate, formatNum } from '../utils';
 import styles from './Comprobaciones.module.css';
 
 export default function Comprobaciones() {
@@ -180,16 +180,20 @@ export default function Comprobaciones() {
                 <th className={styles.th}>Sensor</th>
                 <th className={styles.th}>Fecha</th>
                 <th className={styles.th}>Resultado</th>
+                <th className={styles.th}>Patrón</th>
+                <th className={styles.th}>Media</th>
+                <th className={styles.th}>Error</th>
+                <th className={styles.th}>u (A)</th>
+                <th className={styles.th}>n</th>
                 <th className={styles.th}>Responsable</th>
                 <th className={styles.th}>Observaciones</th>
-                <th className={styles.th}>Datos</th>
                 <th className={styles.th}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={7}>No hay comprobaciones que coincidan con los filtros.</td>
+                  <td colSpan={11}>No hay comprobaciones que coincidan con los filtros.</td>
                 </tr>
               ) : (
                 filtered.map(c => {
@@ -214,15 +218,32 @@ export default function Comprobaciones() {
                           {c.resultado}
                         </span>
                       </td>
+                      <td className={styles.tdNum}>
+                        {c.valorPatron !== undefined
+                          ? `${formatNum(c.valorPatron, 4)}${c.unidad ? ' ' + c.unidad : ''}`
+                          : '—'}
+                      </td>
+                      <td className={styles.tdNum}>{formatNum(c.media, 4)}</td>
+                      <td className={styles.tdNum}>
+                        {c.error !== undefined ? (
+                          <span
+                            style={{
+                              color:
+                                c.valorPatron && Math.abs(c.error) > Math.abs(c.valorPatron) * 0.01
+                                  ? '#DC2626'
+                                  : 'inherit',
+                            }}
+                          >
+                            {formatNum(c.error, 4)}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className={styles.tdNum}>{formatNum(c.incertidumbre, 4)}</td>
+                      <td className={styles.tdNum}>{c.nReplicas ?? '—'}</td>
                       <td className={styles.td}>{c.responsable}</td>
                       <td className={styles.td}>{c.observaciones || '—'}</td>
-                      <td className={styles.td}>
-                        <div className={styles.dataPreview} title={JSON.stringify(c.data)}>
-                          {c.data && Object.keys(c.data as object).length > 0
-                            ? JSON.stringify(c.data)
-                            : '—'}
-                        </div>
-                      </td>
                       <td className={styles.td}>
                         <div className={styles.actions}>
                           <button onClick={() => openEdit(c)} className={styles.btnEdit}>

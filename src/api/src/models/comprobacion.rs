@@ -10,6 +10,13 @@ pub struct Comprobacion {
     pub resultado: String,   // FK a comprobacion_resultados
     pub responsable: String, // FK a usuarios.id
     pub observaciones: Option<String>,
+    pub valor_patron: Option<f64>,
+    pub unidad: Option<String>,
+    pub n_replicas: Option<i32>,
+    pub media: Option<f64>,
+    pub desviacion_std: Option<f64>,
+    pub error: Option<f64>,
+    pub incertidumbre: Option<f64>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -22,6 +29,13 @@ pub struct CreateComprobacion {
     pub resultado: String,
     pub responsable: String,
     pub observaciones: Option<String>,
+    pub valor_patron: Option<f64>,
+    pub unidad: Option<String>,
+    pub n_replicas: Option<i32>,
+    pub media: Option<f64>,
+    pub desviacion_std: Option<f64>,
+    pub error: Option<f64>,
+    pub incertidumbre: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,4 +45,11 @@ pub struct UpdateComprobacion {
     pub resultado: Option<String>,
     pub responsable: Option<String>,
     pub observaciones: Option<String>,
+    pub valor_patron: Option<f64>,
+    pub unidad: Option<String>,
+    pub n_replicas: Option<i32>,
+    pub media: Option<f64>,
+    pub desviacion_std: Option<f64>,
+    pub error: Option<f64>,
+    pub incertidumbre: Option<f64>,
 }

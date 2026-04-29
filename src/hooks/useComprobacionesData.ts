@@ -14,14 +14,27 @@ import { ComprobacionesAPI, SensoresAPI } from '../services/apiService';
 // INTERFACES
 // ============================================
 
+export interface ComprobacionDataShape {
+  replicas?: number[];
+  ambiente?: Record<string, number | string>;
+  [key: string]: unknown;
+}
+
 export interface ComprobacionRaw {
   id: string;
   sensor_id: string;
   fecha: string;
-  data?: unknown;
+  data?: ComprobacionDataShape | unknown;
   resultado: string;
   responsable: string;
   observaciones?: string;
+  valor_patron?: number | null;
+  unidad?: string | null;
+  n_replicas?: number | null;
+  media?: number | null;
+  desviacion_std?: number | null;
+  error?: number | null;
+  incertidumbre?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -30,10 +43,17 @@ export interface Comprobacion {
   id: string;
   sensorId: string;
   fecha: string;
-  data?: unknown;
+  data?: ComprobacionDataShape | unknown;
   resultado: string;
   responsable: string;
   observaciones?: string;
+  valorPatron?: number;
+  unidad?: string;
+  nReplicas?: number;
+  media?: number;
+  desviacionStd?: number;
+  error?: number;
+  incertidumbre?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -81,6 +101,9 @@ export interface UseComprobacionesDataResult {
 // HELPERS
 // ============================================
 
+const toNum = (v: number | null | undefined): number | undefined =>
+  v === null || v === undefined ? undefined : v;
+
 const mapComprobaciones = (raw: ComprobacionRaw[] = []): Comprobacion[] =>
   raw.map(c => ({
     id: String(c.id),
@@ -90,6 +113,13 @@ const mapComprobaciones = (raw: ComprobacionRaw[] = []): Comprobacion[] =>
     resultado: c.resultado,
     responsable: c.responsable,
     observaciones: c.observaciones,
+    valorPatron: toNum(c.valor_patron),
+    unidad: c.unidad ?? undefined,
+    nReplicas: toNum(c.n_replicas),
+    media: toNum(c.media),
+    desviacionStd: toNum(c.desviacion_std),
+    error: toNum(c.error),
+    incertidumbre: toNum(c.incertidumbre),
     createdAt: c.created_at,
     updatedAt: c.updated_at,
   }));

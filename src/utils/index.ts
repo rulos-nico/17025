@@ -124,3 +124,15 @@ export {
   filterTransitionsByRole,
   canPerformTransition,
 } from './permissions';
+
+// ============================================
+// METROLOGY - Cálculos estadísticos para comprobaciones
+// ============================================
+export {
+  mean,
+  stdDevSample,
+  uncertaintyTypeA,
+  computeDerived,
+  formatNum,
+  type DerivedMetrics,
+} from './metrology';

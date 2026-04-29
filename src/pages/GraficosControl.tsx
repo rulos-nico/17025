@@ -1,15 +1,15 @@
 /**
  * GraficosControl - Cartas de control sobre comprobaciones + calibraciones de un sensor
  *
- * Tres modos:
- *   1. Estadístico (Shewhart): UCL/LCL = x̄ ± 3σ calculado de la propia serie de
- *      lecturas de comprobaciones.
- *   2. Tolerancia – Error: grafica la desviación absoluta |lectura − patrón| de las
- *      comprobaciones unidas con los error_máximo reportados en cada calibración
- *      (rombos en la línea temporal). Línea de límite horizontal configurable
- *      (default 1% del patrón medio).
- *   3. Tolerancia – Incertidumbre: grafica la incertidumbre reportada en cada
- *      calibración a lo largo del tiempo. Sin línea de límite.
+ * Tres modos (todos sobre columnas tipadas de `comprobacion`: media, error,
+ * incertidumbre, valor_patron):
+ *   1. Estadístico (Shewhart): Y = media. UCL/LCL = x̄ ± 3σ de la propia
+ *      serie de medias. Barras de error ±u_A en cada punto.
+ *   2. Tolerancia – Error: Y = error (signo). Umbral horizontal ±th
+ *      configurable (% del patrón o absoluto). Barras de error ±u_A.
+ *      Marcadores rombo con error_máximo de calibraciones.
+ *   3. Tolerancia – Incertidumbre: Y = incertidumbre por comprobación.
+ *      Marcadores rombo con incertidumbre reportada en calibraciones.
  *
  * En los 3 modos las fechas de calibración se muestran como líneas verticales
  * tenues con tooltip.
@@ -34,6 +34,7 @@ type ThresholdType = 'percent' | 'absolute';
 interface ChartPoint {
   fecha: string;
   valor: number;
+  errorU?: number; // ±u para barras de error
   label: string;
   kind: 'comprobacion' | 'calibracion';
   refId: string;
@@ -66,35 +67,6 @@ const computeStats = (values: number[]): Stats | null => {
   };
 };
 
-const getNumericKeys = (objs: unknown[]): string[] => {
-  const keys = new Map<string, number>();
-  for (const o of objs) {
-    if (!o || typeof o !== 'object') continue;
-    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
-      if (typeof v === 'number' && Number.isFinite(v)) {
-        keys.set(k, (keys.get(k) || 0) + 1);
-      }
-    }
-  }
-  return [...keys.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
-};
-
-const extractValue = (data: unknown, key: string): number | null => {
-  if (!data || typeof data !== 'object') return null;
-  const v = (data as Record<string, unknown>)[key];
-  return typeof v === 'number' && Number.isFinite(v) ? v : null;
-};
-
-/** Heurística: dado una clave "lectura_g" busca la pareja "masa_patron_g" o similar. */
-const findPatronKey = (data: unknown, lecturaKey: string): string | null => {
-  if (!data || typeof data !== 'object') return null;
-  const keys = Object.keys(data as Record<string, unknown>);
-  const suffix = lecturaKey.replace(/^lectura[_]?/i, '');
-  // Coincidencia exacta de sufijo: "lectura_g" -> "*_patron_g" o "patron_g"
-  const candidates = keys.filter(k => /patron/i.test(k) && (suffix === '' || k.endsWith(suffix)));
-  return candidates[0] || keys.find(k => /patron/i.test(k)) || null;
-};
-
 /** Extrae el primer número (con signo y decimales) de un texto tipo "± 0.0002 g". */
 const parseMetrologicValue = (text: string | undefined | null): number | null => {
   if (!text) return null;
@@ -120,6 +92,7 @@ interface ControlChartProps {
   calibrationPoints: ChartPoint[]; // marcadores rombo en la serie + líneas verticales
   lines: ChartLine[]; // líneas horizontales (mean, UCL, LCL, threshold...)
   yAxisLabel: string;
+  showErrorBars?: boolean;
   width?: number;
   height?: number;
 }
@@ -129,6 +102,7 @@ function ControlChart({
   calibrationPoints,
   lines,
   yAxisLabel,
+  showErrorBars = false,
   width = 900,
   height = 380,
 }: ControlChartProps) {
@@ -152,12 +126,17 @@ function ControlChart({
     return padLeft + ((t - tMin) / (tMax - tMin)) * innerW;
   };
 
-  // Eje Y = valores de puntos + líneas de referencia
-  const yValues = [
-    ...points.map(p => p.valor),
-    ...calibrationPoints.map(p => p.valor),
-    ...lines.map(l => l.yValue),
-  ];
+  // Eje Y = valores de puntos + barras de error + líneas de referencia
+  const yValues: number[] = [];
+  for (const p of points) {
+    yValues.push(p.valor);
+    if (showErrorBars && p.errorU !== undefined) {
+      yValues.push(p.valor + p.errorU, p.valor - p.errorU);
+    }
+  }
+  for (const p of calibrationPoints) yValues.push(p.valor);
+  for (const l of lines) yValues.push(l.yValue);
+
   const yMin = Math.min(...yValues);
   const yMax = Math.max(...yValues);
   const yPad = (yMax - yMin) * 0.1 || Math.abs(yMin) * 0.1 || 1;
@@ -237,6 +216,23 @@ function ControlChart({
       {/* Serie de comprobaciones */}
       {linePath && <path d={linePath} fill="none" stroke="#3B82F6" strokeWidth={2} />}
 
+      {/* Barras de error ±u sobre los puntos */}
+      {showErrorBars &&
+        points.map(p => {
+          if (p.errorU === undefined || p.errorU <= 0) return null;
+          const cx = xOf(p.fecha);
+          const yTop = yOf(p.valor + p.errorU);
+          const yBot = yOf(p.valor - p.errorU);
+          const cap = 4;
+          return (
+            <g key={`err-${p.refId}`} stroke="#3B82F6" strokeWidth={1.2} opacity={0.7}>
+              <line x1={cx} x2={cx} y1={yTop} y2={yBot} />
+              <line x1={cx - cap} x2={cx + cap} y1={yTop} y2={yTop} />
+              <line x1={cx - cap} x2={cx + cap} y1={yBot} y2={yBot} />
+            </g>
+          );
+        })}
+
       {/* Puntos de comprobaciones */}
       {points.map(p => {
         const out = !!p.isViolation;
@@ -251,7 +247,7 @@ function ControlChart({
             strokeWidth={1.5}
           >
             <title>
-              {`${formatDate(p.fecha)}\n${p.label} = ${p.valor.toFixed(4)}${p.resultado ? `\nResultado: ${p.resultado}` : ''}${out ? '\n¡Fuera del límite!' : ''}`}
+              {`${formatDate(p.fecha)}\n${p.label} = ${p.valor.toFixed(4)}${p.errorU !== undefined ? `\n±u = ${p.errorU.toFixed(4)}` : ''}${p.resultado ? `\nResultado: ${p.resultado}` : ''}${out ? '\n¡Fuera del límite!' : ''}`}
             </title>
           </circle>
         );
@@ -330,7 +326,6 @@ export default function GraficosControl() {
   const loading = lc || lk;
 
   const [sensorId, setSensorId] = useState<string>('');
-  const [variable, setVariable] = useState<string>('');
   const [mode, setMode] = useState<Mode>('estadistico');
   const [thresholdValue, setThresholdValue] = useState<string>('1.0');
   const [thresholdType, setThresholdType] = useState<ThresholdType>('percent');
@@ -352,63 +347,31 @@ export default function GraficosControl() {
       .sort((a, b) => a.fechaCalibracion.localeCompare(b.fechaCalibracion));
   }, [calibraciones, sensorId]);
 
-  // Variables numéricas detectadas
-  const variables = useMemo(() => getNumericKeys(sensorComps.map(c => c.data)), [sensorComps]);
-
   // Auto-selección
   useEffect(() => {
     if (!sensorId && sensores.length > 0) setSensorId(String(sensores[0].id));
   }, [sensores, sensorId]);
-  useEffect(() => {
-    if (variables.length > 0 && !variables.includes(variable)) setVariable(variables[0]);
-    if (variables.length === 0 && variable) setVariable('');
-  }, [variables, variable]);
+
+  // Unidad detectada (de la primera comprobación)
+  const unidad = useMemo(() => sensorComps.find(c => c.unidad)?.unidad || '', [sensorComps]);
 
   // ---- valor patrón promedio (para % de tolerancia) ----
   const patronMean = useMemo<number | null>(() => {
-    if (!variable || sensorComps.length === 0) return null;
-    const patronKey = findPatronKey(sensorComps[0]?.data, variable);
-    if (!patronKey) return null;
     const vals = sensorComps
-      .map(c => extractValue(c.data, patronKey))
-      .filter((v): v is number => v !== null);
+      .map(c => c.valorPatron)
+      .filter((v): v is number => v !== undefined && Number.isFinite(v));
     if (vals.length === 0) return null;
     return vals.reduce((a, b) => a + b, 0) / vals.length;
-  }, [sensorComps, variable]);
+  }, [sensorComps]);
 
   // ---- threshold absoluto efectivo ----
   const effectiveThreshold = useMemo<number | null>(() => {
     const num = parseFloat(thresholdValue);
     if (!Number.isFinite(num) || num <= 0) return null;
     if (thresholdType === 'absolute') return num;
-    // percent: % del patrón medio
     if (patronMean === null) return null;
     return (num / 100) * Math.abs(patronMean);
   }, [thresholdValue, thresholdType, patronMean]);
-
-  // ---- desviación absoluta de cada comprobación (|lectura - patrón|) ----
-  const compDeviations = useMemo<
-    Array<{ fecha: string; dev: number; id: string; resultado: string }>
-  >(() => {
-    if (!variable) return [];
-    const patronKey = findPatronKey(sensorComps[0]?.data, variable);
-    return sensorComps
-      .map(c => {
-        const lectura = extractValue(c.data, variable);
-        if (lectura === null) return null;
-        const patron = patronKey ? extractValue(c.data, patronKey) : null;
-        if (patron === null) return null;
-        return {
-          fecha: c.fecha,
-          dev: Math.abs(lectura - patron),
-          id: c.id,
-          resultado: c.resultado,
-        };
-      })
-      .filter(
-        (p): p is { fecha: string; dev: number; id: string; resultado: string } => p !== null
-      );
-  }, [sensorComps, variable]);
 
   // ---- error_maximo / incertidumbre parseados de calibraciones ----
   const calErrors = useMemo(
@@ -437,24 +400,18 @@ export default function GraficosControl() {
   // BUILD CHART DATA per mode
   // ============================================
   const chartData = useMemo(() => {
-    if (!variable) return null;
-
     if (mode === 'estadistico') {
-      const pts = sensorComps
-        .map(c => {
-          const valor = extractValue(c.data, variable);
-          if (valor === null) return null;
-          const p: ChartPoint = {
-            fecha: c.fecha,
-            valor,
-            label: variable,
-            kind: 'comprobacion',
-            refId: c.id,
-            resultado: c.resultado,
-          };
-          return p;
-        })
-        .filter((p): p is ChartPoint => p !== null);
+      const pts: ChartPoint[] = sensorComps
+        .filter(c => c.media !== undefined && Number.isFinite(c.media))
+        .map(c => ({
+          fecha: c.fecha,
+          valor: c.media as number,
+          errorU: c.incertidumbre,
+          label: 'media',
+          kind: 'comprobacion',
+          refId: c.id,
+          resultado: c.resultado,
+        }));
       const stats = computeStats(pts.map(p => p.valor));
       if (!stats) return { points: pts, calibrationPoints: [], lines: [], stats: null };
       pts.forEach(p => {
@@ -462,43 +419,51 @@ export default function GraficosControl() {
       });
       const calMarkers: ChartPoint[] = sensorCals.map(c => ({
         fecha: c.fechaCalibracion,
-        valor: stats.mean, // alineados con la línea central
+        valor: stats.mean,
         label: 'Calibración',
         kind: 'calibracion',
         refId: c.id,
       }));
-      return {
-        points: pts,
-        calibrationPoints: calMarkers,
-        lines: [
-          { yValue: stats.mean, color: '#10B981', label: `x̄ ${stats.mean.toFixed(4)}` },
-          {
-            yValue: stats.ucl,
-            color: '#DC2626',
-            label: `UCL ${stats.ucl.toFixed(4)}`,
-            dashed: true,
-          },
-          {
-            yValue: stats.lcl,
-            color: '#DC2626',
-            label: `LCL ${stats.lcl.toFixed(4)}`,
-            dashed: true,
-          },
-        ] as ChartLine[],
-        stats,
-      };
+      const lines: ChartLine[] = [
+        { yValue: stats.mean, color: '#10B981', label: `x̄ ${stats.mean.toFixed(4)}` },
+        {
+          yValue: stats.ucl,
+          color: '#DC2626',
+          label: `UCL ${stats.ucl.toFixed(4)}`,
+          dashed: true,
+        },
+        {
+          yValue: stats.lcl,
+          color: '#DC2626',
+          label: `LCL ${stats.lcl.toFixed(4)}`,
+          dashed: true,
+        },
+      ];
+      if (patronMean !== null) {
+        lines.push({
+          yValue: patronMean,
+          color: '#6366F1',
+          label: `Patrón ${patronMean.toFixed(4)}`,
+          dashed: true,
+        });
+      }
+      return { points: pts, calibrationPoints: calMarkers, lines, stats };
     }
 
     if (mode === 'tolerancia-error') {
-      const pts: ChartPoint[] = compDeviations.map(d => ({
-        fecha: d.fecha,
-        valor: d.dev,
-        label: `|Δ ${variable}|`,
-        kind: 'comprobacion',
-        refId: d.id,
-        resultado: d.resultado,
-        isViolation: effectiveThreshold !== null && d.dev > effectiveThreshold,
-      }));
+      const pts: ChartPoint[] = sensorComps
+        .filter(c => c.error !== undefined && Number.isFinite(c.error))
+        .map(c => ({
+          fecha: c.fecha,
+          valor: c.error as number,
+          errorU: c.incertidumbre,
+          label: 'error',
+          kind: 'comprobacion',
+          refId: c.id,
+          resultado: c.resultado,
+          isViolation:
+            effectiveThreshold !== null && Math.abs(c.error as number) > effectiveThreshold,
+        }));
       const calMarkers: ChartPoint[] = calErrors.map(c => ({
         fecha: c.fecha,
         valor: c.valor,
@@ -507,38 +472,44 @@ export default function GraficosControl() {
         refId: c.id,
         isViolation: effectiveThreshold !== null && c.valor > effectiveThreshold,
       }));
-      const lines: ChartLine[] = [];
+      const lines: ChartLine[] = [{ yValue: 0, color: '#10B981', label: '0' }];
       if (effectiveThreshold !== null) {
         lines.push({
           yValue: effectiveThreshold,
           color: '#DC2626',
-          label: `Umbral ${effectiveThreshold.toFixed(4)}`,
+          label: `+${effectiveThreshold.toFixed(4)}`,
+          dashed: true,
+        });
+        lines.push({
+          yValue: -effectiveThreshold,
+          color: '#DC2626',
+          label: `−${effectiveThreshold.toFixed(4)}`,
           dashed: true,
         });
       }
-      lines.push({ yValue: 0, color: '#10B981', label: '0' });
       return { points: pts, calibrationPoints: calMarkers, lines, stats: null };
     }
 
-    // tolerancia-incertidumbre: solo serie de calibraciones
-    const pts: ChartPoint[] = calUncertainties.map(c => ({
+    // tolerancia-incertidumbre: serie de incertidumbres por comprobación + rombos calibraciones
+    const pts: ChartPoint[] = sensorComps
+      .filter(c => c.incertidumbre !== undefined && Number.isFinite(c.incertidumbre))
+      .map(c => ({
+        fecha: c.fecha,
+        valor: c.incertidumbre as number,
+        label: 'u (A)',
+        kind: 'comprobacion',
+        refId: c.id,
+        resultado: c.resultado,
+      }));
+    const calMarkers: ChartPoint[] = calUncertainties.map(c => ({
       fecha: c.fecha,
       valor: c.valor,
-      label: 'Incertidumbre (U)',
-      kind: 'comprobacion', // la usamos como serie continua
+      label: 'U (calibración)',
+      kind: 'calibracion',
       refId: c.id,
     }));
-    return { points: pts, calibrationPoints: [], lines: [], stats: null };
-  }, [
-    mode,
-    variable,
-    sensorComps,
-    sensorCals,
-    compDeviations,
-    calErrors,
-    calUncertainties,
-    effectiveThreshold,
-  ]);
+    return { points: pts, calibrationPoints: calMarkers, lines: [], stats: null };
+  }, [mode, sensorComps, sensorCals, calErrors, calUncertainties, patronMean, effectiveThreshold]);
 
   // ---- Eventos para tabla complementaria ----
   const events = useMemo(() => {
@@ -603,15 +574,15 @@ export default function GraficosControl() {
   // ============================================
 
   const titleByMode: Record<Mode, string> = {
-    estadistico: 'Carta Shewhart (±3σ)',
+    estadistico: 'Carta Shewhart (±3σ) sobre medias',
     'tolerancia-error': 'Tolerancia · Error vs umbral',
-    'tolerancia-incertidumbre': 'Evolución de la incertidumbre (U)',
+    'tolerancia-incertidumbre': 'Evolución de la incertidumbre (u_A)',
   };
 
   const yLabelByMode: Record<Mode, string> = {
-    estadistico: variable,
-    'tolerancia-error': `|Δ ${variable}|`,
-    'tolerancia-incertidumbre': 'Incertidumbre (U)',
+    estadistico: `media${unidad ? ` (${unidad})` : ''}`,
+    'tolerancia-error': `error${unidad ? ` (${unidad})` : ''}`,
+    'tolerancia-incertidumbre': `u${unidad ? ` (${unidad})` : ''}`,
   };
 
   return (
@@ -630,28 +601,6 @@ export default function GraficosControl() {
             </option>
           ))}
         </select>
-
-        {mode !== 'tolerancia-incertidumbre' && (
-          <>
-            <label style={{ fontSize: 13, color: '#374151' }}>Variable:</label>
-            <select
-              value={variable}
-              onChange={e => setVariable(e.target.value)}
-              className={styles.select}
-              disabled={variables.length === 0}
-            >
-              {variables.length === 0 ? (
-                <option value="">— sin datos numéricos —</option>
-              ) : (
-                variables.map(k => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))
-              )}
-            </select>
-          </>
-        )}
       </div>
 
       <div className={styles.controls}>
@@ -690,22 +639,14 @@ export default function GraficosControl() {
         <div className={styles.chartCard}>
           <div className={styles.empty}>Seleccione un sensor para visualizar la carta.</div>
         </div>
-      ) : !chartData ? (
-        <div className={styles.chartCard}>
-          <div className={styles.empty}>Sin datos para graficar.</div>
-        </div>
-      ) : mode === 'tolerancia-incertidumbre' && chartData.points.length === 0 ? (
+      ) : !chartData || chartData.points.length === 0 ? (
         <div className={styles.chartCard}>
           <div className={styles.empty}>
-            No hay incertidumbres registradas en las calibraciones de este sensor.
-          </div>
-        </div>
-      ) : mode !== 'tolerancia-incertidumbre' && chartData.points.length === 0 ? (
-        <div className={styles.chartCard}>
-          <div className={styles.empty}>
-            {mode === 'tolerancia-error'
-              ? 'No se encontró pareja patrón/lectura en las comprobaciones para calcular desviación.'
-              : 'El sensor seleccionado no tiene comprobaciones.'}
+            {mode === 'estadistico'
+              ? 'El sensor seleccionado no tiene comprobaciones con media derivada.'
+              : mode === 'tolerancia-error'
+                ? 'No hay comprobaciones con error derivado para este sensor.'
+                : 'No hay comprobaciones con incertidumbre derivada para este sensor.'}
           </div>
         </div>
       ) : (
@@ -717,6 +658,10 @@ export default function GraficosControl() {
               <Metric label="Desv. (σ)" value={chartData.stats.std.toFixed(4)} />
               <Metric label="UCL (+3σ)" value={chartData.stats.ucl.toFixed(4)} />
               <Metric label="LCL (−3σ)" value={chartData.stats.lcl.toFixed(4)} />
+              <Metric
+                label="Patrón medio"
+                value={patronMean !== null ? patronMean.toFixed(4) : '—'}
+              />
               <Metric
                 label="Fuera de control"
                 value={String(chartData.points.filter(p => p.isViolation).length)}
@@ -730,7 +675,7 @@ export default function GraficosControl() {
               <Metric label="Calibraciones" value={String(chartData.calibrationPoints.length)} />
               <Metric
                 label="Umbral"
-                value={effectiveThreshold !== null ? effectiveThreshold.toFixed(4) : '—'}
+                value={effectiveThreshold !== null ? `±${effectiveThreshold.toFixed(4)}` : '—'}
               />
               <Metric
                 label="Patrón medio"
@@ -748,9 +693,13 @@ export default function GraficosControl() {
 
           {mode === 'tolerancia-incertidumbre' && (
             <div className={styles.metricsGrid}>
-              <Metric label="Calibraciones (U)" value={String(chartData.points.length)} />
+              <Metric label="Comprobaciones (u)" value={String(chartData.points.length)} />
               <Metric
-                label="U mín"
+                label="Calibraciones (U)"
+                value={String(chartData.calibrationPoints.length)}
+              />
+              <Metric
+                label="u mín"
                 value={
                   chartData.points.length > 0
                     ? Math.min(...chartData.points.map(p => p.valor)).toFixed(4)
@@ -758,7 +707,7 @@ export default function GraficosControl() {
                 }
               />
               <Metric
-                label="U máx"
+                label="u máx"
                 value={
                   chartData.points.length > 0
                     ? Math.max(...chartData.points.map(p => p.valor)).toFixed(4)
@@ -766,7 +715,7 @@ export default function GraficosControl() {
                 }
               />
               <Metric
-                label="U promedio"
+                label="u promedio"
                 value={
                   chartData.points.length > 0
                     ? (
@@ -787,11 +736,21 @@ export default function GraficosControl() {
               calibrationPoints={chartData.calibrationPoints}
               lines={chartData.lines}
               yAxisLabel={yLabelByMode[mode]}
+              showErrorBars={mode !== 'tolerancia-incertidumbre'}
             />
             <div className={styles.legend}>
               <span className={styles.legendItem}>
                 <span className={styles.legendLine} style={{ background: '#3B82F6' }} /> serie
               </span>
+              {mode !== 'tolerancia-incertidumbre' && (
+                <span className={styles.legendItem}>
+                  <span
+                    className={styles.legendLine}
+                    style={{ background: '#3B82F6', opacity: 0.5 }}
+                  />{' '}
+                  ± u (barras de error)
+                </span>
+              )}
               {mode === 'estadistico' && (
                 <>
                   <span className={styles.legendItem}>
@@ -818,7 +777,7 @@ export default function GraficosControl() {
                         'repeating-linear-gradient(90deg, #DC2626 0 6px, transparent 6px 10px)',
                     }}
                   />{' '}
-                  umbral
+                  ±umbral
                 </span>
               )}
               <span className={styles.legendItem}>
