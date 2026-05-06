@@ -2,40 +2,46 @@
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
+# Node / Vue
 node_modules
 dist
 dist-ssr
+.vite
 *.local
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln
+!src/api-dotnet/Lab17025.sln
+
+# Rust (legacy, kept on main branch)
+target/
+**/*.rs.bk
+Cargo.lock
 
 # Environment variables
 .env
 .env.local
 .env.production
+.env.*.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-!src/api-dotnet/Lab17025.sln
 *.sw?
-
-# Rust
-target/
-**/*.rs.bk
-Cargo.lock
 
 # OpenCode
 .opencode/
 
-# Token files
+# Token files / secrets
 sustained-truck-493518-b7-d4b4e336bdd1.json
+*.serviceaccount.json
+
+# Untracked legacy files
+docker/docker-compose.tsnet.yml
