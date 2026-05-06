@@ -53,6 +53,12 @@ try
     builder.Services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
     builder.Services.AddScoped<IEquipoRepository, EquipoRepository>();
     builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+    builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+    builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+    builder.Services.AddHttpClient(GoogleTokenValidator.HttpClientName, c =>
+    {
+        c.Timeout = TimeSpan.FromSeconds(8);
+    });
 
     // ----- Controllers + JSON snake_case -----------------------------------
     builder.Services
@@ -131,6 +137,13 @@ try
         throw new InvalidOperationException($"Migration failed: {migrationResult.ErrorMessage}");
     }
     migrationLogger.LogInformation("Migraciones aplicadas: {Count}", migrationResult.ScriptsApplied.Length);
+
+    // ----- Seeder demo (BCrypt + rol ADMIN, idempotente) -------------------
+    using (var scope = app.Services.CreateScope())
+    {
+        await Lab17025.Api.Bootstrap.DemoSeeder.EnsureAsync(
+            scope.ServiceProvider, migrationLogger);
+    }
 
     // ----- Pipeline ---------------------------------------------------------
     app.UseSerilogRequestLogging();

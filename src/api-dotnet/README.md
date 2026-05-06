@@ -12,9 +12,10 @@ El resto de módulos se portará en fases posteriores.
 src/api-dotnet/
 ├── Lab17025.sln
 ├── Lab17025.Api/                 # ASP.NET Core 9 (controllers, DI, JWT, Swagger)
-│   ├── Auth/                     # JwtTokenService, PasswordHasher
+│   ├── Auth/                     # JwtTokenService (JWT+refresh), GoogleTokenValidator, PasswordHasher (BCrypt)
+│   ├── Bootstrap/                # DemoSeeder (idempotente)
 │   ├── Controllers/              # AuthController, EquiposController
-│   ├── Domain/                   # Equipo, Usuario
+│   ├── Domain/                   # Equipo, Usuario, RefreshToken
 │   ├── Dtos/                     # DTOs con JsonPropertyName snake_case
 │   ├── Repositories/             # Dapper repos + ISqlConnectionFactory
 │   ├── Program.cs
@@ -25,7 +26,8 @@ src/api-dotnet/
 │       ├── 001_initial_schema.sql
 │       ├── 002_add_equipo_id_to_sensores.sql
 │       ├── 003_seed_equipos_demo.sql
-│       └── 004_add_usuarios_table.sql
+│       ├── 004_add_usuarios_table.sql
+│       └── 005_refresh_tokens.sql
 └── Lab17025.Tests.Api/           # xUnit + Testcontainers SQL Server
 
 src/web-vue/                      # Vite + Vue 3 + TS + Pinia + TanStack Query
@@ -100,9 +102,11 @@ Vite dev server en http://localhost:5173 con proxy `/api` → `localhost:5080`.
 
 - email: `demo@ingetec.cl`
 - password: `demo1234`
+- rol: `ADMIN` (asignado por `DemoSeeder` en cada arranque)
 
-> ⚠️ El hash es SHA-256 hex sin salt (placeholder PoC).
-> Reemplazar por **BCrypt** en producción.
+> El hash en BD se genera/normaliza a **BCrypt (work factor 12)** automáticamente
+> al arrancar (`DemoSeeder`). El SQL seed deja un placeholder; el seeder lo
+> reescribe si detecta hash legacy o rol distinto a `ADMIN`. Idempotente.
 
 ## Tests
 
@@ -122,17 +126,35 @@ Cobertura PoC:
 
 ## Endpoints implementados
 
-| Método | Ruta              | Auth | Descripción          |
-| ------ | ----------------- | ---- | -------------------- |
-| POST   | /api/auth/login   | —    | Login email+password |
-| GET    | /api/auth/me      | ✓    | Info usuario actual  |
-| GET    | /api/equipos      | ✓    | Lista de equipos     |
-| GET    | /api/equipos/{id} | ✓    | Equipo por id        |
-| POST   | /api/equipos      | ✓    | Crear equipo         |
-| PUT    | /api/equipos/{id} | ✓    | Actualizar equipo    |
-| DELETE | /api/equipos/{id} | ✓    | Soft delete          |
-| GET    | /health           | —    | Healthcheck          |
-| GET    | /metrics          | —    | Prometheus metrics   |
+| Método | Ruta                | Auth          | Descripción                                            |
+| ------ | ------------------- | ------------- | ------------------------------------------------------ |
+| POST   | /api/auth/login     | —             | Login email+password (BCrypt) → JWT + refresh          |
+| POST   | /api/auth/google    | —             | Login con `access_token` Google → JWT + refresh        |
+| POST   | /api/auth/refresh   | —             | Rota refresh token, emite nuevo par                    |
+| POST   | /api/auth/logout    | ✓             | Revoca el refresh token enviado                        |
+| GET    | /api/auth/me        | ✓             | Info usuario actual                                    |
+| GET    | /api/equipos        | ✓             | Lista de equipos                                       |
+| GET    | /api/equipos/{id}   | ✓             | Equipo por id                                          |
+| POST   | /api/equipos        | ADMIN/COORD   | Crear equipo                                           |
+| PUT    | /api/equipos/{id}   | ADMIN/COORD   | Actualizar equipo                                      |
+| DELETE | /api/equipos/{id}   | ADMIN/COORD   | Soft delete                                            |
+| GET    | /health             | —             | Healthcheck                                            |
+| GET    | /metrics            | —             | Prometheus metrics                                     |
+
+### Auth híbrido (Sub-fase A.1)
+
+- **Login local (`/api/auth/login`)**: valida email + password contra BCrypt.
+- **Login Google (`/api/auth/google`)**: el frontend obtiene un `access_token`
+  de Google Identity Services y lo envía al backend; éste lo valida contra
+  `https://www.googleapis.com/oauth2/v2/userinfo`. Si la cuenta no existe se
+  crea con rol `TECNICO` por defecto (upsert por email).
+- **Refresh tokens**: opacos (256 bits, base64-url). En BD se persiste solo el
+  SHA-256 hex (`refresh_tokens.token_hash`). En cada `/refresh` el token viejo
+  se marca `revoked_at` y se enlaza con el nuevo (`replaced_by`). Si llega un
+  reuse de token revocado se revoca **toda la familia** del usuario (defensa
+  contra robo).
+- **Roles** propagados como claim `role` en el JWT. `[Authorize(Roles="…")]`
+  en controllers.
 
 ## Convenciones de diseño
 

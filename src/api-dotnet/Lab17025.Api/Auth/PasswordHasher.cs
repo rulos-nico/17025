@@ -1,21 +1,27 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace Lab17025.Api.Auth;
 
 /// <summary>
-/// Hash de contraseñas para PoC.
-/// Usa SHA-256 hex sin salt (suficiente para validar el pipeline).
-/// PRODUCCIÓN: reemplazar por BCrypt.Net-Next o Argon2 antes del cutover.
+/// Hash de contraseñas usando BCrypt (work factor 12).
+/// Reemplaza al SHA-256 placeholder del PoC en Sub-fase A.1.
 /// </summary>
 public static class PasswordHasher
 {
+    private const int WorkFactor = 12;
+
     public static string Hash(string password)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
+        => BCrypt.Net.BCrypt.HashPassword(password, WorkFactor);
 
     public static bool Verify(string password, string hash)
-        => string.Equals(Hash(password), hash, StringComparison.OrdinalIgnoreCase);
+    {
+        if (string.IsNullOrEmpty(hash)) return false;
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hash);
+        }
+        catch (BCrypt.Net.SaltParseException)
+        {
+            // Hash malformado o de otro algoritmo (p.ej. SHA-256 legacy).
+            return false;
+        }
+    }
 }

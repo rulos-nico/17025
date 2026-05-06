@@ -18,6 +18,9 @@ namespace Lab17025.Api.Controllers;
 [Route("api/equipos")]
 public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
 {
+    /// <summary>Roles autorizados a mutar equipos. TECNICO/CLIENTE/DISENO solo lectura.</summary>
+    private const string WriteRoles = "ADMIN,COORDINADOR";
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EquipoDto>>> List(CancellationToken ct)
     {
@@ -33,6 +36,7 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = WriteRoles)]
     public async Task<ActionResult<EquipoDto>> Create([FromBody] CreateEquipoDto body, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(body.Nombre) || string.IsNullOrWhiteSpace(body.Serie))
@@ -48,6 +52,7 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = WriteRoles)]
     public async Task<ActionResult<EquipoDto>> Update(Guid id, [FromBody] UpdateEquipoDto body, CancellationToken ct)
     {
         var updated = await repo.UpdateAsync(id, body, ct);
@@ -55,6 +60,7 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = WriteRoles)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var ok = await repo.SoftDeleteAsync(id, ct);
