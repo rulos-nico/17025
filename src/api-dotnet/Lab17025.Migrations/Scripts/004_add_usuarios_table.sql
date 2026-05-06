@@ -4,13 +4,17 @@
 -- =============================================================================
 -- Adiciones para PoC:
 --   * password_hash (NVARCHAR(255)) para auth local sin Google.
+--     PoC usa SHA256 hex de "demo1234"; Fase A.1 lo migra a BCrypt.
+-- Fase A.0:
+--   * id es UNIQUEIDENTIFIER (DEFAULT NEWSEQUENTIALID()).
+--   * Usuario demo usa GUID fijo para que tests puedan referenciarlo.
 -- =============================================================================
 
 IF OBJECT_ID(N'dbo.usuarios', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.usuarios (
-        id              NVARCHAR(50)    NOT NULL CONSTRAINT PK_usuarios PRIMARY KEY
-                                        CONSTRAINT DF_usuarios_id DEFAULT (CONVERT(NVARCHAR(36), NEWID())),
+        id              UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_usuarios PRIMARY KEY
+                                          CONSTRAINT DF_usuarios_id DEFAULT (NEWSEQUENTIALID()),
         email           NVARCHAR(255)   NOT NULL CONSTRAINT UQ_usuarios_email UNIQUE,
         nombre          NVARCHAR(255)   NOT NULL,
         apellido        NVARCHAR(255)   NULL,
@@ -36,10 +40,11 @@ GO
 
 -- Seed usuario demo para PoC.
 -- password_hash corresponde a SHA256("demo1234") en hex (placeholder PoC).
--- En producción reemplazar por BCrypt/Argon2.
+-- En producción reemplazar por BCrypt/Argon2 (Fase A.1).
 MERGE dbo.usuarios AS target
 USING (VALUES
-    ('demo-user-001', 'demo@ingetec.cl', N'Demo', N'Técnico', 'tecnico', CAST(1 AS BIT),
+    (CAST('00000000-0000-0000-0000-000000000001' AS UNIQUEIDENTIFIER),
+     'demo@ingetec.cl', N'Demo', N'Técnico', 'tecnico', CAST(1 AS BIT),
      '0ead2060b65992dca4769af601a1b3a35ef38cfad2c2c465bb160ea764157c5d')
 ) AS source (id, email, nombre, apellido, rol, activo, password_hash)
 ON target.id = source.id

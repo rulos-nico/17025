@@ -25,8 +25,8 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
         return Ok(equipos.Select(e => e.ToDto()));
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<EquipoDto>> Get(string id, CancellationToken ct)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<EquipoDto>> Get(Guid id, CancellationToken ct)
     {
         var equipo = await repo.GetByIdAsync(id, ct);
         return equipo is null ? NotFound() : Ok(equipo.ToDto());
@@ -38,22 +38,24 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
         if (string.IsNullOrWhiteSpace(body.Nombre) || string.IsNullOrWhiteSpace(body.Serie))
             return Problem(statusCode: 400, title: "nombre y serie son obligatorios");
 
-        var id = Guid.NewGuid().ToString();
+        var id = Guid.NewGuid();
+        // TODO Fase A.3: reemplazar por SEQUENCE T-SQL para garantizar unicidad
+        // y formato consecutivo (paridad con generación de códigos en Rust).
         var codigo = $"EQP-{DateTime.UtcNow:yyyyMMddHHmmss}";
 
         var created = await repo.CreateAsync(id, codigo, body, ct);
         return Created($"/api/equipos/{created.Id}", created.ToDto());
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<EquipoDto>> Update(string id, [FromBody] UpdateEquipoDto body, CancellationToken ct)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<EquipoDto>> Update(Guid id, [FromBody] UpdateEquipoDto body, CancellationToken ct)
     {
         var updated = await repo.UpdateAsync(id, body, ct);
         return updated is null ? NotFound() : Ok(updated.ToDto());
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id, CancellationToken ct)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var ok = await repo.SoftDeleteAsync(id, ct);
         return ok ? NoContent() : NotFound();

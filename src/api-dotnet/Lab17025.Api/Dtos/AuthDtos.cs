@@ -18,7 +18,7 @@ public sealed class LoginResponseDto
 
 public sealed class UserInfoDto
 {
-    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("id")] public Guid Id { get; set; }
     [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
     [JsonPropertyName("nombre")] public string Nombre { get; set; } = string.Empty;
     [JsonPropertyName("apellido")] public string? Apellido { get; set; }

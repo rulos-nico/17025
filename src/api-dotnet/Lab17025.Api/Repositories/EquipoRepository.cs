@@ -7,15 +7,16 @@ namespace Lab17025.Api.Repositories;
 public interface IEquipoRepository
 {
     Task<IReadOnlyList<Equipo>> ListAsync(CancellationToken ct = default);
-    Task<Equipo?> GetByIdAsync(string id, CancellationToken ct = default);
-    Task<Equipo> CreateAsync(string id, string codigo, CreateEquipoDto dto, CancellationToken ct = default);
-    Task<Equipo?> UpdateAsync(string id, UpdateEquipoDto dto, CancellationToken ct = default);
-    Task<bool> SoftDeleteAsync(string id, CancellationToken ct = default);
+    Task<Equipo?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<Equipo> CreateAsync(Guid id, string codigo, CreateEquipoDto dto, CancellationToken ct = default);
+    Task<Equipo?> UpdateAsync(Guid id, UpdateEquipoDto dto, CancellationToken ct = default);
+    Task<bool> SoftDeleteAsync(Guid id, CancellationToken ct = default);
 }
 
 /// <summary>
 /// Repositorio Dapper para dbo.equipos. Replica el comportamiento de
 /// src/api/src/repositories/equipo_repo.rs traduciendo SQLx -> SqlClient.
+/// PKs son UNIQUEIDENTIFIER (Guid en C#).
 /// </summary>
 public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRepository
 {
@@ -35,7 +36,7 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
         return rows.Select(MapRow).ToList();
     }
 
-    public async Task<Equipo?> GetByIdAsync(string id, CancellationToken ct = default)
+    public async Task<Equipo?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         using var conn = factory.Create();
         var row = await conn.QuerySingleOrDefaultAsync<EquipoRow>(new CommandDefinition(
@@ -45,7 +46,7 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
         return row is null ? null : MapRow(row);
     }
 
-    public async Task<Equipo> CreateAsync(string id, string codigo, CreateEquipoDto dto, CancellationToken ct = default)
+    public async Task<Equipo> CreateAsync(Guid id, string codigo, CreateEquipoDto dto, CancellationToken ct = default)
     {
         const string sql = $"""
             INSERT INTO dbo.equipos (id, codigo, nombre, serie, placa, descripcion, marca, modelo, ubicacion, estado, sync_source)
@@ -75,11 +76,13 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
         return MapRow(row);
     }
 
-    public async Task<Equipo?> UpdateAsync(string id, UpdateEquipoDto dto, CancellationToken ct = default)
+    public async Task<Equipo?> UpdateAsync(Guid id, UpdateEquipoDto dto, CancellationToken ct = default)
     {
         DateOnly? fechaCal = TryParseDate(dto.FechaCalibracion);
         DateOnly? proximaCal = TryParseDate(dto.ProximaCalibracion);
 
+        // SQL Server no permite OUTPUT sin INTO cuando la tabla tiene triggers
+        // (trg_equipos_updated_at). Hacemos UPDATE + SELECT en la misma conexión.
         const string sql = $"""
             UPDATE dbo.equipos
             SET nombre              = COALESCE(@Nombre,              nombre),
@@ -96,13 +99,9 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
                 activo              = COALESCE(@Activo,              activo),
                 sync_source         = 'db',
                 updated_at          = SYSUTCDATETIME()
-            OUTPUT INSERTED.id, INSERTED.codigo, INSERTED.nombre, INSERTED.serie, INSERTED.placa,
-                   INSERTED.descripcion, INSERTED.marca, INSERTED.modelo, INSERTED.ubicacion,
-                   INSERTED.estado, INSERTED.fecha_calibracion, INSERTED.proxima_calibracion,
-                   INSERTED.incertidumbre, INSERTED.error_maximo, INSERTED.certificado_id,
-                   INSERTED.responsable, INSERTED.observaciones, INSERTED.activo,
-                   INSERTED.created_at, INSERTED.updated_at, INSERTED.synced_at, INSERTED.sync_source
             WHERE id = @id;
+
+            SELECT {Columns} FROM dbo.equipos WHERE id = @id;
             """;
 
         using var conn = factory.Create();
@@ -126,7 +125,7 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
         return row is null ? null : MapRow(row);
     }
 
-    public async Task<bool> SoftDeleteAsync(string id, CancellationToken ct = default)
+    public async Task<bool> SoftDeleteAsync(Guid id, CancellationToken ct = default)
     {
         const string sql = """
             UPDATE dbo.equipos
@@ -176,7 +175,7 @@ public sealed class EquipoRepository(ISqlConnectionFactory factory) : IEquipoRep
     /// </summary>
 #pragma warning disable IDE1006
     private sealed record EquipoRow(
-        string id,
+        Guid id,
         string codigo,
         string nombre,
         string serie,

@@ -2,13 +2,15 @@
 -- Migración: Agregar columna equipo_id a sensores + FK
 -- Portado desde 20240126000000_add_equipo_id_to_sensores.sql
 -- =============================================================================
+-- Fase A.0: equipo_id es UNIQUEIDENTIFIER (igual que dbo.equipos.id).
+-- =============================================================================
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
     WHERE object_id = OBJECT_ID('dbo.sensores') AND name = 'equipo_id'
 )
 BEGIN
-    ALTER TABLE dbo.sensores ADD equipo_id NVARCHAR(36) NULL;
+    ALTER TABLE dbo.sensores ADD equipo_id UNIQUEIDENTIFIER NULL;
 END;
 GO
 

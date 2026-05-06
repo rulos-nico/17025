@@ -54,8 +54,8 @@ public sealed class AuthController(
     [Microsoft.AspNetCore.Authorization.Authorize]
     public async Task<ActionResult<UserInfoDto>> Me(CancellationToken ct)
     {
-        var id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (id is null) return Unauthorized();
+        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out var id)) return Unauthorized();
 
         var user = await usuarios.FindByIdAsync(id, ct);
         if (user is null) return Unauthorized();

@@ -32,6 +32,8 @@ try
 
     // ----- Dapper: snake_case -> PascalCase ---------------------------------
     DefaultTypeMap.MatchNamesWithUnderscores = true;
+    SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+    SqlMapper.AddTypeHandler(new NullableDateOnlyTypeHandler());
 
     // ----- Configuración / opciones ----------------------------------------
     var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()

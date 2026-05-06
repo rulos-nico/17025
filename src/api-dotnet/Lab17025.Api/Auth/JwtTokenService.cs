@@ -29,11 +29,12 @@ public sealed class JwtTokenService(JwtOptions options) : IJwtTokenService
         var exp = now.AddMinutes(options.ExpirationMinutes);
         expiresInSeconds = (int)(exp - now).TotalSeconds;
 
+        var sub = user.Id.ToString();
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Sub, sub),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.NameIdentifier, sub),
             new(ClaimTypes.Role, user.Rol),
             new("nombre", user.Nombre),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

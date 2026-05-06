@@ -134,6 +134,17 @@ Cobertura PoC:
 | GET    | /health           | —    | Healthcheck          |
 | GET    | /metrics          | —    | Prometheus metrics   |
 
+## Convenciones de diseño
+
+- **PKs**: `UNIQUEIDENTIFIER` (mapeado a `System.Guid` en C#) con `DEFAULT NEWSEQUENTIALID()`.
+  Los códigos legibles (`EQ-BAL-001`, `EQP-20260101…`) viven en columnas separadas `codigo NVARCHAR(...) UNIQUE`.
+- **Triggers `updated_at`**: por trigger AFTER UPDATE T-SQL. Ojo: SQL Server no permite
+  `OUTPUT … INSERTED.*` sin `INTO` cuando la tabla tiene triggers, así que los repos
+  que actualizan hacen `UPDATE` + `SELECT` en el mismo batch.
+- **`DateOnly`**: Dapper aún no lo soporta nativamente; se registran `DateOnlyTypeHandler` y
+  `NullableDateOnlyTypeHandler` en `Program.cs`.
+- **JSON snake_case** para preservar contrato con el frontend Vue.
+
 ## Próximas fases
 
 - **Fase 2**: portar 23 migraciones T-SQL restantes + repos/controllers de los 13 módulos.

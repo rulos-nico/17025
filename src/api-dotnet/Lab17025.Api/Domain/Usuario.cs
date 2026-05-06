@@ -5,7 +5,7 @@ namespace Lab17025.Api.Domain;
 /// </summary>
 public sealed class Usuario
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Email { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string? Apellido { get; set; }

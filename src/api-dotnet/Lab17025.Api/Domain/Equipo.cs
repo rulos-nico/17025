@@ -6,7 +6,7 @@ namespace Lab17025.Api.Domain;
 /// </summary>
 public sealed class Equipo
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string Serie { get; set; } = string.Empty;

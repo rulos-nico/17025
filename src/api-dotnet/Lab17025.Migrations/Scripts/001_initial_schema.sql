@@ -8,13 +8,18 @@
 --   TEXT               -> NVARCHAR(MAX)
 --   NUMERIC(p,s)       -> DECIMAL(p,s)
 --   NOW()              -> SYSUTCDATETIME()
---   gen_random_uuid()  -> CONVERT(NVARCHAR(36), NEWID())
+--   gen_random_uuid()  -> NEWID() / NEWSEQUENTIALID()
+--   UUID               -> UNIQUEIDENTIFIER
 --   SERIAL             -> INT IDENTITY(1,1)
 --   JSONB              -> NVARCHAR(MAX) + CHECK (ISJSON(...) = 1)
---   TEXT[]             -> NVARCHAR(MAX) (JSON serializado)
+--   TEXT[]             -> tabla puente o JSON
 --   ON CONFLICT...     -> MERGE
 --   RETURNING *        -> OUTPUT INSERTED.*
 --   trigger updated_at -> trigger T-SQL AFTER UPDATE
+-- =============================================================================
+-- Decisión de diseño (Fase A.0):
+--   Todas las PK son UNIQUEIDENTIFIER (no NVARCHAR(36)). Los códigos
+--   legibles (EQ-BAL-001, etc.) viven en columnas separadas `codigo`.
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -23,7 +28,8 @@
 IF OBJECT_ID(N'dbo.clientes', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.clientes (
-        id                  NVARCHAR(36)    NOT NULL CONSTRAINT PK_clientes PRIMARY KEY,
+        id                  UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_clientes PRIMARY KEY
+                                              CONSTRAINT DF_clientes_id DEFAULT (NEWSEQUENTIALID()),
         codigo              NVARCHAR(20)    NOT NULL CONSTRAINT UQ_clientes_codigo UNIQUE,
         nombre              NVARCHAR(255)   NOT NULL,
         rut                 NVARCHAR(20)    NULL,
@@ -74,13 +80,14 @@ GO
 IF OBJECT_ID(N'dbo.proyectos', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.proyectos (
-        id                  NVARCHAR(36)    NOT NULL CONSTRAINT PK_proyectos PRIMARY KEY,
+        id                  UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_proyectos PRIMARY KEY
+                                              CONSTRAINT DF_proyectos_id DEFAULT (NEWSEQUENTIALID()),
         codigo              NVARCHAR(20)    NOT NULL CONSTRAINT UQ_proyectos_codigo UNIQUE,
         nombre              NVARCHAR(255)   NOT NULL,
         descripcion         NVARCHAR(MAX)   NULL,
         fecha_inicio        DATE            NOT NULL,
         fecha_fin_estimada  DATE            NULL,
-        cliente_id          NVARCHAR(36)    NOT NULL,
+        cliente_id          UNIQUEIDENTIFIER NOT NULL,
         cliente_nombre      NVARCHAR(255)   NOT NULL,
         contacto            NVARCHAR(255)   NULL,
         estado              NVARCHAR(50)    NOT NULL CONSTRAINT DF_proyectos_estado DEFAULT ('activo'),
@@ -132,9 +139,10 @@ GO
 IF OBJECT_ID(N'dbo.perforaciones', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.perforaciones (
-        id              NVARCHAR(36)    NOT NULL CONSTRAINT PK_perforaciones PRIMARY KEY,
+        id              UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_perforaciones PRIMARY KEY
+                                          CONSTRAINT DF_perforaciones_id DEFAULT (NEWSEQUENTIALID()),
         codigo          NVARCHAR(50)    NOT NULL CONSTRAINT UQ_perforaciones_codigo UNIQUE,
-        proyecto_id     NVARCHAR(36)    NOT NULL,
+        proyecto_id     UNIQUEIDENTIFIER NOT NULL,
         nombre          NVARCHAR(255)   NOT NULL,
         fecha_inicio    DATE            NULL,
         fecha_fin       DATE            NULL,
@@ -176,14 +184,20 @@ GO
 -- ---------------------------------------------------------------------------
 -- 4. ENSAYOS
 -- ---------------------------------------------------------------------------
+-- Nota: equipos_utilizados (TEXT[] en Postgres) se normalizará a tabla
+-- puente `ensayo_equipos` en una migración posterior (decisión Fase A).
+-- Por ahora se mantiene como NVARCHAR(MAX) JSON para no bloquear el
+-- portado del módulo de ensayos.
+-- ---------------------------------------------------------------------------
 IF OBJECT_ID(N'dbo.ensayos', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.ensayos (
-        id                  NVARCHAR(36)    NOT NULL CONSTRAINT PK_ensayos PRIMARY KEY,
+        id                  UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_ensayos PRIMARY KEY
+                                              CONSTRAINT DF_ensayos_id DEFAULT (NEWSEQUENTIALID()),
         codigo              NVARCHAR(50)    NOT NULL CONSTRAINT UQ_ensayos_codigo UNIQUE,
         tipo                NVARCHAR(100)   NOT NULL,
-        perforacion_id      NVARCHAR(36)    NOT NULL,
-        proyecto_id         NVARCHAR(36)    NOT NULL,
+        perforacion_id      UNIQUEIDENTIFIER NOT NULL,
+        proyecto_id         UNIQUEIDENTIFIER NOT NULL,
         muestra             NVARCHAR(100)   NOT NULL,
         norma               NVARCHAR(100)   NOT NULL,
         workflow_state      NVARCHAR(50)    NOT NULL CONSTRAINT DF_ensayos_workflow_state DEFAULT ('solicitado'),
@@ -192,11 +206,11 @@ BEGIN
         fecha_ejecucion     DATE            NULL,
         fecha_reporte       DATE            NULL,
         fecha_entrega       DATE            NULL,
-        tecnico_id          NVARCHAR(36)    NULL,
+        tecnico_id          UNIQUEIDENTIFIER NULL,
         tecnico_nombre      NVARCHAR(255)   NULL,
         sheet_id            NVARCHAR(100)   NULL,
         sheet_url           NVARCHAR(MAX)   NULL,
-        equipos_utilizados  NVARCHAR(MAX)   NULL, -- JSON array (era TEXT[] en Postgres)
+        equipos_utilizados  NVARCHAR(MAX)   NULL, -- JSON (legacy: TEXT[])
         observaciones       NVARCHAR(MAX)   NULL,
         urgente             BIT             NOT NULL CONSTRAINT DF_ensayos_urgente DEFAULT (0),
         created_at          DATETIMEOFFSET  NOT NULL CONSTRAINT DF_ensayos_created_at DEFAULT (SYSUTCDATETIME()),
@@ -249,7 +263,8 @@ GO
 IF OBJECT_ID(N'dbo.equipos', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.equipos (
-        id                      NVARCHAR(36)    NOT NULL CONSTRAINT PK_equipos PRIMARY KEY,
+        id                      UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_equipos PRIMARY KEY
+                                                  CONSTRAINT DF_equipos_id DEFAULT (NEWSEQUENTIALID()),
         codigo                  NVARCHAR(20)    NOT NULL CONSTRAINT UQ_equipos_codigo UNIQUE,
         nombre                  NVARCHAR(255)   NOT NULL,
         serie                   NVARCHAR(100)   NOT NULL,
@@ -305,7 +320,8 @@ GO
 IF OBJECT_ID(N'dbo.sensores', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.sensores (
-        id                  NVARCHAR(36)    NOT NULL CONSTRAINT PK_sensores PRIMARY KEY,
+        id                  UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_sensores PRIMARY KEY
+                                              CONSTRAINT DF_sensores_id DEFAULT (NEWSEQUENTIALID()),
         codigo              NVARCHAR(20)    NOT NULL CONSTRAINT UQ_sensores_codigo UNIQUE,
         tipo                NVARCHAR(100)   NOT NULL CONSTRAINT DF_sensores_tipo DEFAULT ('general'),
         estado              NVARCHAR(50)    NULL CONSTRAINT DF_sensores_estado DEFAULT ('activo'),
@@ -359,7 +375,7 @@ BEGIN
     CREATE TABLE dbo.sync_log (
         id              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_sync_log PRIMARY KEY,
         entity_type     NVARCHAR(50)    NOT NULL,
-        entity_id       NVARCHAR(36)    NOT NULL,
+        entity_id       UNIQUEIDENTIFIER NOT NULL,
         action          NVARCHAR(20)    NOT NULL,
         source          NVARCHAR(20)    NOT NULL,
         target          NVARCHAR(20)    NOT NULL,

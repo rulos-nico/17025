@@ -6,7 +6,7 @@ namespace Lab17025.Api.Repositories;
 public interface IUsuarioRepository
 {
     Task<Usuario?> FindByEmailAsync(string email, CancellationToken ct = default);
-    Task<Usuario?> FindByIdAsync(string id, CancellationToken ct = default);
+    Task<Usuario?> FindByIdAsync(Guid id, CancellationToken ct = default);
 }
 
 public sealed class UsuarioRepository(ISqlConnectionFactory factory) : IUsuarioRepository
@@ -25,7 +25,7 @@ public sealed class UsuarioRepository(ISqlConnectionFactory factory) : IUsuarioR
             cancellationToken: ct));
     }
 
-    public async Task<Usuario?> FindByIdAsync(string id, CancellationToken ct = default)
+    public async Task<Usuario?> FindByIdAsync(Guid id, CancellationToken ct = default)
     {
         using var conn = factory.Create();
         return await conn.QuerySingleOrDefaultAsync<Usuario>(new CommandDefinition(

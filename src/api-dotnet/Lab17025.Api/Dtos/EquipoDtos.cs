@@ -8,7 +8,7 @@ namespace Lab17025.Api.Dtos;
 /// </summary>
 public sealed class EquipoDto
 {
-    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("id")] public Guid Id { get; set; }
     [JsonPropertyName("codigo")] public string Codigo { get; set; } = string.Empty;
     [JsonPropertyName("nombre")] public string Nombre { get; set; } = string.Empty;
     [JsonPropertyName("serie")] public string Serie { get; set; } = string.Empty;

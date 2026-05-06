@@ -117,7 +117,7 @@ public sealed class EquiposIntegrationTests : IAsyncLifetime
         });
         create.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await create.Content.ReadFromJsonAsync<EquipoDto>();
-        created!.Id.Should().NotBeNullOrEmpty();
+        created!.Id.Should().NotBe(Guid.Empty);
         created.Codigo.Should().StartWith("EQP-");
 
         // Update
