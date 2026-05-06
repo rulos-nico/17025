@@ -40,7 +40,7 @@ GO
 MERGE dbo.usuarios AS target
 USING (VALUES
     ('demo-user-001', 'demo@ingetec.cl', N'Demo', N'Técnico', 'tecnico', CAST(1 AS BIT),
-     '7b2cbeed9cc1eed3b4afb50d7aa3aa57c1ee15db75c2e30706f66f88c84bcd54')
+     '0ead2060b65992dca4769af601a1b3a35ef38cfad2c2c465bb160ea764157c5d')
 ) AS source (id, email, nombre, apellido, rol, activo, password_hash)
 ON target.id = source.id
 WHEN NOT MATCHED BY TARGET THEN
