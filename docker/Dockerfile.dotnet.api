@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1.6
+# ----------- Build -----------
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy csproj/sln first for cached restore
+COPY src/api-dotnet/Lab17025.sln ./
+COPY src/api-dotnet/Lab17025.Api/Lab17025.Api.csproj Lab17025.Api/
+COPY src/api-dotnet/Lab17025.Migrations/Lab17025.Migrations.csproj Lab17025.Migrations/
+COPY src/api-dotnet/Lab17025.Tests.Api/Lab17025.Tests.Api.csproj Lab17025.Tests.Api/
+RUN dotnet restore Lab17025.Api/Lab17025.Api.csproj
+
+# Copy the rest
+COPY src/api-dotnet/ ./
+RUN dotnet publish Lab17025.Api/Lab17025.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+# ----------- Runtime -----------
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_RUNNING_IN_CONTAINER=true
+EXPOSE 8080
+COPY --from=build /app/publish ./
+USER app
+ENTRYPOINT ["dotnet", "Lab17025.Api.dll"]

@@ -1,0 +1,59 @@
+# Compose para PoC .NET 9 + Vue 3 + SQL Server 2022
+# Uso:
+#   docker compose -f docker/docker-compose.dotnet.dev.yml up --build
+#
+# Servicios:
+#   mssql  -> SQL Server 2022 Developer (puerto 1433)
+#   api    -> ASP.NET Core 9 API        (puerto 5080 -> 8080)
+#   web    -> nginx sirviendo Vue dist  (puerto 5173)
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: lab17025-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "ChangeMe!Dev123"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C -No || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dotnet.api
+    container_name: lab17025-api
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__SqlServer: "Server=mssql,1433;Database=lab17025;User Id=sa;Password=ChangeMe!Dev123;TrustServerCertificate=True;Encrypt=False"
+      Jwt__Secret: "dev-only-secret-please-change-this-32chars-minimum-xxx"
+      Cors__AllowedOrigins__0: "http://localhost:5173"
+    ports:
+      - "5080:8080"
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.vue
+    container_name: lab17025-web
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  mssql_data:

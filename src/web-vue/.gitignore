@@ -1,0 +1,6 @@
+# Vue PoC scaffolds
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
