@@ -167,6 +167,73 @@ Cobertura PoC:
   `NullableDateOnlyTypeHandler` en `Program.cs`.
 - **JSON snake_case** para preservar contrato con el frontend Vue.
 
+## Errores y observabilidad (Sub-fase A.2)
+
+Toda respuesta de error sigue **RFC 7807 ProblemDetails** (`application/problem+json`)
+con los campos:
+
+| Campo           | Origen                                                                       |
+| --------------- | ---------------------------------------------------------------------------- |
+| `type`          | Link RFC 9110 al status (default ASP.NET) o sobrescrito por la excepción.    |
+| `title`         | Reason phrase HTTP (`Unauthorized`, `Not Found`, …) o título de la excepción.|
+| `status`        | Código HTTP.                                                                 |
+| `detail`        | Detalle (en `Development`; en producción solo para 4xx controlados).         |
+| `instance`      | `HttpContext.Request.Path`.                                                  |
+| `traceId`       | `Activity.Current?.Id` o `HttpContext.TraceIdentifier`.                      |
+| `correlationId` | Valor del header `X-Correlation-Id` (entrante o generado).                   |
+
+### Correlation-ID
+
+`CorrelationIdMiddleware` (`Bootstrap/CorrelationIdMiddleware.cs`):
+
+- Si la request trae header `X-Correlation-Id`, **lo respeta** (sanitiza a 128 chars).
+- Si no, genera un `Guid.NewGuid("N")` (32 hex sin guiones).
+- Lo expone en:
+  - `HttpContext.Items["CorrelationId"]` (uso interno).
+  - Header de respuesta `X-Correlation-Id`.
+  - `Serilog.Context.LogContext` como propiedad `CorrelationId` (todos los logs
+    de la request lo incluyen).
+- También empuja `UserId` al `LogContext` cuando hay JWT autenticado.
+
+### Excepciones
+
+`GlobalExceptionHandler` (`IExceptionHandler` registrado en pipeline) mapea:
+
+| Excepción                       | Status         | Notas                                       |
+| ------------------------------- | -------------- | ------------------------------------------- |
+| `ApiException` (custom)         | `ex.StatusCode`| Factories: `NotFound/BadRequest/Conflict`.  |
+| `BadHttpRequestException`       | 400            |                                             |
+| `UnauthorizedAccessException`   | 401            |                                             |
+| `OperationCanceledException`    | 499            | Cliente cerró la conexión.                  |
+| (default)                       | 500            | `detail` solo en Development.               |
+
+### Logging
+
+Serilog está enriquecido con:
+
+- `MachineName`, `EnvironmentName`, `Application=Lab17025.Api` (estáticos).
+- `CorrelationId`, `UserId`, `ClientIp` (por request, vía `UseSerilogRequestLogging`).
+
+El `outputTemplate` de consola incluye `{CorrelationId}` y `{UserId}` para grep
+rápido en desarrollo. En producción los sinks JSON ya lo tienen como propiedades.
+
+### Smoke checks
+
+```bash
+# Sin header → server genera uno
+curl -i http://localhost:5080/health
+
+# Con header del cliente → server lo respeta
+curl -i -H 'X-Correlation-Id: my-trace-1' http://localhost:5080/health
+
+# 401 con problem+json
+curl -i http://localhost:5080/api/equipos
+
+# 404 con problem+json (requiere token)
+curl -i -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5080/api/equipos/00000000-0000-0000-0000-000000000000
+```
+
 ## Próximas fases
 
 - **Fase 2**: portar 23 migraciones T-SQL restantes + repos/controllers de los 13 módulos.

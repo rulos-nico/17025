@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dapper;
 using Lab17025.Api.Auth;
+using Lab17025.Api.Bootstrap;
 using Lab17025.Api.Repositories;
 using Lab17025.Migrations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,7 +30,11 @@ try
         .ReadFrom.Configuration(ctx.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .Enrich.WithMachineName()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithProperty("Application", "Lab17025.Api")
+        .WriteTo.Console(outputTemplate:
+            "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {UserId} {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
     // ----- Dapper: snake_case -> PascalCase ---------------------------------
     DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -70,7 +76,27 @@ try
             o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
         });
 
-    builder.Services.AddProblemDetails();
+    builder.Services.AddProblemDetails(o =>
+    {
+        // Enriquecer TODA respuesta ProblemDetails con traceId/correlationId/instance.
+        o.CustomizeProblemDetails = ctx =>
+        {
+            ctx.ProblemDetails.Instance ??= ctx.HttpContext.Request.Path;
+            ctx.ProblemDetails.Extensions["traceId"] =
+                Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier;
+
+            if (ctx.HttpContext.Items.TryGetValue(CorrelationIdMiddleware.ItemsKey, out var cid)
+                && cid is string s)
+            {
+                ctx.ProblemDetails.Extensions["correlationId"] = s;
+            }
+
+            // RFC 7807 'type' por defecto si el caller no lo especifica.
+            if (string.IsNullOrEmpty(ctx.ProblemDetails.Type) && ctx.ProblemDetails.Status is int st)
+                ctx.ProblemDetails.Type = $"https://httpstatuses.com/{st}";
+        };
+    });
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddEndpointsApiExplorer();
 
     // ----- Swagger ----------------------------------------------------------
@@ -146,7 +172,19 @@ try
     }
 
     // ----- Pipeline ---------------------------------------------------------
-    app.UseSerilogRequestLogging();
+    app.UseSerilogRequestLogging(opts =>
+    {
+        opts.EnrichDiagnosticContext = (diag, http) =>
+        {
+            if (http.Items.TryGetValue(CorrelationIdMiddleware.ItemsKey, out var cid) && cid is not null)
+                diag.Set("CorrelationId", cid.ToString()!);
+            var uid = http.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(uid)) diag.Set("UserId", uid);
+            var ip = http.Connection.RemoteIpAddress?.ToString();
+            if (!string.IsNullOrEmpty(ip)) diag.Set("ClientIp", ip);
+        };
+    });
+    app.UseCorrelationId();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
