@@ -26,6 +26,7 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
+!src/api-dotnet/Lab17025.sln
 *.sw?
 
 # Rust
