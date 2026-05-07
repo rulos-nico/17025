@@ -8,6 +8,8 @@ const auth = useAuthStore();
 
 const items = [
   { path: '/equipos', label: 'Equipos', icon: '🔧' },
+  { path: '/sensores', label: 'Sensores', icon: '📡' },
+  { path: '/clientes', label: 'Clientes', icon: '👥' },
   { path: '/dashboard', label: 'Dashboard', icon: '📊' },
 ];
 

@@ -1,3 +1,4 @@
+using Lab17025.Api.Auth;
 using Lab17025.Api.Dtos;
 using Lab17025.Api.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -16,11 +17,10 @@ namespace Lab17025.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/equipos")]
-public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
+public sealed class EquiposController(
+    IEquipoRepository repo,
+    ICodigoGenerator codigos) : ControllerBase
 {
-    /// <summary>Roles autorizados a mutar equipos. TECNICO/CLIENTE/DISENO solo lectura.</summary>
-    private const string WriteRoles = "ADMIN,COORDINADOR";
-
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EquipoDto>>> List(CancellationToken ct)
     {
@@ -36,23 +36,24 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = WriteRoles)]
+    [Authorize(Roles = Roles.Write)]
     public async Task<ActionResult<EquipoDto>> Create([FromBody] CreateEquipoDto body, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(body.Nombre) || string.IsNullOrWhiteSpace(body.Serie))
-            return Problem(statusCode: 400, title: "nombre y serie son obligatorios");
+        // Defensa en profundidad: CreateEquipoValidator (FluentValidation) ya
+        // rechazaría nombre vacío con 400; este guard cubre el caso de que el
+        // filtro fuera removido en el futuro.
+        if (string.IsNullOrWhiteSpace(body.Nombre))
+            return Problem(statusCode: 400, title: "nombre es obligatorio");
 
         var id = Guid.NewGuid();
-        // TODO Fase A.3: reemplazar por SEQUENCE T-SQL para garantizar unicidad
-        // y formato consecutivo (paridad con generación de códigos en Rust).
-        var codigo = $"EQP-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        var codigo = await codigos.NextAsync("EQP", "seq_equipos", ct);
 
         var created = await repo.CreateAsync(id, codigo, body, ct);
         return Created($"/api/equipos/{created.Id}", created.ToDto());
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = WriteRoles)]
+    [Authorize(Roles = Roles.Write)]
     public async Task<ActionResult<EquipoDto>> Update(Guid id, [FromBody] UpdateEquipoDto body, CancellationToken ct)
     {
         var updated = await repo.UpdateAsync(id, body, ct);
@@ -60,7 +61,7 @@ public sealed class EquiposController(IEquipoRepository repo) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = WriteRoles)]
+    [Authorize(Roles = Roles.Write)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var ok = await repo.SoftDeleteAsync(id, ct);

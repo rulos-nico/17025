@@ -7,6 +7,8 @@ const router = createRouter({
     { path: '/', redirect: '/equipos' },
     { path: '/login', component: () => import('@/pages/Login.vue'), meta: { public: true } },
     { path: '/equipos', component: () => import('@/pages/Equipos.vue') },
+    { path: '/sensores', component: () => import('@/pages/Sensores.vue') },
+    { path: '/clientes', component: () => import('@/pages/Clientes.vue') },
     { path: '/dashboard', component: () => import('@/pages/Dashboard.vue') },
   ],
 });

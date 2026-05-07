@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dapper;
+using FluentValidation;
 using Lab17025.Api.Auth;
 using Lab17025.Api.Bootstrap;
 using Lab17025.Api.Repositories;
@@ -58,9 +59,15 @@ try
     builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
     builder.Services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
     builder.Services.AddScoped<IEquipoRepository, EquipoRepository>();
+    builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+    builder.Services.AddScoped<ISensorRepository, SensorRepository>();
     builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
     builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+    builder.Services.AddScoped<ICodigoGenerator, CodigoGenerator>();
     builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+
+    // FluentValidation: registra todos los IValidator<T> del ensamblado.
+    builder.Services.AddValidatorsFromAssemblyContaining<Program>();
     builder.Services.AddHttpClient(GoogleTokenValidator.HttpClientName, c =>
     {
         c.Timeout = TimeSpan.FromSeconds(8);
@@ -68,7 +75,10 @@ try
 
     // ----- Controllers + JSON snake_case -----------------------------------
     builder.Services
-        .AddControllers()
+        .AddControllers(o =>
+        {
+            o.Filters.Add<FluentValidationFilter>();
+        })
         .AddJsonOptions(o =>
         {
             o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
