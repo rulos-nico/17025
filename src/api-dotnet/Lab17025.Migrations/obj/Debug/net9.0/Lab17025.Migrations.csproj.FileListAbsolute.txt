@@ -1,0 +1,13 @@
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/bin/Debug/net9.0/Lab17025.Migrations.deps.json
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/bin/Debug/net9.0/Lab17025.Migrations.dll
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/bin/Debug/net9.0/Lab17025.Migrations.pdb
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.csproj.AssemblyReference.cache
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.GeneratedMSBuildEditorConfig.editorconfig
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.AssemblyInfoInputs.cache
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.AssemblyInfo.cs
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.csproj.CoreCompileInputs.cache
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.sourcelink.json
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.dll
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/refint/Lab17025.Migrations.dll
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/Lab17025.Migrations.pdb
+/home/rulos/Proyects/17025/src/api-dotnet/Lab17025.Migrations/obj/Debug/net9.0/ref/Lab17025.Migrations.dll

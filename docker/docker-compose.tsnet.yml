@@ -1,0 +1,49 @@
+# =============================================================================
+# Docker Compose override - Tailscale Funnel (acceso publico via *.ts.net)
+# =============================================================================
+# Uso (combinado con el compose base):
+#   docker compose -f docker/docker-compose.yml \
+#                  -f docker/docker-compose.tsnet.yml up -d --build
+#
+# Funnel se habilita aparte con:
+#   sudo tailscale funnel --bg 80
+#
+# IMPORTANTE: este override mantiene el auth bypass del compose base
+# (REQUIRE_AUTH=false, VITE_AUTH_BYPASS=true). La URL publica queda
+# accesible sin login. No difundir el link hasta implementar auth real.
+#
+# NOTA: este override reutiliza el volumen `docker_pgdata-dev` (creado por
+# docker-compose.dev.yml) y las credenciales `rulos / 17025`. Esto evita
+# re-ejecutar la migracion 20260417010000 (bug pre-existente con UUIDs
+# hardcoded de tipos_ensayo). Mientras este stack este corriendo, NO
+# levantar el dev compose para evitar conflicto de contenedores en :5433
+# vs :5434 ni de container_name.
+#
+# Si cambia el hostname Tailscale (TSHOST), actualizar ALLOWED_ORIGINS y
+# rebuildear con `up -d --build`.
+# =============================================================================
+
+services:
+  db:
+    environment:
+      POSTGRES_DB: "17025"
+      POSTGRES_USER: rulos
+      POSTGRES_PASSWORD: "Kimposible14@"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rulos -d 17025"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    environment:
+      DATABASE_URL: postgres://rulos:Kimposible14%40@db:5432/17025
+      RUN_MIGRATIONS: "false"
+      ALLOWED_ORIGINS: "https://rulos-zenbook-ux325ea.tail950747.ts.net,http://localhost,http://localhost:80"
+
+volumes:
+  pgdata-dev:
+    name: docker_pgdata-dev
+    external: true

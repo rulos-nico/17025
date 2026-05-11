@@ -102,7 +102,7 @@ rebuild-frontend: ## Rebuild y reiniciar frontend (tras cambiar package.json)
 # Base de datos
 # -------------------------------------------
 db-shell: ## Conectarse a psql en el container
-	docker exec -it lab17025-dev-db psql -U lab17025 -d lab17025
+	docker exec -it lab17025-dev-db psql -U rulos -d 17025
 
 db-dump: ## Exportar dump de la base de datos
 	docker exec lab17025-dev-db pg_dump -U lab17025 lab17025 > dump_$(shell date +%Y%m%d_%H%M%S).sql
